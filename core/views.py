@@ -7,6 +7,7 @@ from django.contrib.auth.models import User
 from django.core.mail import send_mail
 from django.utils import timezone
 from django.db.models import Q
+from django.core.paginator import Paginator
 
 # Create your views here.
 
@@ -197,26 +198,79 @@ from django.db.models import Q
 
 
 def course_list_view(request):
-    courses = Course.objects.filter(is_active=True)
+
+    courses = Course.objects.filter(
+        is_active=True
+    )
 
     search_query = request.GET.get("q", "").strip()
 
-    if search_query:
-        normalized_query = search_query.lower().replace(" ", "_")
+    category_filter = request.GET.get(
+        "category",
+        ""
+    ).strip()
 
-        courses = courses.filter(
-            Q(title__icontains=search_query) |
-            Q(category__icontains=search_query) |
-            Q(category__icontains=normalized_query)
+
+    # Search by title or category
+
+    if search_query:
+
+        normalized_query = search_query.lower().replace(
+            " ",
+            "_"
         )
 
-    courses = courses.order_by("-created_at")
+        courses = courses.filter(
+
+            Q(title__icontains=search_query) |
+
+            Q(category__icontains=search_query) |
+
+            Q(category__icontains=normalized_query)
+
+        )
+
+
+    # Category filter
+
+    if category_filter:
+
+        courses = courses.filter(
+            category=category_filter
+        )
+
+
+    # Latest courses first
+
+    courses = courses.order_by(
+        "-created_at"
+    )
+
+
+    # Pagination - 6 courses per page
+
+    paginator = Paginator(
+        courses,
+        6
+    )
+
+    page_number = request.GET.get(
+        "page"
+    )
+
+    page_obj = paginator.get_page(
+        page_number
+    )
+
 
     return render(
         request,
         "course_list.html",
         {
-            "courses": courses,
+            "courses": page_obj,
+            "page_obj": page_obj,
             "search_query": search_query,
+            "category_filter": category_filter,
+            "categories": Course.CATEGORY_CHOICES,
         }
     )
