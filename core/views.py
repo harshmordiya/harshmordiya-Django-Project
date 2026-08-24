@@ -1,3 +1,193 @@
-from django.shortcuts import render
+import random
+
+from django.shortcuts import render,redirect
+from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.models import User
+from django.core.mail import send_mail
+from django.utils import timezone
 
 # Create your views here.
+
+from .forms import RegistrationForm
+from .models import PasswordResetOTP
+
+
+def register_view(request):
+    if request.user.is_authenticated:
+        return redirect("dashboard")
+
+    if request.method == "POST":
+        form = RegistrationForm(request.POST)
+
+        if form.is_valid():
+            form.save()
+            return redirect("login")
+
+    else:
+        form = RegistrationForm()
+
+    return render(request, "register.html", {"form": form})
+
+
+def login_view(request):
+    if request.user.is_authenticated:
+        return redirect("dashboard")
+
+    if request.method == "POST":
+        username = request.POST.get("username")
+        password = request.POST.get("password")
+
+        user = authenticate(
+            request,
+            username=username,
+            password=password
+        )
+
+        if user is not None:
+            login(request, user)
+            return redirect("dashboard")
+
+        return render(
+            request,
+            "login.html",
+            {"error": "Invalid username or password."}
+        )
+
+    return render(request, "login.html")
+
+
+@login_required
+def dashboard_view(request):
+    profile = request.user.userprofile
+
+    return render(
+        request,
+        "dashboard.html",
+        {"profile": profile}
+    )
+
+
+def logout_view(request):
+    logout(request)
+    return redirect("login")
+
+def forgot_password_view(request):
+    if request.method == "POST":
+        email = request.POST.get("email")
+
+        try:
+            user = User.objects.get(email=email)
+        except User.DoesNotExist:
+            return render(
+                request,
+                "forgot_password.html",
+                {"error": "No account found with this email."}
+            )
+
+        otp = str(random.randint(100000, 999999))
+
+        PasswordResetOTP.objects.filter(
+            user=user,
+            is_verified=False
+        ).delete()
+
+        PasswordResetOTP.objects.create(
+            user=user,
+            otp=otp
+        )
+
+        send_mail(
+            subject="Password Reset OTP",
+            message=f"Your password reset OTP is: {otp}",
+            from_email="noreply@example.com",
+            recipient_list=[email],
+        )
+
+        request.session["reset_email"] = email
+
+        return redirect("verify_otp")
+
+    return render(request, "forgot_password.html")
+
+def verify_otp_view(request):
+    email = request.session.get("reset_email")
+
+    if not email:
+        return redirect("forgot_password")
+
+    if request.method == "POST":
+        entered_otp = request.POST.get("otp")
+
+        try:
+            user = User.objects.get(email=email)
+            otp_record = PasswordResetOTP.objects.filter(
+                user=user,
+                otp=entered_otp,
+                is_verified=False
+            ).latest("created_at")
+
+        except (User.DoesNotExist, PasswordResetOTP.DoesNotExist):
+            return render(
+                request,
+                "verify_otp.html",
+                {"error": "Invalid OTP."}
+            )
+
+        # OTP expires after 5 minutes
+        elapsed_time = timezone.now() - otp_record.created_at
+
+        if elapsed_time.total_seconds() > 300:
+            otp_record.delete()
+
+            return render(
+                request,
+                "verify_otp.html",
+                {"error": "OTP has expired. Please request a new OTP."}
+            )
+
+        otp_record.is_verified = True
+        otp_record.save()
+
+        request.session["otp_verified"] = True
+
+        return redirect("reset_password")
+
+    return render(request, "verify_otp.html")
+
+def reset_password_view(request):
+    email = request.session.get("reset_email")
+    otp_verified = request.session.get("otp_verified")
+
+    if not email or not otp_verified:
+        return redirect("forgot_password")
+
+    if request.method == "POST":
+        password = request.POST.get("password")
+        confirm_password = request.POST.get("confirm_password")
+
+        if password != confirm_password:
+            return render(
+                request,
+                "reset_password.html",
+                {"error": "Passwords do not match."}
+            )
+
+        if len(password) < 8:
+            return render(
+                request,
+                "reset_password.html",
+                {"error": "Password must be at least 8 characters."}
+            )
+
+        user = User.objects.get(email=email)
+
+        user.set_password(password)
+        user.save()
+
+        request.session.pop("reset_email", None)
+        request.session.pop("otp_verified", None)
+
+        return redirect("login")
+
+    return render(request, "reset_password.html")

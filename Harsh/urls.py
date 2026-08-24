@@ -17,6 +17,23 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 
+from core.views import (
+    dashboard_view,
+    login_view,
+    logout_view,
+    register_view,
+    forgot_password_view,
+    verify_otp_view,
+    reset_password_view,
+)
+
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path("register/", register_view, name="register"),
+    path("login/", login_view, name="login"),
+    path("dashboard/", dashboard_view, name="dashboard"),
+    path("logout/", logout_view, name="logout"),
+    path("forgot-password/", forgot_password_view, name="forgot_password"),
+    path("verify-otp/", verify_otp_view, name="verify_otp"),
+    path("reset-password/", reset_password_view, name="reset_password"),
 ]
