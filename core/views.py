@@ -6,6 +6,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.core.mail import send_mail
 from django.utils import timezone
+from django.db.models import Q
 
 # Create your views here.
 
@@ -192,7 +193,30 @@ def reset_password_view(request):
 
     return render(request, "reset_password.html")
 
-def course_list_view(request):
-    courses = Course.objects.filter(is_active=True).order_by("-created_at")
+from django.db.models import Q
 
-    return render(request,"course_list.html",{"courses": courses})
+
+def course_list_view(request):
+    courses = Course.objects.filter(is_active=True)
+
+    search_query = request.GET.get("q", "").strip()
+
+    if search_query:
+        normalized_query = search_query.lower().replace(" ", "_")
+
+        courses = courses.filter(
+            Q(title__icontains=search_query) |
+            Q(category__icontains=search_query) |
+            Q(category__icontains=normalized_query)
+        )
+
+    courses = courses.order_by("-created_at")
+
+    return render(
+        request,
+        "course_list.html",
+        {
+            "courses": courses,
+            "search_query": search_query,
+        }
+    )

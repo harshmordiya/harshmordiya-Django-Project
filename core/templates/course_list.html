@@ -72,6 +72,25 @@
 
     <h1>Available Courses</h1>
 
+    <form method="get">
+        <input
+            type="text"
+            name="q"
+            placeholder="Search courses..."
+            value="{{ search_query }}"
+        >
+
+        <button type="submit">
+            Search
+        </button>
+
+        {% if search_query %}
+            <a href="{% url 'course_list' %}">
+                Clear
+            </a>
+        {% endif %}
+    </form>
+
     {% if courses %}
 
         <div class="course-grid">
