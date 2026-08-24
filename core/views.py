@@ -10,7 +10,7 @@ from django.utils import timezone
 # Create your views here.
 
 from .forms import RegistrationForm
-from .models import PasswordResetOTP
+from .models import Course, PasswordResetOTP, Course
 
 
 def register_view(request):
@@ -191,3 +191,8 @@ def reset_password_view(request):
         return redirect("login")
 
     return render(request, "reset_password.html")
+
+def course_list_view(request):
+    courses = Course.objects.filter(is_active=True).order_by("-created_at")
+
+    return render(request,"course_list.html",{"courses": courses})

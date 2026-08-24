@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Courses</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 30px;
+            background: #f5f5f5;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: auto;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .course-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+        }
+
+        .course-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .course-card h2 {
+            margin-top: 0;
+        }
+
+        .category {
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .price {
+            font-size: 20px;
+            font-weight: bold;
+        }
+
+        .description {
+            color: #555;
+        }
+
+        .duration {
+            margin-top: 10px;
+        }
+
+        .empty {
+            text-align: center;
+            padding: 40px;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <h1>Available Courses</h1>
+
+    {% if courses %}
+
+        <div class="course-grid">
+
+            {% for course in courses %}
+
+                <div class="course-card">
+
+                    <h2>{{ course.title }}</h2>
+
+                    <p class="category">
+                        Category:
+                        {{ course.get_category_display }}
+                    </p>
+
+                    <p class="description">
+                        {{ course.description }}
+                    </p>
+
+                    <p class="duration">
+                        Duration: {{ course.duration }}
+                    </p>
+
+                    <p class="price">
+                        Price: ₹{{ course.price }}
+                    </p>
+
+                    {% if course.instructor %}
+                        <p>
+                            Instructor:
+                            {{ course.instructor.first_name }}
+                            {{ course.instructor.last_name }}
+                        </p>
+                    {% endif %}
+
+                </div>
+
+            {% endfor %}
+
+        </div>
+
+    {% else %}
+
+        <div class="empty">
+            <h2>No courses available</h2>
+            <p>Please check again later.</p>
+        </div>
+
+    {% endif %}
+
+</div>
+
+</body>
+</html>

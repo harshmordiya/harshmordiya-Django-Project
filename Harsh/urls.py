@@ -16,6 +16,7 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
+from core import views
 
 from core.views import (
     dashboard_view,
@@ -36,4 +37,5 @@ urlpatterns = [
     path("forgot-password/", forgot_password_view, name="forgot_password"),
     path("verify-otp/", verify_otp_view, name="verify_otp"),
     path("reset-password/", reset_password_view, name="reset_password"),
+    path("courses/", views.course_list_view, name="course_list"),
 ]
