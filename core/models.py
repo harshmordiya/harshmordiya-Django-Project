@@ -108,3 +108,22 @@ class Course(models.Model):
 
     def __str__(self):
         return self.title
+
+class Cart(models.Model):
+    cart_id = models.AutoField(primary_key=True)
+    Student = models.ForeignKey(Student,on_delete=models.CASCADE,related_name="cart_items")
+
+    Course = models.ForeignKey(Course,on_delete=models.CASCADE,related_name="cart_items")
+
+    added_at = models.DateTimeField(auto_now_add=True)
+
+class Meta:
+    constraints = [
+        models.UniqueConstraint(
+            fields=["student", "course"],
+            name="unique_student_course_cart"
+        )
+    ]
+
+def __str__(self):
+    return f"{self.Student} - {self.Course}"
