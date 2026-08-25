@@ -90,6 +90,14 @@
             font-weight: bold;
         }
 
+        .details-button {
+            display: inline-block;
+            margin-top: 15px;
+            padding: 10px 18px;
+            text-decoration: none;
+            border-radius: 5px;
+        }
+
         .description {
             color: #555;
         }
@@ -253,6 +261,13 @@
                         </p>
 
                     {% endif %}
+
+                        <a
+                            href="{% url 'course_detail' course.course_id %}"
+                            class="details-button"
+                            >
+                            View Details
+                        </a>
 
                 </div>
 

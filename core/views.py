@@ -1,6 +1,6 @@
 import random
 
-from django.shortcuts import render,redirect
+from django.shortcuts import render,redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
@@ -272,5 +272,20 @@ def course_list_view(request):
             "search_query": search_query,
             "category_filter": category_filter,
             "categories": Course.CATEGORY_CHOICES,
+        }
+    )
+
+def course_detail_view(request, course_id):
+    course = get_object_or_404(
+        Course,
+        course_id=course_id,
+        is_active=True
+    )
+
+    return render(
+        request,
+        "course_detail.html",
+        {
+            "course": course
         }
     )

@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>
+        {{ course.title }}
+    </title>
+
+
+    <style>
+
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 30px;
+            background: #f5f5f5;
+        }
+
+
+        .container {
+            max-width: 900px;
+            margin: auto;
+        }
+
+
+        .course-detail {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+
+        h1 {
+            margin-top: 0;
+        }
+
+
+        .category {
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+
+        .description {
+            line-height: 1.6;
+            color: #555;
+        }
+
+
+        .course-info {
+            margin-top: 25px;
+            padding: 20px;
+            border-radius: 8px;
+        }
+
+
+        .course-info p {
+            margin: 10px 0;
+        }
+
+
+        .price {
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+
+        .instructor {
+            margin-top: 25px;
+        }
+
+
+        .back-button {
+            display: inline-block;
+            margin-top: 25px;
+            padding: 10px 18px;
+            text-decoration: none;
+            border-radius: 5px;
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+
+<div class="container">
+
+
+    <div class="course-detail">
+
+
+        <!-- Course Title -->
+
+        <h1>
+            {{ course.title }}
+        </h1>
+
+
+        <!-- Category -->
+
+        <p class="category">
+
+            Category:
+
+            {{ course.get_category_display }}
+
+        </p>
+
+
+        <!-- Description -->
+
+        <h2>
+            Course Description
+        </h2>
+
+        <p class="description">
+
+            {{ course.description }}
+
+        </p>
+
+
+        <!-- Course Information -->
+
+        <div class="course-info">
+
+            <h2>
+                Course Information
+            </h2>
+
+
+            <p>
+
+                <strong>
+                    Price:
+                </strong>
+
+                <span class="price">
+                    ₹{{ course.price }}
+                </span>
+
+            </p>
+
+
+            <p>
+
+                <strong>
+                    Duration:
+                </strong>
+
+                {{ course.duration }}
+
+            </p>
+
+
+            <p>
+
+                <strong>
+                    Status:
+                </strong>
+
+                {% if course.is_active %}
+
+                    Available
+
+                {% else %}
+
+                    Not Available
+
+                {% endif %}
+
+            </p>
+
+
+            <p>
+
+                <strong>
+                    Created:
+                </strong>
+
+                {{ course.created_at|date:"d M Y" }}
+
+            </p>
+
+
+            <p>
+
+                <strong>
+                    Last Updated:
+                </strong>
+
+                {{ course.updated_at|date:"d M Y" }}
+
+            </p>
+
+        </div>
+
+
+        <!-- Instructor -->
+
+        {% if course.instructor %}
+
+            <div class="instructor">
+
+                <h2>
+                    Instructor
+                </h2>
+
+
+                <p>
+
+                    <strong>
+                        Name:
+                    </strong>
+
+                    {{ course.instructor.first_name }}
+
+                    {{ course.instructor.last_name }}
+
+                </p>
+
+
+                <p>
+
+                    <strong>
+                        Email:
+                    </strong>
+
+                    {{ course.instructor.email }}
+
+                </p>
+
+
+                <p>
+
+                    <strong>
+                        Specialization:
+                    </strong>
+
+                    {{ course.instructor.specialization }}
+
+                </p>
+
+
+            </div>
+
+        {% else %}
+
+            <div class="instructor">
+
+                <p>
+                    Instructor information is not available.
+                </p>
+
+            </div>
+
+        {% endif %}
+
+
+        <!-- Back to Course List -->
+
+        <a
+            href="{% url 'course_list' %}"
+            class="back-button"
+        >
+            ← Back to Courses
+        </a>
+
+
+    </div>
+
+
+</div>
+
+
+</body>
+
+</html>

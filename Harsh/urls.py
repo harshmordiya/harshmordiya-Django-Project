@@ -38,4 +38,5 @@ urlpatterns = [
     path("verify-otp/", verify_otp_view, name="verify_otp"),
     path("reset-password/", reset_password_view, name="reset_password"),
     path("courses/", views.course_list_view, name="course_list"),
+    path("courses/<int:course_id>/",views.course_detail_view,name="course_detail"),
 ]
