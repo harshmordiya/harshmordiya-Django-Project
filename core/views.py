@@ -8,11 +8,12 @@ from django.core.mail import send_mail
 from django.utils import timezone
 from django.db.models import Q
 from django.core.paginator import Paginator
+from django.contrib import messages
 
 # Create your views here.
 
 from .forms import RegistrationForm
-from .models import Course, PasswordResetOTP, Course
+from .models import Cart, Course, PasswordResetOTP ,Student
 
 
 def register_view(request):
@@ -287,5 +288,100 @@ def course_detail_view(request, course_id):
         "course_detail.html",
         {
             "course": course
+        }
+    )
+
+@login_required
+def add_to_cart(request, course_id):
+
+    course = get_object_or_404(
+        Course,
+        course_id=course_id,
+        is_active=True
+    )
+
+    student = Student.objects.filter(
+        email=request.user.email
+    ).first()
+
+    if not student:
+        messages.error(
+            request,
+            "No student profile found for this account."
+        )
+
+        return redirect("course_detail", course_id=course_id)
+
+    cart_item, created = Cart.objects.get_or_create(
+        student=student,
+        course=course
+    )
+
+    if created:
+        messages.success(
+            request,
+            "Course added to cart successfully!"
+        )
+    else:
+        messages.info(
+            request,
+            "This course is already in your cart."
+        )
+
+    return redirect("cart")
+
+@login_required
+def remove_from_cart(request, cart_id):
+
+    try:
+        student = Student.objects.get(
+            email=request.user.email
+        )
+    except Student.DoesNotExist:
+        messages.error(
+            request,
+            "Student profile not found."
+        )
+        return redirect("cart")
+
+    cart_item = get_object_or_404(
+        Cart,
+        cart_id=cart_id,
+        student=student
+    )
+
+    cart_item.delete()
+
+    messages.success(
+        request,
+        "Course removed from cart."
+    )
+
+    return redirect("cart")
+
+@login_required
+def cart_view(request):
+
+    student = Student.objects.filter(
+        email=request.user.email
+    ).first()
+
+    if not student:
+        messages.error(
+            request,
+            "No student profile found for this account."
+        )
+
+        return redirect("course_list")
+
+    cart_items = Cart.objects.filter(
+        student=student
+    ).select_related("course")
+
+    return render(
+        request,
+        "cart.html",
+        {
+            "cart_items": cart_items
         }
     )

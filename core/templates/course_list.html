@@ -138,6 +138,14 @@
 
 <div class="container">
 
+    <p style="text-align: right;">
+        {% if user.is_authenticated %}
+            <a href="{% url 'cart' %}">
+                🛒 My Cart
+            </a>
+        {% endif %}
+    </p>
+
     <h1>Available Courses</h1>
 
 

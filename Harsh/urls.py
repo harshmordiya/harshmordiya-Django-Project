@@ -39,4 +39,7 @@ urlpatterns = [
     path("reset-password/", reset_password_view, name="reset_password"),
     path("courses/", views.course_list_view, name="course_list"),
     path("courses/<int:course_id>/",views.course_detail_view,name="course_detail"),
+    path("cart/",views.cart_view,name="cart"),
+    path("cart/add/<int:course_id>/",views.add_to_cart,name="add_to_cart"),
+    path("cart/remove/<int:cart_id>/",views.remove_from_cart,name="remove_from_cart"),
 ]

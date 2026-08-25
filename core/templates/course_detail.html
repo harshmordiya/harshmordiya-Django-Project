@@ -14,7 +14,6 @@
         {{ course.title }}
     </title>
 
-
     <style>
 
         body {
@@ -24,12 +23,10 @@
             background: #f5f5f5;
         }
 
-
         .container {
             max-width: 900px;
             margin: auto;
         }
-
 
         .course-detail {
             background: white;
@@ -38,46 +35,53 @@
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
         }
 
-
         h1 {
             margin-top: 0;
         }
-
 
         .category {
             font-size: 16px;
             font-weight: bold;
         }
 
-
         .description {
             line-height: 1.6;
             color: #555;
         }
 
-
         .course-info {
             margin-top: 25px;
             padding: 20px;
             border-radius: 8px;
+            background: #f8f8f8;
         }
-
 
         .course-info p {
             margin: 10px 0;
         }
-
 
         .price {
             font-size: 24px;
             font-weight: bold;
         }
 
-
         .instructor {
             margin-top: 25px;
         }
 
+        .cart-button {
+            display: inline-block;
+            margin-top: 20px;
+            padding: 12px 20px;
+            text-decoration: none;
+            border-radius: 5px;
+            background: #007bff;
+            color: white;
+        }
+
+        .cart-button:hover {
+            opacity: 0.9;
+        }
 
         .back-button {
             display: inline-block;
@@ -85,6 +89,14 @@
             padding: 10px 18px;
             text-decoration: none;
             border-radius: 5px;
+            background: #555;
+            color: white;
+        }
+
+        .cart-link {
+            display: inline-block;
+            margin-top: 15px;
+            text-decoration: none;
         }
 
     </style>
@@ -94,9 +106,7 @@
 
 <body>
 
-
 <div class="container">
-
 
     <div class="course-detail">
 
@@ -205,6 +215,46 @@
 
             </p>
 
+
+            <!-- Add To Cart -->
+
+            {% if user.is_authenticated %}
+
+                <a
+                    href="{% url 'add_to_cart' course.course_id %}"
+                    class="cart-button"
+                >
+                    Add to Cart
+                </a>
+
+            {% else %}
+
+                <a
+                    href="{% url 'login' %}"
+                    class="cart-button"
+                >
+                    Login to Add to Cart
+                </a>
+
+            {% endif %}
+
+
+            <!-- My Cart -->
+
+            {% if user.is_authenticated %}
+
+                <br>
+
+                <a
+                    href="{% url 'cart' %}"
+                    class="cart-link"
+                >
+                    🛒 My Cart
+                </a>
+
+            {% endif %}
+
+
         </div>
 
 
@@ -281,9 +331,7 @@
 
     </div>
 
-
 </div>
-
 
 </body>
 

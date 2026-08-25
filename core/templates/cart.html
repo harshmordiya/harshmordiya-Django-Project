@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>My Cart</title>
+
+    <style>
+
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 30px;
+            background: #f5f5f5;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: auto;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .cart-item {
+            background: white;
+            padding: 20px;
+            margin-bottom: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .cart-item h2 {
+            margin-top: 0;
+        }
+
+        .price {
+            font-size: 20px;
+            font-weight: bold;
+        }
+
+        .remove-button {
+            display: inline-block;
+            margin-top: 10px;
+            padding: 8px 15px;
+            text-decoration: none;
+            border-radius: 5px;
+        }
+
+        .empty {
+            text-align: center;
+            padding: 40px;
+            background: white;
+            border-radius: 8px;
+        }
+
+        .back-button {
+            display: inline-block;
+            margin-top: 20px;
+            text-decoration: none;
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+<div class="container">
+
+    <h1>
+        My Cart
+    </h1>
+
+
+    {% if messages %}
+
+        {% for message in messages %}
+
+            <p>
+                {{ message }}
+            </p>
+
+        {% endfor %}
+
+    {% endif %}
+
+
+    {% if cart_items %}
+
+        {% for item in cart_items %}
+
+            <div class="cart-item">
+
+                <h2>
+                    {{ item.course.title }}
+                </h2>
+
+
+                <p>
+
+                    Category:
+
+                    {{ item.course.get_category_display }}
+
+                </p>
+
+
+                <p>
+
+                    Duration:
+
+                    {{ item.course.duration }}
+
+                </p>
+
+
+                <p class="price">
+
+                    Price:
+
+                    ₹{{ item.course.price }}
+
+                </p>
+
+
+                <p>
+
+                    Added:
+
+                    {{ item.added_at|date:"d M Y" }}
+
+                </p>
+
+
+                <a
+                    href="{% url 'remove_from_cart' item.cart_id %}"
+                    class="remove-button"
+                >
+                    Remove from Cart
+                </a>
+
+            </div>
+
+        {% endfor %}
+
+    {% else %}
+
+        <div class="empty">
+
+            <h2>
+                Your cart is empty
+            </h2>
+
+            <p>
+                Browse courses and add one to your cart.
+            </p>
+
+        </div>
+
+    {% endif %}
+
+
+    <a
+        href="{% url 'course_list' %}"
+        class="back-button"
+    >
+        ← Browse Courses
+    </a>
+
+</div>
+
+</body>
+
+</html>
