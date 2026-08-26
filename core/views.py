@@ -16,7 +16,7 @@ from django.views.decorators.csrf import csrf_exempt
 # Create your views here.
 
 from .forms import RegistrationForm
-from .models import Cart, Course, PasswordResetOTP ,Student,UserProfile, Payment
+from .models import Cart, Course, PasswordResetOTP ,Student,UserProfile, Payment, Enrollment 
 
 
 razorpay_client = razorpay.Client(
@@ -309,12 +309,6 @@ def course_detail_view(request, course_id):
 @login_required
 def add_to_cart(request, course_id):
 
-    course = get_object_or_404(
-        Course,
-        course_id=course_id,
-        is_active=True
-    )
-
     student = Student.objects.filter(
         email=request.user.email
     ).first()
@@ -324,8 +318,12 @@ def add_to_cart(request, course_id):
             request,
             "No student profile found for this account."
         )
+        return redirect("course_list")
 
-        return redirect("course_detail", course_id=course_id)
+    course = get_object_or_404(
+        Course,
+        course_id=course_id
+    )
 
     cart_item, created = Cart.objects.get_or_create(
         student=student,
@@ -335,12 +333,12 @@ def add_to_cart(request, course_id):
     if created:
         messages.success(
             request,
-            "Course added to cart successfully!"
+            f"{course.title} added to your cart."
         )
     else:
         messages.info(
             request,
-            "This course is already in your cart."
+            f"{course.title} is already in your cart."
         )
 
     return redirect("cart")
@@ -420,6 +418,10 @@ def cart_view(request):
     ).first()
 
     if not student:
+        messages.error(
+            request,
+            "No student profile found for this account."
+        )
         return redirect("course_list")
 
     cart_items = Cart.objects.filter(
@@ -430,7 +432,7 @@ def cart_view(request):
         request,
         "cart.html",
         {
-            "cart_items": cart_items
+            "cart_items": cart_items,
         }
     )
 
@@ -488,6 +490,21 @@ def checkout_view(request):
         razorpay_order_id=order["id"],
         amount=total_amount,
         status="created",
+    )
+
+    order = client.order.create(
+    data={
+        "amount": amount_paise,
+        "currency": "INR",
+        "receipt": f"cart_{student.student_id}",
+    }
+)
+
+    Payment.objects.create(
+        student=student,
+        razorpay_order_id=order["id"],
+        amount=total_amount,
+        status="created"
     )
 
     context = {
@@ -554,10 +571,29 @@ def payment_callback(request):
         payment.status = "verified"
         payment.save()
 
+        cart_items = Cart.objects.filter(
+    student=payment.student
+)
+
+        for cart_item in cart_items:
+            Enrollment.objects.get_or_create(
+                student=payment.student,
+                course=cart_item.course,
+                defaults={
+                    "status": "active"
+                }
+            )
+
+        cart_items.delete()
+
         # Remove purchased courses from cart
         student = Student.objects.filter(
             student_id=payment.student_id
         ).first()
+
+        if student:
+            student.enrollment_date = timezone.now()
+            student.save(update_fields=["enrollment_date"])
 
         if student:
             Cart.objects.filter(

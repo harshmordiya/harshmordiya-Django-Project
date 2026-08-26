@@ -1,32 +1,69 @@
 {% load static %}
+
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
     <title>Registration</title>
-    <link rel="stylesheet" href="{% static 'core/style.css' %}">
+
+    <link
+        rel="stylesheet"
+        href="{% static 'core/style.css' %}"
+    >
 </head>
+
 <body>
+
 <div class="auth-container">
+
     <div class="auth-card">
+
         <h1>Create Account</h1>
 
+        {% if messages %}
+            {% for message in messages %}
+                <div class="message {% if message.tags %}{{ message.tags }}{% endif %}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+
         <form method="post">
+
             {% csrf_token %}
 
             {{ form.as_p }}
 
-            <button type="submit">Register</button>
+            <button
+                type="submit"
+                class="btn btn-primary"
+            >
+                Register
+            </button>
+
         </form>
 
         <div class="auth-links">
+
             <p>
                 Already have an account?
-                <a href="{% url 'login' %}">Login</a>
+                <a href="{% url 'login' %}">
+                    Login
+                </a>
             </p>
+
         </div>
+
     </div>
+
 </div>
+
 </body>
 </html>
