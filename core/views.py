@@ -1,4 +1,5 @@
-import random
+import random 
+import razorpay
 
 from django.shortcuts import render,redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout
@@ -9,12 +10,20 @@ from django.utils import timezone
 from django.db.models import Q
 from django.core.paginator import Paginator
 from django.contrib import messages
+from django.conf import settings
 
 # Create your views here.
 
 from .forms import RegistrationForm
 from .models import Cart, Course, PasswordResetOTP ,Student,UserProfile
 
+
+razorpay_client = razorpay.Client(
+    auth=(
+        settings.RAZORPAY_KEY_ID,
+        settings.RAZORPAY_KEY_SECRET
+    )
+)
 
 def register_view(request):
     if request.user.is_authenticated:
