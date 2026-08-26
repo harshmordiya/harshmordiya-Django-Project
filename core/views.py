@@ -11,11 +11,12 @@ from django.db.models import Q
 from django.core.paginator import Paginator
 from django.contrib import messages
 from django.conf import settings
+from django.views.decorators.csrf import csrf_exempt
 
 # Create your views here.
 
 from .forms import RegistrationForm
-from .models import Cart, Course, PasswordResetOTP ,Student,UserProfile
+from .models import Cart, Course, PasswordResetOTP ,Student,UserProfile, Payment
 
 
 razorpay_client = razorpay.Client(
@@ -432,3 +433,152 @@ def cart_view(request):
             "cart_items": cart_items
         }
     )
+
+@login_required
+def checkout_view(request):
+
+    student = Student.objects.filter(
+        email=request.user.email
+    ).first()
+
+    if not student:
+        messages.error(
+            request,
+            "No student profile found for this account."
+        )
+        return redirect("course_list")
+
+    cart_items = Cart.objects.filter(
+        student=student
+    ).select_related("course")
+
+    if not cart_items.exists():
+        messages.warning(
+            request,
+            "Your cart is empty."
+        )
+        return redirect("cart")
+
+    total_amount = sum(
+        item.course.price for item in cart_items
+    )
+
+    amount_paise = int(total_amount * 100)
+
+    client = razorpay.Client(
+        auth=(
+            settings.RAZORPAY_KEY_ID,
+            settings.RAZORPAY_KEY_SECRET
+        )
+    )
+
+    # Create Razorpay order
+    order = client.order.create(
+        data={
+            "amount": amount_paise,
+            "currency": "INR",
+            "receipt": f"cart_{student.student_id}",
+        }
+    )
+
+    # IMPORTANT:
+    # Save Razorpay order in our database BEFORE payment
+    Payment.objects.create(
+        student_id=student.student_id,
+        razorpay_order_id=order["id"],
+        amount=total_amount,
+        status="created",
+    )
+
+    context = {
+        "student": student,
+        "cart_items": cart_items,
+        "total_amount": total_amount,
+        "amount_paise": amount_paise,
+        "razorpay_key_id": settings.RAZORPAY_KEY_ID,
+        "razorpay_order_id": order["id"],
+    }
+
+    return render(
+        request,
+        "checkout.html",
+        context
+    )
+
+@csrf_exempt
+def payment_callback(request):
+
+    if request.method != "POST":
+        return redirect("cart")
+
+    payment_id = request.POST.get("razorpay_payment_id")
+    order_id = request.POST.get("razorpay_order_id")
+    signature = request.POST.get("razorpay_signature")
+
+    if not payment_id or not order_id or not signature:
+        messages.error(
+            request,
+            "Payment information is incomplete."
+        )
+        return redirect("cart")
+
+    try:
+        payment = Payment.objects.get(
+            razorpay_order_id=order_id
+        )
+    except Payment.DoesNotExist:
+        messages.error(
+            request,
+            "Payment order was not found."
+        )
+        return redirect("cart")
+
+    client = razorpay.Client(
+        auth=(
+            settings.RAZORPAY_KEY_ID,
+            settings.RAZORPAY_KEY_SECRET
+        )
+    )
+
+    try:
+
+        client.utility.verify_payment_signature({
+            "razorpay_order_id": order_id,
+            "razorpay_payment_id": payment_id,
+            "razorpay_signature": signature,
+        })
+
+        # Payment verified successfully
+        payment.razorpay_payment_id = payment_id
+        payment.razorpay_signature = signature
+        payment.status = "verified"
+        payment.save()
+
+        # Remove purchased courses from cart
+        student = Student.objects.filter(
+            student_id=payment.student_id
+        ).first()
+
+        if student:
+            Cart.objects.filter(
+                student=student
+            ).delete()
+
+        messages.success(
+            request,
+            "Payment successful! Your payment has been verified."
+        )
+
+        return redirect("course_list")
+
+    except razorpay.errors.SignatureVerificationError:
+
+        payment.status = "failed"
+        payment.save()
+
+        messages.error(
+            request,
+            "Payment verification failed."
+        )
+
+        return redirect("cart")

@@ -28,12 +28,19 @@
                     <p><strong>Duration:</strong> {{ item.course.duration }}</p>
                     <p class="cart-price">₹{{ item.course.price }}</p>
                     <p><strong>Added:</strong> {{ item.added_at|date:"d M Y" }}</p>
+                    {% if cart_items %}
+
+                    <a href="{% url 'checkout' %}" class="btn btn-success" >
+                        Proceed to Checkout
+                    </a>
+
 
                     <a href="{% url 'remove_from_cart' item.cart_id %}" class="btn btn-danger">
                         Remove from Cart
                     </a>
                 </div>
-            {% endfor %}
+            {% endif %}
+            {%endfor%}
         </div>
     {% else %}
         <div class="empty">
@@ -41,6 +48,8 @@
             <p>Browse courses and add one to your cart.</p>
         </div>
     {% endif %}
+
+
 
     <a href="{% url 'course_list' %}" class="btn btn-secondary back-button">
         ← Browse Courses

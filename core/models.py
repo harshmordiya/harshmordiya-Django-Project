@@ -136,3 +136,47 @@ class Cart(models.Model):
 
     def __str__(self):
         return f"{self.student} - {self.course}"
+
+class Payment(models.Model):
+
+    payment_id = models.AutoField(primary_key=True)
+
+    student = models.ForeignKey(
+        Student,
+        on_delete=models.CASCADE,
+        related_name="payments"
+    )
+
+    razorpay_order_id = models.CharField(
+        max_length=100,
+        unique=True
+    )
+
+    razorpay_payment_id = models.CharField(
+        max_length=100,
+        blank=True,
+        null=True
+    )
+
+    razorpay_signature = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True
+    )
+
+    amount = models.DecimalField(
+        max_digits=10,
+        decimal_places=2
+    )
+
+    status = models.CharField(
+        max_length=30,
+        default="created"
+    )
+
+    created_at = models.DateTimeField(
+        auto_now_add=True
+    )
+
+    def __str__(self):
+        return f"{self.student} - {self.razorpay_order_id}"

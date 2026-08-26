@@ -1,0 +1,332 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>
+        Checkout - Books
+    </title>
+
+    <link
+        rel="stylesheet"
+        href="{% static 'core/style.css' %}"
+    >
+
+</head>
+
+
+<body>
+
+
+<div class="container">
+
+
+    <div class="course-detail">
+
+
+        <!-- Page Heading -->
+
+        <h1>
+            Checkout
+        </h1>
+
+
+        <p class="category">
+            Review your courses before payment.
+        </p>
+
+
+        <!-- Cart Items -->
+
+        <h2>
+            Your Courses
+        </h2>
+
+
+        {% for item in cart_items %}
+
+            <div class="course-info">
+
+
+                <h3>
+                    {{ item.course.title }}
+                </h3>
+
+
+                <p class="category">
+
+                    Category:
+
+                    {{ item.course.get_category_display }}
+
+                </p>
+
+
+                <p class="description">
+
+                    {{ item.course.description }}
+
+                </p>
+
+
+                <p>
+
+                    <strong>
+                        Duration:
+                    </strong>
+
+                    {{ item.course.duration }}
+
+                </p>
+
+
+                <p class="price">
+
+                    ₹{{ item.course.price }}
+
+                </p>
+
+
+            </div>
+
+        {% empty %}
+
+            <div class="empty">
+
+                <h2>
+                    Your cart is empty
+                </h2>
+
+                <p>
+                    Please add a course before checkout.
+                </p>
+
+
+                <a
+                    href="{% url 'course_list' %}"
+                    class="btn btn-secondary"
+                >
+                    Browse Courses
+                </a>
+
+            </div>
+
+        {% endfor %}
+
+
+        {% if cart_items %}
+
+
+            <!-- Payment Summary -->
+
+            <div class="course-info">
+
+
+                <h2>
+                    Payment Summary
+                </h2>
+
+
+                <p>
+
+                    <strong>
+                        Number of Courses:
+                    </strong>
+
+                    {{ cart_items|length }}
+
+                </p>
+
+
+                <p class="price">
+
+                    Total:
+
+                    ₹{{ total_amount }}
+
+                </p>
+
+
+            </div>
+
+
+            <!-- Razorpay Payment -->
+
+            <div class="course-info">
+
+
+                <h2>
+                    Secure Payment
+                </h2>
+
+
+                <p class="description">
+
+                    You will be redirected to Razorpay
+                    Checkout to complete your payment.
+
+                </p>
+
+
+                <button
+                    type="button"
+                    id="rzp-button"
+                    class="btn btn-success cart-button"
+                >
+                    Pay ₹{{ total_amount }}
+                </button>
+
+
+                <br><br>
+
+
+                <a
+                    href="{% url 'cart' %}"
+                    class="btn btn-secondary"
+                >
+                    ← Back to Cart
+                </a>
+
+
+            </div>
+
+
+        {% endif %}
+
+
+    </div>
+
+
+</div>
+
+
+<!-- Razorpay Checkout Script -->
+
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+
+
+<script>
+
+    var options = {
+
+        key: "{{ razorpay_key_id }}",
+
+        amount: "{{ amount_in_paise }}",
+
+        currency: "INR",
+
+        name: "Books",
+
+        description: "Course Purchase",
+
+        order_id: "{{ razorpay_order_id }}",
+
+
+        handler: function (response) {
+
+            var form =
+                document.createElement("form");
+
+            form.method = "POST";
+
+            form.action =
+                "{% url 'payment_callback' %}";
+
+
+            /* CSRF Token */
+
+            var csrf =
+                document.createElement("input");
+
+            csrf.type = "hidden";
+
+            csrf.name =
+                "csrfmiddlewaretoken";
+
+            csrf.value =
+                "{{ csrf_token }}";
+
+            form.appendChild(csrf);
+
+
+            /* Payment ID */
+
+            var paymentId =
+                document.createElement("input");
+
+            paymentId.type = "hidden";
+
+            paymentId.name =
+                "razorpay_payment_id";
+
+            paymentId.value =
+                response.razorpay_payment_id;
+
+            form.appendChild(paymentId);
+
+
+            /* Order ID */
+
+            var orderId =
+                document.createElement("input");
+
+            orderId.type = "hidden";
+
+            orderId.name =
+                "razorpay_order_id";
+
+            orderId.value =
+                response.razorpay_order_id;
+
+            form.appendChild(orderId);
+
+
+            /* Signature */
+
+            var signature =
+                document.createElement("input");
+
+            signature.type = "hidden";
+
+            signature.name =
+                "razorpay_signature";
+
+            signature.value =
+                response.razorpay_signature;
+
+            form.appendChild(signature);
+
+
+            document.body.appendChild(form);
+
+            form.submit();
+        },
+        theme: {
+            color: "#3399cc"
+        }
+    };
+
+    var razorpay =
+        new Razorpay(options);
+    document
+        .getElementById("rzp-button")
+        ?.addEventListener(
+            "click",
+            function (event) {
+                event.preventDefault();
+                razorpay.open();
+            }
+        );
+
+</script>
+</body>
+</html>
