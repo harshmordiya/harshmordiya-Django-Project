@@ -13,7 +13,7 @@ from django.contrib import messages
 # Create your views here.
 
 from .forms import RegistrationForm
-from .models import Cart, Course, PasswordResetOTP ,Student
+from .models import Cart, Course, PasswordResetOTP ,Student,UserProfile
 
 
 def register_view(request):
@@ -62,12 +62,17 @@ def login_view(request):
 
 @login_required
 def dashboard_view(request):
-    profile = request.user.userprofile
+    profile, created = UserProfile.objects.get_or_create(
+        user=request.user,
+        defaults={"role": "student"}
+    )
 
     return render(
         request,
         "dashboard.html",
-        {"profile": profile}
+        {
+            "profile": profile
+        }
     )
 
 
@@ -359,6 +364,44 @@ def remove_from_cart(request, cart_id):
 
     return redirect("cart")
 
+# @login_required
+# def cart_view(request):
+
+#     print("========== CART VIEW ==========")
+#     print("LOGGED USER:", request.user.username)
+#     print("USER EMAIL:", repr(request.user.email))
+#     print("AUTHENTICATED:", request.user.is_authenticated)
+
+#     student = Student.objects.filter(
+#         email=request.user.email
+#     ).first()
+
+#     print("FOUND STUDENT:", student)
+
+#     if not student:
+#         print("NO STUDENT - REDIRECTING TO COURSES")
+
+#         messages.error(
+#             request,
+#             "No student profile found for this account."
+#         )
+
+#         return redirect("course_list")
+
+#     cart_items = Cart.objects.filter(
+#         student=student
+#     ).select_related("course")
+
+#     print("CART ITEMS:", list(cart_items))
+
+#     return render(
+#         request,
+#         "cart.html",
+#         {
+#             "cart_items": cart_items
+#         }
+#     )
+
 @login_required
 def cart_view(request):
 
@@ -367,11 +410,6 @@ def cart_view(request):
     ).first()
 
     if not student:
-        messages.error(
-            request,
-            "No student profile found for this account."
-        )
-
         return redirect("course_list")
 
     cart_items = Cart.objects.filter(

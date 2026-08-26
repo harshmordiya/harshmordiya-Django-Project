@@ -1,21 +1,33 @@
+{% load static %}
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard</title>
+    <link rel="stylesheet" href="{% static 'core/style.css' %}">
 </head>
 <body>
+<div class="container">
+    <div class="dashboard-card">
+        <h1>Welcome, {{ request.user.username }}</h1>
 
-<h1>Welcome, {{ request.user.username }}</h1>
+        <div class="dashboard-info">
+            <p>
+                <strong>Role:</strong>
+                <span class="role-badge">{{ profile.get_role_display }}</span>
+            </p>
 
-<p>
-    Role: {{ profile.get_role_display }}
-</p>
+            <p>
+                <strong>Email:</strong>
+                {{ request.user.email }}
+            </p>
+        </div>
 
-<p>
-    Email: {{ request.user.email }}
-</p>
-
-<a href="{% url 'logout' %}">Logout</a>
-
+        <a href="{% url 'course_list' %}" class="btn">Browse Courses</a>
+        <a href="{% url 'cart' %}" class="btn btn-success">🛒 My Cart</a>
+        <a href="{% url 'logout' %}" class="btn btn-secondary">Logout</a>
+    </div>
+</div>
 </body>
 </html>
