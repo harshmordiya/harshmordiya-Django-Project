@@ -235,4 +235,4 @@ class CourseForm(forms.ModelForm):
         title = self.cleaned_data.get("title", "").strip()
         if len(title) < 3:
             raise forms.ValidationError("Course title must be at least 3 characters long.")
-        return title
+        return title
