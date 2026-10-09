@@ -60,17 +60,19 @@
 
     <!-- Global Flash Messages -->
     {% if messages %}
-        <div class="messages-container">
+        <div class="messages-container" role="region" aria-label="Notifications">
             {% for message in messages %}
-                <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags|default:'info' }}{% endif %}" id="msg-{{ forloop.counter }}">
-                    <span>
-                        {% if message.tags == 'error' %}⚠️
-                        {% elif message.tags == 'success' %}✅
-                        {% elif message.tags == 'warning' %}🔔
-                        {% else %}ℹ️{% endif %}
-                        {{ message }}
+                <div class="alert {% if 'error' in message.tags %}alert-danger{% elif 'success' in message.tags %}alert-success{% elif 'warning' in message.tags %}alert-warning{% else %}alert-info{% endif %}" id="msg-{{ forloop.counter }}" role="alert">
+                    <span style="display: flex; align-items: center; gap: 0.5rem;">
+                        <span>
+                            {% if 'error' in message.tags %}⚠️
+                            {% elif 'success' in message.tags %}✅
+                            {% elif 'warning' in message.tags %}🔔
+                            {% else %}ℹ️{% endif %}
+                        </span>
+                        <span>{{ message }}</span>
                     </span>
-                    <button type="button" class="alert-close" onclick="document.getElementById('msg-{{ forloop.counter }}').remove();">&times;</button>
+                    <button type="button" class="alert-close" aria-label="Dismiss notification" onclick="document.getElementById('msg-{{ forloop.counter }}').remove();">&times;</button>
                 </div>
             {% endfor %}
         </div>

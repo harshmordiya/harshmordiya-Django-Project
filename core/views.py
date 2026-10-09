@@ -55,8 +55,11 @@ def register_view(request):
         form = RegistrationForm(request.POST)
 
         if form.is_valid():
-            form.save()
+            user = form.save()
+            messages.success(request, f"Account created successfully for {user.username}! Please log in to get started.")
             return redirect("login")
+        else:
+            messages.error(request, "Registration failed. Please correct the highlighted errors below.")
 
     else:
         form = RegistrationForm()
@@ -69,19 +72,39 @@ def login_view(request):
         return redirect("dashboard")
 
     if request.method == "POST":
-        username = request.POST.get("username")
-        password = request.POST.get("password")
+        username_input = request.POST.get("username", "").strip()
+        password = request.POST.get("password", "")
 
         user = authenticate(
             request,
-            username=username,
+            username=username_input,
             password=password
         )
 
+        # Allow logging in with email address as well
+        if user is None and "@" in username_input:
+            user_by_email = User.objects.filter(email__iexact=username_input).first()
+            if user_by_email:
+                user = authenticate(
+                    request,
+                    username=user_by_email.username,
+                    password=password
+                )
+
         if user is not None:
             login(request, user)
+            profile = UserProfile.objects.filter(user=user).first()
+            role_display = f" ({profile.role.title()})" if profile else ""
+            messages.success(request, f"Welcome back, {user.first_name or user.username}! You are now signed in{role_display}.")
+
+            next_url = request.GET.get("next")
+            if next_url:
+                return redirect(next_url)
+            if profile and profile.role == "instructor":
+                return redirect("instructor_courses")
             return redirect("dashboard")
 
+        messages.error(request, "Invalid username or password. Please try again.")
         return render(
             request,
             "login.html",
@@ -108,16 +131,24 @@ def dashboard_view(request):
 
 
 def logout_view(request):
-    logout(request)
+    if request.user.is_authenticated:
+        username = request.user.first_name or request.user.username
+        logout(request)
+        messages.info(request, f"Goodbye {username}! You have been logged out successfully.")
+    else:
+        logout(request)
+        messages.info(request, "You have been logged out.")
     return redirect("login")
+
 
 def forgot_password_view(request):
     if request.method == "POST":
-        email = request.POST.get("email")
+        email = request.POST.get("email", "").strip()
 
         try:
             user = User.objects.get(email=email)
         except User.DoesNotExist:
+            messages.error(request, "No account was found with this email address.")
             return render(
                 request,
                 "forgot_password.html",
@@ -136,27 +167,51 @@ def forgot_password_view(request):
             otp=otp
         )
 
-        send_mail(
-            subject="Password Reset OTP",
-            message=f"Your password reset OTP is: {otp}",
-            from_email="noreply@example.com",
-            recipient_list=[email],
-        )
+        try:
+            send_mail(
+                subject="EduLearn Password Reset Verification Code",
+                message=(
+                    f"Hello {user.first_name or user.username},\n\n"
+                    f"Your 6-digit verification code is: {otp}\n\n"
+                    f"This code will expire in 5 minutes.\n\n"
+                    "If you did not request this password reset, please ignore this email.\n\n"
+                    "— EduLearn Security Team"
+                ),
+                from_email=getattr(settings, "DEFAULT_FROM_EMAIL", "noreply@edulearn.local"),
+                recipient_list=[email],
+                fail_silently=False,
+            )
+        except Exception as mail_err:
+            print(f"[EMAIL ERROR] Failed to send email via {settings.EMAIL_BACKEND}: {mail_err}")
+            if settings.EMAIL_BACKEND == 'django.core.mail.backends.smtp.EmailBackend':
+                messages.error(request, f"Email delivery failed: {mail_err}. Please check your SMTP settings.")
+                return render(request, "forgot_password.html")
 
         request.session["reset_email"] = email
-
+        messages.success(request, f"A 6-digit verification code has been sent to {email}.")
         return redirect("verify_otp")
 
     return render(request, "forgot_password.html")
+
 
 def verify_otp_view(request):
     email = request.session.get("reset_email")
 
     if not email:
+        messages.warning(request, "Please request a password reset code first.")
         return redirect("forgot_password")
 
+    # Helper for local development testing when Console email backend is active
+    dev_otp = None
+    if settings.EMAIL_BACKEND == 'django.core.mail.backends.console.EmailBackend':
+        user = User.objects.filter(email=email).first()
+        if user:
+            otp_record = PasswordResetOTP.objects.filter(user=user, is_verified=False).order_by("-created_at").first()
+            if otp_record:
+                dev_otp = otp_record.otp
+
     if request.method == "POST":
-        entered_otp = request.POST.get("otp")
+        entered_otp = request.POST.get("otp", "").strip()
 
         try:
             user = User.objects.get(email=email)
@@ -167,10 +222,11 @@ def verify_otp_view(request):
             ).latest("created_at")
 
         except (User.DoesNotExist, PasswordResetOTP.DoesNotExist):
+            messages.error(request, "Invalid OTP code entered. Please try again.")
             return render(
                 request,
                 "verify_otp.html",
-                {"error": "Invalid OTP."}
+                {"error": "Invalid OTP.", "dev_otp": dev_otp}
             )
 
         # OTP expires after 5 minutes
@@ -178,27 +234,29 @@ def verify_otp_view(request):
 
         if elapsed_time.total_seconds() > 300:
             otp_record.delete()
-
+            messages.error(request, "OTP code has expired. Please request a new code.")
             return render(
                 request,
                 "verify_otp.html",
-                {"error": "OTP has expired. Please request a new OTP."}
+                {"error": "OTP has expired. Please request a new OTP.", "dev_otp": None}
             )
 
         otp_record.is_verified = True
         otp_record.save()
 
         request.session["otp_verified"] = True
-
+        messages.success(request, "OTP code verified successfully! Please choose a new password.")
         return redirect("reset_password")
 
-    return render(request, "verify_otp.html")
+    return render(request, "verify_otp.html", {"dev_otp": dev_otp})
+
 
 def reset_password_view(request):
     email = request.session.get("reset_email")
     otp_verified = request.session.get("otp_verified")
 
     if not email or not otp_verified:
+        messages.warning(request, "Session expired or invalid. Please request a password reset.")
         return redirect("forgot_password")
 
     if request.method == "POST":
@@ -206,6 +264,7 @@ def reset_password_view(request):
         confirm_password = request.POST.get("confirm_password")
 
         if password != confirm_password:
+            messages.error(request, "Passwords do not match. Please re-enter both fields.")
             return render(
                 request,
                 "reset_password.html",
@@ -213,6 +272,7 @@ def reset_password_view(request):
             )
 
         if len(password) < 8:
+            messages.error(request, "Password must be at least 8 characters long.")
             return render(
                 request,
                 "reset_password.html",
@@ -227,6 +287,7 @@ def reset_password_view(request):
         request.session.pop("reset_email", None)
         request.session.pop("otp_verified", None)
 
+        messages.success(request, "Your password has been reset successfully! You can now log in.")
         return redirect("login")
 
     return render(request, "reset_password.html")
@@ -353,7 +414,6 @@ def course_detail_view(request, course_id):
 
 @login_required
 def add_to_cart(request, course_id):
-
     student = Student.objects.filter(
         email=request.user.email
     ).first()
@@ -361,7 +421,7 @@ def add_to_cart(request, course_id):
     if not student:
         messages.error(
             request,
-            "No student profile found for this account."
+            "No student profile found for this account. Only registered students can enroll in courses."
         )
         return redirect("course_list")
 
@@ -369,6 +429,20 @@ def add_to_cart(request, course_id):
         Course,
         course_id=course_id
     )
+
+    # Check if student is already enrolled in this course
+    is_already_enrolled = Enrollment.objects.filter(
+        student=student,
+        course=course,
+        status="active"
+    ).exists()
+
+    if is_already_enrolled:
+        messages.info(
+            request,
+            f"You are already actively enrolled in '{course.title}'."
+        )
+        return redirect("course_detail", course_id=course.course_id)
 
     cart_item, created = Cart.objects.get_or_create(
         student=student,
@@ -378,19 +452,18 @@ def add_to_cart(request, course_id):
     if created:
         messages.success(
             request,
-            f"{course.title} added to your cart."
+            f"'{course.title}' was added to your cart."
         )
     else:
         messages.info(
             request,
-            f"{course.title} is already in your cart."
+            f"'{course.title}' is already in your cart."
         )
 
     return redirect("cart")
 
 @login_required
 def remove_from_cart(request, cart_id):
-
     try:
         student = Student.objects.get(
             email=request.user.email
@@ -402,17 +475,24 @@ def remove_from_cart(request, cart_id):
         )
         return redirect("cart")
 
-    cart_item = get_object_or_404(
-        Cart,
+    cart_item = Cart.objects.filter(
         cart_id=cart_id,
         student=student
-    )
+    ).first()
 
+    if not cart_item:
+        messages.warning(
+            request,
+            "Item was not found in your cart."
+        )
+        return redirect("cart")
+
+    course_title = cart_item.course.title
     cart_item.delete()
 
     messages.success(
         request,
-        "Course removed from cart."
+        f"'{course_title}' was removed from your cart."
     )
 
     return redirect("cart")
@@ -770,6 +850,8 @@ def instructor_course_create_view(request):
             course.save()
             messages.success(request, f'Course "{course.title}" was created successfully!')
             return redirect("instructor_courses")
+        else:
+            messages.error(request, "Failed to create course. Please review the highlighted errors below.")
     else:
         form = CourseForm()
 
@@ -832,6 +914,8 @@ def instructor_course_edit_view(request, course_id):
             if profile and profile.role == "instructor":
                 return redirect("instructor_courses")
             return redirect("course_detail", course_id=course.course_id)
+        else:
+            messages.error(request, "Failed to update course. Please review the highlighted errors below.")
     else:
         form = CourseForm(instance=course)
 
@@ -940,6 +1024,8 @@ def course_content_add_view(request, course_id):
             content.save()
             messages.success(request, f'Lesson "{content.title}" was added successfully!')
             return redirect("course_content_manage", course_id=course.course_id)
+        else:
+            messages.error(request, "Failed to add lesson. Please review the highlighted errors below.")
     else:
         next_order = course.contents.count() + 1
         form = CourseContentForm(initial={"order": next_order})
@@ -975,6 +1061,8 @@ def course_content_edit_view(request, content_id):
             form.save()
             messages.success(request, f'Lesson "{content.title}" updated successfully!')
             return redirect("course_content_manage", course_id=course.course_id)
+        else:
+            messages.error(request, "Failed to update lesson. Please review the highlighted errors below.")
     else:
         form = CourseContentForm(instance=content)
 

@@ -12,7 +12,7 @@
             <p class="auth-subtitle">Sign in to resume your courses and track your learning progress.</p>
         </div>
 
-        {% if error %}
+        {% if error and not messages %}
             <div class="alert alert-danger">
                 <span>⚠️ {{ error }}</span>
             </div>
