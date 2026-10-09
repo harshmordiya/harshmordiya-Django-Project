@@ -96,6 +96,23 @@
                     </div>
                 {% endif %}
             </div>
+
+            {% if is_course_manager %}
+                <div style="margin-top: 1.5rem; padding: 1.25rem; background: var(--slate-50); border: 2px dashed #c7d2fe; border-radius: var(--radius-lg);">
+                    <div style="font-size: 0.85rem; font-weight: 700; color: var(--primary-dark); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.4rem;">
+                        <span>⚙️</span>
+                        <span>Instructor Controls</span>
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                        <a href="{% url 'course_edit' course.course_id %}" class="btn btn-primary btn-sm btn-block">
+                            ✏️ Edit / Update Course
+                        </a>
+                        <a href="{% url 'course_delete' course.course_id %}" class="btn btn-danger btn-sm btn-block">
+                            🗑️ Delete Course
+                        </a>
+                    </div>
+                </div>
+            {% endif %}
         </div>
     </div>
 </div>

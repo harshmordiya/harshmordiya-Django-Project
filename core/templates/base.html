@@ -43,6 +43,12 @@
                         {% endif %}
                     </a>
 
+                    {% if nav_user_role == 'instructor' %}
+                        <a href="{% url 'course_create' %}" class="btn btn-primary btn-sm" title="Create New Course">
+                            ➕ Add Course
+                        </a>
+                    {% endif %}
+
                     <a href="{% url 'logout' %}" class="btn btn-secondary btn-sm">Logout</a>
                 {% else %}
                     <a href="{% url 'login' %}" class="btn btn-secondary btn-sm">Login</a>

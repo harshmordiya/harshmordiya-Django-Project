@@ -1,7 +1,8 @@
 import random 
 import razorpay
 
-from django.shortcuts import render,redirect, get_object_or_404
+from django.shortcuts import render, redirect, get_object_or_404
+from django.http import Http404
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
@@ -312,17 +313,32 @@ def course_list_view(request):
     )
 
 def course_detail_view(request, course_id):
-    course = get_object_or_404(
-        Course,
-        course_id=course_id,
-        is_active=True
-    )
+    course = get_object_or_404(Course, course_id=course_id)
+
+    # Check if the authenticated user is authorized to manage this course
+    is_course_manager = False
+    if request.user.is_authenticated:
+        if request.user.is_staff or request.user.is_superuser:
+            is_course_manager = True
+        else:
+            profile = UserProfile.objects.filter(user=request.user).first()
+            if profile and profile.role == "admin":
+                is_course_manager = True
+            elif profile and profile.role == "instructor":
+                instructor = get_instructor_for_user(request.user)
+                if instructor and (course.instructor == instructor or course.instructor is None):
+                    is_course_manager = True
+
+    # If the course is inactive, only allow course managers to view it
+    if not course.is_active and not is_course_manager:
+        raise Http404("Course not found or currently unavailable.")
 
     return render(
         request,
         "course_detail.html",
         {
-            "course": course
+            "course": course,
+            "is_course_manager": is_course_manager,
         }
     )
 
@@ -761,30 +777,52 @@ def instructor_course_create_view(request):
     )
 
 
-@instructor_required
+def can_manage_course(user, course):
+    """
+    Determines if a user has permission to manage (edit or delete) a course.
+    - Superusers, staff, and admin role users can manage any course.
+    - Instructors can manage courses that belong to them (or unclaimed courses).
+    """
+    if not user.is_authenticated:
+        return False, None
+    if user.is_staff or user.is_superuser:
+        return True, None
+    profile = UserProfile.objects.filter(user=user).first()
+    if profile and profile.role == "admin":
+        return True, None
+    if profile and profile.role == "instructor":
+        instructor = get_instructor_for_user(user)
+        if instructor and (course.instructor == instructor or course.instructor is None):
+            return True, instructor
+    return False, None
+
+
+@login_required
 def instructor_course_edit_view(request, course_id):
     """
-    Allows an instructor to edit details of an existing course they authored.
-    Includes strict permission check to prevent editing another instructor's course.
+    Allows an instructor or admin to edit details of an existing course.
+    Strictly verifies ownership or administrative privileges.
     """
-    instructor = get_instructor_for_user(request.user)
+    course = get_object_or_404(Course, course_id=course_id)
 
-    course = Course.objects.filter(course_id=course_id).first()
-    if not course:
-        messages.error(request, "Course not found.")
-        return redirect("instructor_courses")
-
-    # Security check: Ensure instructor owns this course
-    if course.instructor != instructor:
+    allowed, instructor = can_manage_course(request.user, course)
+    if not allowed:
         messages.error(request, "Unauthorized: You can only edit courses that belong to you.")
         return redirect("instructor_courses")
 
     if request.method == "POST":
         form = CourseForm(request.POST, instance=course)
         if form.is_valid():
-            form.save()
+            updated_course = form.save(commit=False)
+            if not updated_course.instructor and instructor:
+                updated_course.instructor = instructor
+            updated_course.save()
             messages.success(request, f'Course "{course.title}" was updated successfully!')
-            return redirect("instructor_courses")
+            
+            profile = UserProfile.objects.filter(user=request.user).first()
+            if profile and profile.role == "instructor":
+                return redirect("instructor_courses")
+            return redirect("course_detail", course_id=course.course_id)
     else:
         form = CourseForm(instance=course)
 
@@ -797,26 +835,21 @@ def instructor_course_edit_view(request, course_id):
             "title": f"Edit Course: {course.title}",
             "subtitle": "Update details, syllabus description, duration, pricing, and availability.",
             "is_edit": True,
-            "instructor": instructor,
+            "instructor": course.instructor or instructor,
         }
     )
 
 
-@instructor_required
+@login_required
 def instructor_course_delete_view(request, course_id):
     """
-    Allows an instructor to delete a course they authored with confirmation.
-    Includes strict permission check and requires a POST request to perform deletion.
+    Allows an instructor or admin to delete a course with confirmation.
+    Strictly verifies ownership or administrative privileges. Requires a POST request to perform deletion.
     """
-    instructor = get_instructor_for_user(request.user)
+    course = get_object_or_404(Course, course_id=course_id)
 
-    course = Course.objects.filter(course_id=course_id).first()
-    if not course:
-        messages.error(request, "Course not found.")
-        return redirect("instructor_courses")
-
-    # Security check: Ensure instructor owns this course
-    if course.instructor != instructor:
+    allowed, instructor = can_manage_course(request.user, course)
+    if not allowed:
         messages.error(request, "Unauthorized: You can only delete courses that belong to you.")
         return redirect("instructor_courses")
 
@@ -826,14 +859,26 @@ def instructor_course_delete_view(request, course_id):
         title = course.title
         course.delete()
         messages.success(request, f'Course "{title}" was deleted permanently.')
-        return redirect("instructor_courses")
+        
+        profile = UserProfile.objects.filter(user=request.user).first()
+        if profile and profile.role == "instructor":
+            return redirect("instructor_courses")
+        return redirect("course_list")
 
     return render(
         request,
         "instructor_course_confirm_delete.html",
         {
             "course": course,
-            "instructor": instructor,
+            "instructor": course.instructor or instructor,
             "enrolled_count": enrolled_count,
         }
     )
+
+
+# Course CRUD view aliases for flexible imports and routing
+course_create_view = instructor_course_create_view
+course_add_view = instructor_course_create_view
+course_update_view = instructor_course_edit_view
+course_edit_view = instructor_course_edit_view
+course_delete_view = instructor_course_delete_view
