@@ -1,33 +1,70 @@
+{% extends 'base.html' %}
 {% load static %}
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard</title>
-    <link rel="stylesheet" href="{% static 'core/style.css' %}">
-</head>
-<body>
-<div class="container">
-    <div class="dashboard-card">
-        <h1>Welcome, {{ request.user.username }}</h1>
 
-        <div class="dashboard-info">
-            <p>
-                <strong>Role:</strong>
-                <span class="role-badge">{{ profile.get_role_display }}</span>
-            </p>
+{% block title %}Dashboard - EduLearn{% endblock %}
 
-            <p>
-                <strong>Email:</strong>
-                {{ request.user.email }}
-            </p>
+{% block content %}
+<div class="container container-narrow">
+    <div class="dashboard-card-modern">
+        <div class="dashboard-hero">
+            <div style="display: flex; align-items: center; gap: 1.5rem;">
+                <div class="user-avatar">
+                    {{ request.user.username|first|upper }}
+                </div>
+                <div>
+                    <h1 style="font-size: 1.85rem; margin-bottom: 0.35rem; color: var(--slate-900);">
+                        Welcome back, {{ request.user.username }}!
+                    </h1>
+                    <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
+                        <span class="badge-category" style="background: var(--primary-light); color: var(--primary-dark);">
+                            Role: {{ profile.get_role_display|default:profile.role|title }}
+                        </span>
+                        <span style="color: var(--slate-500); font-size: 0.92rem;">
+                            📧 {{ request.user.email }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <div>
+                <a href="{% url 'logout' %}" class="btn btn-secondary btn-sm">Log Out</a>
+            </div>
         </div>
 
-        <a href="{% url 'course_list' %}" class="btn">Browse Courses</a>
-        <a href="{% url 'cart' %}" class="btn btn-success">🛒 My Cart</a>
-        <a href="{% url 'logout' %}" class="btn btn-secondary">Logout</a>
+        <!-- Quick Access Actions -->
+        <div>
+            <h2 style="font-size: 1.25rem; margin-bottom: 1.25rem; color: var(--slate-900);">Quick Actions</h2>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.25rem;">
+                <a href="{% url 'course_list' %}" class="feature-box" style="padding: 1.5rem; text-decoration: none;">
+                    <div class="feature-box-icon" style="margin-bottom: 0.75rem;">📚</div>
+                    <h3 style="font-size: 1.05rem; margin-bottom: 0.35rem;">Explore Catalog</h3>
+                    <p style="font-size: 0.85rem; margin: 0;">Browse our full selection of live courses.</p>
+                </a>
+
+                {% if profile.role == 'student' %}
+                    <a href="{% url 'cart' %}" class="feature-box" style="padding: 1.5rem; text-decoration: none;">
+                        <div class="feature-box-icon" style="margin-bottom: 0.75rem;">🛒</div>
+                        <h3 style="font-size: 1.05rem; margin-bottom: 0.35rem;">My Shopping Cart</h3>
+                        <p style="font-size: 0.85rem; margin: 0;">Review courses queued for enrollment.</p>
+                    </a>
+                {% elif profile.role == 'instructor' %}
+                    <a href="{% url 'instructor_courses' %}" class="feature-box" style="padding: 1.5rem; text-decoration: none;">
+                        <div class="feature-box-icon" style="margin-bottom: 0.75rem;">👨‍🏫</div>
+                        <h3 style="font-size: 1.05rem; margin-bottom: 0.35rem;">Instructor Portal</h3>
+                        <p style="font-size: 0.85rem; margin: 0;">Manage your published courses and materials.</p>
+                    </a>
+                {% endif %}
+
+                {% if request.user.is_staff or profile.role == 'admin' %}
+                    <a href="{% url 'admin:index' %}" class="feature-box" style="padding: 1.5rem; text-decoration: none;">
+                        <div class="feature-box-icon" style="margin-bottom: 0.75rem;">⚙️</div>
+                        <h3 style="font-size: 1.05rem; margin-bottom: 0.35rem;">Admin Dashboard</h3>
+                        <p style="font-size: 0.85rem; margin: 0;">Access Django Admin panel to manage data.</p>
+                    </a>
+                {% endif %}
+            </div>
+        </div>
     </div>
 </div>
-</body>
-</html>
+{% endblock %}

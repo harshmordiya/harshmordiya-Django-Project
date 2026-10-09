@@ -29,6 +29,7 @@ from core.views import (
 )
 
 urlpatterns = [
+    path('', views.home_view, name='home'),
     path('admin/', admin.site.urls),
     path("register/", register_view, name="register"),
     path("login/", login_view, name="login"),
@@ -44,4 +45,9 @@ urlpatterns = [
     path("cart/remove/<int:cart_id>/",views.remove_from_cart,name="remove_from_cart"),
     path("checkout/",views.checkout_view,name="checkout"),
     path("payment/callback/",views.payment_callback,name="payment_callback"),
+    path("instructor/courses/", views.instructor_courses_view, name="instructor_courses"),
+    path("instructor/dashboard/", views.instructor_courses_view, name="instructor_dashboard"),
+    path("instructor/courses/create/", views.instructor_course_create_view, name="instructor_course_create"),
+    path("instructor/courses/<int:course_id>/edit/", views.instructor_course_edit_view, name="instructor_course_edit"),
+    path("instructor/courses/<int:course_id>/delete/", views.instructor_course_delete_view, name="instructor_course_delete"),
 ]

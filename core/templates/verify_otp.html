@@ -1,44 +1,51 @@
+{% extends 'base.html' %}
 {% load static %}
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Verify OTP</title>
-    <link rel="stylesheet" href="{% static 'core/style.css' %}">
-</head>
-<body>
-<div class="auth-container">
-    <div class="auth-card">
-        <h1>Verify OTP</h1>
 
-        <p class="help-text">
-            Enter the 6-digit OTP sent to your email.
-        </p>
+{% block title %}Verify OTP - EduLearn{% endblock %}
+
+{% block content %}
+<div class="auth-wrapper">
+    <div class="auth-card-modern">
+        <div class="auth-header">
+            <div class="auth-header-icon">🔢</div>
+            <h1 class="auth-title">Verify OTP</h1>
+            <p class="auth-subtitle">Enter the 6-digit code sent to your registered email. The code expires in 5 minutes.</p>
+        </div>
 
         {% if error %}
-            <div class="message error">{{ error }}</div>
+            <div class="alert alert-danger">
+                <span>⚠️ {{ error }}</span>
+            </div>
         {% endif %}
 
-        <form method="post">
+        <form method="post" novalidate>
             {% csrf_token %}
 
             <div class="form-group">
-                <label for="otp">OTP</label>
+                <label for="otp">6-Digit OTP Code</label>
                 <input
                     type="text"
                     id="otp"
                     name="otp"
+                    class="form-input"
                     maxlength="6"
                     minlength="6"
                     inputmode="numeric"
+                    placeholder="123456"
+                    style="letter-spacing: 0.35em; font-size: 1.25rem; text-align: center; font-weight: 700;"
                     required
+                    autofocus
                 >
             </div>
 
-            <button type="submit">Verify OTP</button>
+            <button type="submit" class="btn btn-primary btn-block btn-lg" style="margin-top: 1.5rem;">
+                Verify Code & Proceed →
+            </button>
         </form>
+
+        <div class="auth-links">
+            <p>Didn't receive code? <a href="{% url 'forgot_password' %}">Request a new OTP</a></p>
+        </div>
     </div>
 </div>
-</body>
-</html>
+{% endblock %}

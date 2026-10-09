@@ -1,0 +1,132 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}EduLearn - Online Learning & Course Platform{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'core/style.css' %}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+</head>
+<body>
+
+    <!-- Sticky Navigation Bar -->
+    <header class="site-header">
+        <nav class="navbar">
+            <a href="{% url 'home' %}" class="brand-logo">
+                <span class="brand-icon">🎓</span>
+                <span>EduLearn</span>
+            </a>
+
+            <ul class="nav-links">
+                <li><a href="{% url 'home' %}" class="nav-link {% if request.resolver_match.url_name == 'home' %}active{% endif %}">Home</a></li>
+                <li><a href="{% url 'course_list' %}" class="nav-link {% if request.resolver_match.url_name == 'course_list' %}active{% endif %}">Explore Courses</a></li>
+                {% if user.is_authenticated and nav_user_role == 'instructor' %}
+                    <li><a href="{% url 'instructor_courses' %}" class="nav-link {% if 'instructor' in request.resolver_match.url_name %}active{% endif %}">Instructor Portal</a></li>
+                {% endif %}
+            </ul>
+
+            <div class="nav-actions">
+                {% if user.is_authenticated %}
+                    {% if nav_user_role == 'student' or not nav_user_role %}
+                        <a href="{% url 'cart' %}" class="cart-pill" title="View Cart">
+                            <span>🛒 Cart</span>
+                            <span class="cart-badge">{{ nav_cart_count|default:"0" }}</span>
+                        </a>
+                    {% endif %}
+
+                    <a href="{% url 'dashboard' %}" class="user-badge" title="User Dashboard">
+                        <span>👤 {{ user.username }}</span>
+                        {% if nav_user_role %}
+                            <span class="user-role-tag">{{ nav_user_role }}</span>
+                        {% endif %}
+                    </a>
+
+                    <a href="{% url 'logout' %}" class="btn btn-secondary btn-sm">Logout</a>
+                {% else %}
+                    <a href="{% url 'login' %}" class="btn btn-secondary btn-sm">Login</a>
+                    <a href="{% url 'register' %}" class="btn btn-primary btn-sm">Create Account</a>
+                {% endif %}
+            </div>
+        </nav>
+    </header>
+
+    <!-- Global Flash Messages -->
+    {% if messages %}
+        <div class="messages-container">
+            {% for message in messages %}
+                <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags|default:'info' }}{% endif %}" id="msg-{{ forloop.counter }}">
+                    <span>
+                        {% if message.tags == 'error' %}⚠️
+                        {% elif message.tags == 'success' %}✅
+                        {% elif message.tags == 'warning' %}🔔
+                        {% else %}ℹ️{% endif %}
+                        {{ message }}
+                    </span>
+                    <button type="button" class="alert-close" onclick="document.getElementById('msg-{{ forloop.counter }}').remove();">&times;</button>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <!-- Main Content Area -->
+    <main class="main-wrapper">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Site Footer -->
+    <footer class="site-footer">
+        <div class="footer-content">
+            <div class="footer-brand">
+                <a href="{% url 'home' %}" class="brand-logo">
+                    <span class="brand-icon">🎓</span>
+                    <span>EduLearn</span>
+                </a>
+                <p>Empowering learners worldwide with accessible, industry-focused courses taught by passionate experts.</p>
+            </div>
+
+            <div class="footer-col">
+                <h4>Explore</h4>
+                <ul class="footer-links">
+                    <li><a href="{% url 'home' %}">Home</a></li>
+                    <li><a href="{% url 'course_list' %}">All Courses</a></li>
+                    <li><a href="{% url 'course_list' %}?category=programming">Programming</a></li>
+                    <li><a href="{% url 'course_list' %}?category=web_development">Web Development</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-col">
+                <h4>Categories</h4>
+                <ul class="footer-links">
+                    <li><a href="{% url 'course_list' %}?category=data_science">Data Science</a></li>
+                    <li><a href="{% url 'course_list' %}?category=design">Design</a></li>
+                    <li><a href="{% url 'course_list' %}?category=business">Business</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-col">
+                <h4>Account</h4>
+                <ul class="footer-links">
+                    {% if user.is_authenticated %}
+                        <li><a href="{% url 'dashboard' %}">Dashboard</a></li>
+                        <li><a href="{% url 'cart' %}">Shopping Cart</a></li>
+                        <li><a href="{% url 'logout' %}">Logout</a></li>
+                    {% else %}
+                        <li><a href="{% url 'login' %}">Login</a></li>
+                        <li><a href="{% url 'register' %}">Create Account</a></li>
+                        <li><a href="{% url 'forgot_password' %}">Reset Password</a></li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            <div>&copy; 2026 EduLearn Platform. All rights reserved.</div>
+            <div>Secure Payments powered by <strong>Razorpay</strong> 🔒</div>
+        </div>
+    </footer>
+
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

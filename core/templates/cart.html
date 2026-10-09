@@ -1,59 +1,85 @@
+{% extends 'base.html' %}
 {% load static %}
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Cart</title>
-    <link rel="stylesheet" href="{% static 'core/style.css' %}">
-</head>
-<body>
-<div class="container">
-    <h1 class="page-title">My Cart</h1>
 
-    {% if messages %}
-        {% for message in messages %}
-            <div class="message {% if message.tags %}{{ message.tags }}{% endif %}">
-                {{ message }}
-            </div>
-        {% endfor %}
-    {% endif %}
+{% block title %}My Shopping Cart - EduLearn{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="section-header" style="text-align: left; margin-bottom: 2rem;">
+        <span class="section-tag">Review Your Items</span>
+        <h1 class="section-title">My Shopping Cart</h1>
+    </div>
 
     {% if cart_items %}
-        <div class="cart-list">
-            {% for item in cart_items %}
-                <div class="cart-item">
-                    <h2>{{ item.course.title }}</h2>
-                    <p><strong>Category:</strong> {{ item.course.get_category_display }}</p>
-                    <p><strong>Duration:</strong> {{ item.course.duration }}</p>
-                    <p class="cart-price">₹{{ item.course.price }}</p>
-                    <p><strong>Added:</strong> {{ item.added_at|date:"d M Y" }}</p>
-                    {% if cart_items %}
+        <div class="cart-layout">
+            <!-- Cart Items List -->
+            <div class="cart-card">
+                <div style="padding-bottom: 1rem; border-bottom: 1px solid var(--slate-200); font-weight: 700; color: var(--slate-900);">
+                    Courses in Cart ({{ cart_items|length }})
+                </div>
 
-                    <a href="{% url 'checkout' %}" class="btn btn-success" >
-                        Proceed to Checkout
-                    </a>
+                {% for item in cart_items %}
+                    <div class="cart-item-row">
+                        <div style="flex: 1;">
+                            <div class="cart-item-title">{{ item.course.title }}</div>
+                            <div class="cart-item-meta">
+                                <span>{{ item.course.get_category_display }}</span> &bull; 
+                                <span>⏱️ {{ item.course.duration }}</span> &bull; 
+                                <span>Added {{ item.added_at|date:"d M Y" }}</span>
+                            </div>
+                        </div>
 
+                        <div style="text-align: right; display: flex; align-items: center; gap: 1.5rem;">
+                            <div style="font-size: 1.25rem; font-weight: 800; color: var(--slate-900);">
+                                ₹{{ item.course.price }}
+                            </div>
+                            <a href="{% url 'remove_from_cart' item.cart_id %}" class="btn btn-danger btn-sm" title="Remove course">
+                                Remove
+                            </a>
+                        </div>
+                    </div>
+                {% endfor %}
 
-                    <a href="{% url 'remove_from_cart' item.cart_id %}" class="btn btn-danger">
-                        Remove from Cart
+                <div style="margin-top: 1.5rem;">
+                    <a href="{% url 'course_list' %}" style="font-size: 0.92rem; font-weight: 600;">
+                        ← Continue Browsing Courses
                     </a>
                 </div>
-            {% endif %}
-            {%endfor%}
+            </div>
+
+            <!-- Sticky Cart Summary -->
+            <div class="cart-summary-card">
+                <h3 style="font-size: 1.25rem; margin-bottom: 1.25rem; color: var(--slate-900);">Order Summary</h3>
+
+                <div class="summary-row">
+                    <span style="color: var(--slate-500);">Total Courses</span>
+                    <span style="font-weight: 600;">{{ cart_items|length }}</span>
+                </div>
+
+                <div class="summary-row summary-total">
+                    <span>Total Amount</span>
+                    <span style="color: var(--primary);">
+                        ₹{% widthratio 1 1 0 %}{% for item in cart_items %}{% if forloop.last %}{{ item.course.price }}{% endif %}{% endfor %}
+                    </span>
+                </div>
+
+                <a href="{% url 'checkout' %}" class="btn btn-success btn-lg btn-block" style="margin-top: 1.75rem;">
+                    Proceed to Checkout →
+                </a>
+
+                <div style="margin-top: 1.25rem; text-align: center; font-size: 0.8rem; color: var(--slate-400);">
+                    🔒 100% Secure Checkout via Razorpay
+                </div>
+            </div>
         </div>
+
     {% else %}
-        <div class="empty">
-            <h2>Your cart is empty</h2>
-            <p>Browse courses and add one to your cart.</p>
+        <div class="empty-state">
+            <div class="empty-state-icon">🛒</div>
+            <h3>Your cart is empty</h3>
+            <p>You haven't added any courses to your shopping cart yet. Explore our catalog and pick a course to learn!</p>
+            <a href="{% url 'course_list' %}" class="btn btn-primary btn-lg">Browse Courses Now</a>
         </div>
     {% endif %}
-
-
-
-    <a href="{% url 'course_list' %}" class="btn btn-secondary back-button">
-        ← Browse Courses
-    </a>
 </div>
-</body>
-</html>
+{% endblock %}

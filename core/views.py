@@ -7,7 +7,8 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.core.mail import send_mail
 from django.utils import timezone
-from django.db.models import Q
+from functools import wraps
+from django.db.models import Q, Count
 from django.core.paginator import Paginator
 from django.contrib import messages
 from django.conf import settings
@@ -15,8 +16,8 @@ from django.views.decorators.csrf import csrf_exempt
 
 # Create your views here.
 
-from .forms import RegistrationForm
-from .models import Cart, Course, PasswordResetOTP ,Student,UserProfile, Payment, Enrollment 
+from .forms import RegistrationForm, CourseForm
+from .models import Cart, Course, PasswordResetOTP, Student, UserProfile, Payment, Enrollment, Instructor
 
 
 razorpay_client = razorpay.Client(
@@ -25,6 +26,25 @@ razorpay_client = razorpay.Client(
         settings.RAZORPAY_KEY_SECRET
     )
 )
+
+def home_view(request):
+    courses = Course.objects.filter(is_active=True).select_related("instructor").order_by("-created_at")[:6]
+    categories = Course.CATEGORY_CHOICES
+    total_courses = Course.objects.filter(is_active=True).count()
+    total_students = Student.objects.count()
+    total_instructors = Instructor.objects.count()
+
+    return render(
+        request,
+        "home.html",
+        {
+            "courses": courses,
+            "categories": categories,
+            "total_courses": total_courses,
+            "total_students": total_students,
+            "total_instructors": total_instructors,
+        }
+    )
 
 def register_view(request):
     if request.user.is_authenticated:
@@ -483,28 +503,12 @@ def checkout_view(request):
         }
     )
 
-    # IMPORTANT:
     # Save Razorpay order in our database BEFORE payment
-    Payment.objects.create(
-        student_id=student.student_id,
-        razorpay_order_id=order["id"],
-        amount=total_amount,
-        status="created",
-    )
-
-    order = client.order.create(
-    data={
-        "amount": amount_paise,
-        "currency": "INR",
-        "receipt": f"cart_{student.student_id}",
-    }
-)
-
     Payment.objects.create(
         student=student,
         razorpay_order_id=order["id"],
         amount=total_amount,
-        status="created"
+        status="created",
     )
 
     context = {
@@ -512,6 +516,7 @@ def checkout_view(request):
         "cart_items": cart_items,
         "total_amount": total_amount,
         "amount_paise": amount_paise,
+        "amount_in_paise": amount_paise,
         "razorpay_key_id": settings.RAZORPAY_KEY_ID,
         "razorpay_order_id": order["id"],
     }
@@ -618,3 +623,217 @@ def payment_callback(request):
         )
 
         return redirect("cart")
+    
+    
+# ==============================================================================
+# Instructor Portal Helpers, Decorators, and Views
+# ==============================================================================
+
+def get_instructor_for_user(user):
+    """
+    Safely retrieves the Instructor profile for an authenticated user.
+    If the user has role 'instructor' in UserProfile but lacks an Instructor record,
+    it safely auto-heals and creates one using the user's details without creating duplicates.
+    """
+    if not user.is_authenticated:
+        return None
+
+    # Check case-insensitively by email
+    instructor = Instructor.objects.filter(email__iexact=user.email).first()
+    if not instructor:
+        profile = UserProfile.objects.filter(user=user).first()
+        if profile and profile.role == "instructor":
+            # Auto-heal profile
+            instructor, _ = Instructor.objects.get_or_create(
+                email=user.email,
+                defaults={
+                    "first_name": user.first_name or user.username,
+                    "last_name": user.last_name or "",
+                    "phone": "",
+                    "specialization": "General",
+                }
+            )
+    return instructor
+
+
+def instructor_required(view_func):
+    """
+    Decorator to ensure the logged-in user is authenticated, has the instructor role,
+    and has a valid Instructor profile.
+    """
+    @wraps(view_func)
+    def _wrapped_view(request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            messages.info(request, "Please log in to access the Instructor Portal.")
+            return redirect("login")
+
+        profile = UserProfile.objects.filter(user=request.user).first()
+        if not profile or profile.role != "instructor":
+            messages.error(request, "Access restricted. You must have an instructor account to view this page.")
+            return redirect("dashboard")
+
+        instructor = get_instructor_for_user(request.user)
+        if not instructor:
+            messages.error(request, "Could not initialize your instructor profile. Please contact support.")
+            return redirect("dashboard")
+
+        return view_func(request, *args, **kwargs)
+    return _wrapped_view
+
+
+@instructor_required
+def instructor_courses_view(request):
+    """
+    Instructor Dashboard & Course Hub.
+    Displays instructor metrics (total courses, active courses, student enrollments)
+    and lists all courses authored by this instructor with management controls.
+    """
+    instructor = get_instructor_for_user(request.user)
+
+    # Fetch instructor's courses with active and total enrollment counts
+    courses = Course.objects.filter(
+        instructor=instructor
+    ).annotate(
+        active_enrollments=Count(
+            "enrollments",
+            filter=Q(enrollments__status="active")
+        ),
+        total_enrollments_count=Count("enrollments")
+    ).order_by("-created_at")
+
+    total_courses = courses.count()
+    active_courses = courses.filter(is_active=True).count()
+    inactive_courses = total_courses - active_courses
+
+    # Real enrollment metrics across all courses by this instructor
+    total_enrollments = Enrollment.objects.filter(
+        course__instructor=instructor,
+        status="active"
+    ).count()
+
+    unique_students = Enrollment.objects.filter(
+        course__instructor=instructor,
+        status="active"
+    ).values("student").distinct().count()
+
+    context = {
+        "instructor": instructor,
+        "courses": courses,
+        "total_courses": total_courses,
+        "active_courses": active_courses,
+        "inactive_courses": inactive_courses,
+        "total_enrollments": total_enrollments,
+        "unique_students": unique_students,
+    }
+
+    return render(request, "instructor_courses.html", context)
+
+
+@instructor_required
+def instructor_course_create_view(request):
+    """
+    Allows instructors to create and publish a new course.
+    The course is automatically associated with the authenticated instructor.
+    """
+    instructor = get_instructor_for_user(request.user)
+
+    if request.method == "POST":
+        form = CourseForm(request.POST)
+        if form.is_valid():
+            course = form.save(commit=False)
+            course.instructor = instructor
+            course.save()
+            messages.success(request, f'Course "{course.title}" was created successfully!')
+            return redirect("instructor_courses")
+    else:
+        form = CourseForm()
+
+    return render(
+        request,
+        "instructor_course_form.html",
+        {
+            "form": form,
+            "title": "Create New Course",
+            "subtitle": "Add a new course to your curriculum and make it available for students.",
+            "is_edit": False,
+            "instructor": instructor,
+        }
+    )
+
+
+@instructor_required
+def instructor_course_edit_view(request, course_id):
+    """
+    Allows an instructor to edit details of an existing course they authored.
+    Includes strict permission check to prevent editing another instructor's course.
+    """
+    instructor = get_instructor_for_user(request.user)
+
+    course = Course.objects.filter(course_id=course_id).first()
+    if not course:
+        messages.error(request, "Course not found.")
+        return redirect("instructor_courses")
+
+    # Security check: Ensure instructor owns this course
+    if course.instructor != instructor:
+        messages.error(request, "Unauthorized: You can only edit courses that belong to you.")
+        return redirect("instructor_courses")
+
+    if request.method == "POST":
+        form = CourseForm(request.POST, instance=course)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f'Course "{course.title}" was updated successfully!')
+            return redirect("instructor_courses")
+    else:
+        form = CourseForm(instance=course)
+
+    return render(
+        request,
+        "instructor_course_form.html",
+        {
+            "form": form,
+            "course": course,
+            "title": f"Edit Course: {course.title}",
+            "subtitle": "Update details, syllabus description, duration, pricing, and availability.",
+            "is_edit": True,
+            "instructor": instructor,
+        }
+    )
+
+
+@instructor_required
+def instructor_course_delete_view(request, course_id):
+    """
+    Allows an instructor to delete a course they authored with confirmation.
+    Includes strict permission check and requires a POST request to perform deletion.
+    """
+    instructor = get_instructor_for_user(request.user)
+
+    course = Course.objects.filter(course_id=course_id).first()
+    if not course:
+        messages.error(request, "Course not found.")
+        return redirect("instructor_courses")
+
+    # Security check: Ensure instructor owns this course
+    if course.instructor != instructor:
+        messages.error(request, "Unauthorized: You can only delete courses that belong to you.")
+        return redirect("instructor_courses")
+
+    enrolled_count = course.enrollments.filter(status="active").count()
+
+    if request.method == "POST":
+        title = course.title
+        course.delete()
+        messages.success(request, f'Course "{title}" was deleted permanently.')
+        return redirect("instructor_courses")
+
+    return render(
+        request,
+        "instructor_course_confirm_delete.html",
+        {
+            "course": course,
+            "instructor": instructor,
+            "enrolled_count": enrolled_count,
+        }
+    )

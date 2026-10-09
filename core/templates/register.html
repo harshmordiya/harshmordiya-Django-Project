@@ -1,69 +1,151 @@
+{% extends 'base.html' %}
 {% load static %}
 
-<!DOCTYPE html>
-<html lang="en">
+{% block title %}Create Account - EduLearn{% endblock %}
 
-<head>
-    <meta charset="UTF-8">
-
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0"
-    >
-
-    <title>Registration</title>
-
-    <link
-        rel="stylesheet"
-        href="{% static 'core/style.css' %}"
-    >
-</head>
-
-<body>
-
-<div class="auth-container">
-
-    <div class="auth-card">
-
-        <h1>Create Account</h1>
-
-        {% if messages %}
-            {% for message in messages %}
-                <div class="message {% if message.tags %}{{ message.tags }}{% endif %}">
-                    {{ message }}
-                </div>
-            {% endfor %}
-        {% endif %}
-
-        <form method="post">
-
-            {% csrf_token %}
-
-            {{ form.as_p }}
-
-            <button
-                type="submit"
-                class="btn btn-primary"
-            >
-                Register
-            </button>
-
-        </form>
-
-        <div class="auth-links">
-
-            <p>
-                Already have an account?
-                <a href="{% url 'login' %}">
-                    Login
-                </a>
-            </p>
-
+{% block content %}
+<div class="auth-wrapper">
+    <div class="auth-card-modern auth-card-wide">
+        <div class="auth-header">
+            <div class="auth-header-icon">🎓</div>
+            <h1 class="auth-title">Create Your Account</h1>
+            <p class="auth-subtitle">Join thousands of students and instructors today. It only takes a minute!</p>
         </div>
 
+        <form method="post" novalidate>
+            {% csrf_token %}
+
+            {% if form.non_field_errors %}
+                <div class="alert alert-danger">
+                    <span>⚠️ {{ form.non_field_errors|join:", " }}</span>
+                </div>
+            {% endif %}
+
+            <!-- Section 1: Account Credentials -->
+            <div style="margin-bottom: 1.5rem;">
+                <h3 style="font-size: 1rem; color: var(--slate-900); margin-bottom: 0.85rem; padding-bottom: 0.4rem; border-bottom: 1px solid var(--slate-200);">
+                    🔐 Account Credentials
+                </h3>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="{{ form.username.id_for_label }}">Username <span style="color: var(--danger)">*</span></label>
+                        {{ form.username }}
+                        {% if form.username.errors %}
+                            <div style="color: var(--danger); font-size: 0.82rem; margin-top: 0.35rem;">{{ form.username.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="form-group">
+                        <label for="{{ form.email.id_for_label }}">Email Address <span style="color: var(--danger)">*</span></label>
+                        {{ form.email }}
+                        {% if form.email.errors %}
+                            <div style="color: var(--danger); font-size: 0.82rem; margin-top: 0.35rem;">{{ form.email.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="{{ form.password.id_for_label }}">Password <span style="color: var(--danger)">*</span></label>
+                        {{ form.password }}
+                        {% if form.password.errors %}
+                            <div style="color: var(--danger); font-size: 0.82rem; margin-top: 0.35rem;">{{ form.password.errors.0 }}</div>
+                        {% else %}
+                            <div class="form-help">Must be at least 8 characters long.</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="form-group">
+                        <label for="{{ form.confirm_password.id_for_label }}">Confirm Password <span style="color: var(--danger)">*</span></label>
+                        {{ form.confirm_password }}
+                        {% if form.confirm_password.errors %}
+                            <div style="color: var(--danger); font-size: 0.82rem; margin-top: 0.35rem;">{{ form.confirm_password.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section 2: Role Selection -->
+            <div style="margin-bottom: 1.5rem;">
+                <h3 style="font-size: 1rem; color: var(--slate-900); margin-bottom: 0.85rem; padding-bottom: 0.4rem; border-bottom: 1px solid var(--slate-200);">
+                    🎭 Select Your Role
+                </h3>
+
+                <div class="form-group">
+                    <label for="{{ form.role.id_for_label }}">Account Type <span style="color: var(--danger)">*</span></label>
+                    {{ form.role }}
+                    {% if form.role.errors %}
+                        <div style="color: var(--danger); font-size: 0.82rem; margin-top: 0.35rem;">{{ form.role.errors.0 }}</div>
+                    {% endif %}
+                    <div class="form-help">Choose <strong>Student</strong> to enroll in courses, or <strong>Instructor</strong> to manage your courses.</div>
+                </div>
+            </div>
+
+            <!-- Section 3: Profile Information -->
+            <div style="margin-bottom: 1.75rem;">
+                <h3 style="font-size: 1rem; color: var(--slate-900); margin-bottom: 0.85rem; padding-bottom: 0.4rem; border-bottom: 1px solid var(--slate-200);">
+                    👤 Profile Details
+                </h3>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="{{ form.first_name.id_for_label }}">First Name <span style="color: var(--danger)">*</span></label>
+                        {{ form.first_name }}
+                        {% if form.first_name.errors %}
+                            <div style="color: var(--danger); font-size: 0.82rem; margin-top: 0.35rem;">{{ form.first_name.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="form-group">
+                        <label for="{{ form.last_name.id_for_label }}">Last Name</label>
+                        {{ form.last_name }}
+                        {% if form.last_name.errors %}
+                            <div style="color: var(--danger); font-size: 0.82rem; margin-top: 0.35rem;">{{ form.last_name.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="{{ form.phone.id_for_label }}">Phone Number <span style="color: var(--danger)">*</span></label>
+                        {{ form.phone }}
+                        {% if form.phone.errors %}
+                            <div style="color: var(--danger); font-size: 0.82rem; margin-top: 0.35rem;">{{ form.phone.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="form-group">
+                        <label for="{{ form.address.id_for_label }}">Address / City</label>
+                        {{ form.address }}
+                        {% if form.address.errors %}
+                            <div style="color: var(--danger); font-size: 0.82rem; margin-top: 0.35rem;">{{ form.address.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="form-group" style="margin-top: 0.5rem;">
+                    <label for="{{ form.specialization.id_for_label }}">Specialization / Domain</label>
+                    {{ form.specialization }}
+                    {% if form.specialization.errors %}
+                        <div style="color: var(--danger); font-size: 0.82rem; margin-top: 0.35rem;">{{ form.specialization.errors.0 }}</div>
+                    {% endif %}
+                    <div class="form-help">Applicable if registering as Instructor (e.g. Web Development, Data Science, UI/UX).</div>
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-block btn-lg">
+                Create Account & Get Started →
+            </button>
+        </form>
+
+        <div class="auth-divider">
+            <span>OR</span>
+        </div>
+
+        <div class="auth-links">
+            <p>Already have an account? <a href="{% url 'login' %}">Sign in here</a></p>
+        </div>
     </div>
-
 </div>
-
-</body>
-</html>
+{% endblock %}

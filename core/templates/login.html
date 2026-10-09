@@ -1,47 +1,68 @@
+{% extends 'base.html' %}
 {% load static %}
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login</title>
-    <link rel="stylesheet" href="{% static 'core/style.css' %}">
-</head>
-<body>
-<div class="auth-container">
-    <div class="auth-card">
-        <h1>Welcome Back</h1>
+
+{% block title %}Sign In - EduLearn{% endblock %}
+
+{% block content %}
+<div class="auth-wrapper">
+    <div class="auth-card-modern">
+        <div class="auth-header">
+            <div class="auth-header-icon">🔐</div>
+            <h1 class="auth-title">Welcome Back</h1>
+            <p class="auth-subtitle">Sign in to resume your courses and track your learning progress.</p>
+        </div>
 
         {% if error %}
-            <div class="message error">{{ error }}</div>
+            <div class="alert alert-danger">
+                <span>⚠️ {{ error }}</span>
+            </div>
         {% endif %}
 
-        <form method="post">
+        <form method="post" novalidate>
             {% csrf_token %}
 
             <div class="form-group">
-                <label for="username">Username</label>
-                <input type="text" id="username" name="username" required>
+                <label for="username">Username or Email</label>
+                <input 
+                    type="text" 
+                    id="username" 
+                    name="username" 
+                    class="form-input" 
+                    placeholder="Enter your username" 
+                    required 
+                    autocomplete="username"
+                    autofocus
+                >
             </div>
 
             <div class="form-group">
-                <label for="password">Password</label>
-                <input type="password" id="password" name="password" required>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.45rem;">
+                    <label for="password" style="margin-bottom: 0;">Password</label>
+                    <a href="{% url 'forgot_password' %}" style="font-size: 0.84rem; font-weight: 500;">Forgot Password?</a>
+                </div>
+                <input 
+                    type="password" 
+                    id="password" 
+                    name="password" 
+                    class="form-input" 
+                    placeholder="Enter your password" 
+                    required 
+                    autocomplete="current-password"
+                >
             </div>
 
-            <button type="submit">Login</button>
+            <button type="submit" class="btn btn-primary btn-block btn-lg" style="margin-top: 1.5rem;">
+                Sign In to Account →
+            </button>
         </form>
 
+        <div class="auth-divider">
+            <span>New to EduLearn?</span>
+        </div>
+
         <div class="auth-links">
-            <p>
-                <a href="{% url 'forgot_password' %}">Forgot Password?</a>
-            </p>
-            <p>
-                Don't have an account?
-                <a href="{% url 'register' %}">Register</a>
-            </p>
+            <p>Don't have an account yet? <a href="{% url 'register' %}">Create an account for free</a></p>
         </div>
     </div>
 </div>
-</body>
-</html>
+{% endblock %}

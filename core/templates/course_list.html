@@ -1,85 +1,105 @@
+{% extends 'base.html' %}
 {% load static %}
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Courses</title>
-    <link rel="stylesheet" href="{% static 'core/style.css' %}">
-</head>
-<body>
+
+{% block title %}Explore All Courses - EduLearn{% endblock %}
+
+{% block content %}
 <div class="container">
 
-    <div class="top-bar">
-        {% if user.is_authenticated %}
-            <a href="{% url 'cart' %}" class="btn">🛒 My Cart</a>
-        {% endif %}
+    <div class="section-header" style="margin-bottom: 2rem;">
+        <span class="section-tag">Course Catalog</span>
+        <h1 class="section-title">Explore Available Courses</h1>
+        <p class="section-desc">Search across all subjects or filter by category to find your next course.</p>
     </div>
 
-    <h1 class="page-title">Available Courses</h1>
+    <!-- Search & Filter Controls -->
+    <div class="filter-bar">
+        <form method="get" class="search-form">
+            <div class="search-input-wrap">
+                <span class="search-icon-inside">🔍</span>
+                <input
+                    type="text"
+                    name="q"
+                    placeholder="Search by title or category..."
+                    value="{{ search_query }}"
+                >
+            </div>
 
-    <form method="get" class="search-form">
-        <input
-            type="text"
-            name="q"
-            placeholder="Search by title or category"
-            value="{{ search_query }}"
-        >
+            <div>
+                <select name="category" class="filter-select">
+                    <option value="">All Categories</option>
+                    {% for value, label in categories %}
+                        <option value="{{ value }}" {% if category_filter == value %}selected{% endif %}>
+                            {{ label }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
 
-        <select name="category">
-            <option value="">All Categories</option>
-            {% for value, label in categories %}
-                <option value="{{ value }}" {% if category_filter == value %}selected{% endif %}>
-                    {{ label }}
-                </option>
-            {% endfor %}
-        </select>
+            <button type="submit" class="btn btn-primary">Search</button>
 
-        <button type="submit">Search</button>
+            {% if search_query or category_filter %}
+                <a href="{% url 'course_list' %}" class="btn btn-secondary">Clear Filters</a>
+            {% endif %}
+        </form>
+    </div>
 
-        {% if search_query or category_filter %}
-            <a href="{% url 'course_list' %}" class="clear-link">Clear</a>
-        {% endif %}
-    </form>
-
+    <!-- Courses Grid -->
     {% if courses %}
         <div class="course-grid">
             {% for course in courses %}
                 <div class="course-card">
-                    <h2>{{ course.title }}</h2>
+                    <div class="course-card-top bg-{{ course.category|default:'other' }}">
+                        <span class="badge-category">{{ course.get_category_display }}</span>
+                        <span class="course-duration-badge">⏱️ {{ course.duration }}</span>
+                    </div>
 
-                    <p class="category">
-                        Category: {{ course.get_category_display }}
-                    </p>
+                    <div class="course-card-body">
+                        <h2 class="course-title">
+                            <a href="{% url 'course_detail' course.course_id %}">{{ course.title }}</a>
+                        </h2>
 
-                    <p class="description">{{ course.description }}</p>
-
-                    <p class="duration">
-                        <strong>Duration:</strong> {{ course.duration }}
-                    </p>
-
-                    <p class="price">₹{{ course.price }}</p>
-
-                    {% if course.instructor %}
-                        <p>
-                            <strong>Instructor:</strong>
-                            {{ course.instructor.first_name }}
-                            {{ course.instructor.last_name }}
+                        <p class="course-description">
+                            {{ course.description }}
                         </p>
-                    {% endif %}
 
-                    <a href="{% url 'course_detail' course.course_id %}" class="btn details-button">
-                        View Details
-                    </a>
+                        <div class="course-meta">
+                            <div class="course-instructor">
+                                <span>👨‍🏫</span>
+                                <span>
+                                    {% if course.instructor %}
+                                        {{ course.instructor.first_name }} {{ course.instructor.last_name }}
+                                    {% else %}
+                                        Staff Instructor
+                                    {% endif %}
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="course-card-footer">
+                            <div class="course-price">₹{{ course.price }}</div>
+                            <div style="display: flex; gap: 0.5rem;">
+                                <a href="{% url 'course_detail' course.course_id %}" class="btn btn-outline btn-sm">
+                                    View Details
+                                </a>
+                                {% if user.is_authenticated %}
+                                    <a href="{% url 'add_to_cart' course.course_id %}" class="btn btn-success btn-sm" title="Add to Cart">
+                                        🛒 Add
+                                    </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
                 </div>
             {% endfor %}
         </div>
 
+        <!-- Pagination -->
         {% if page_obj.has_other_pages %}
             <div class="pagination">
                 {% if page_obj.has_previous %}
                     <a href="?page={{ page_obj.previous_page_number }}{% if search_query %}&q={{ search_query|urlencode }}{% endif %}{% if category_filter %}&category={{ category_filter|urlencode }}{% endif %}">
-                        Previous
+                        ← Previous
                     </a>
                 {% endif %}
 
@@ -89,24 +109,26 @@
 
                 {% if page_obj.has_next %}
                     <a href="?page={{ page_obj.next_page_number }}{% if search_query %}&q={{ search_query|urlencode }}{% endif %}{% if category_filter %}&category={{ category_filter|urlencode }}{% endif %}">
-                        Next
+                        Next →
                     </a>
                 {% endif %}
             </div>
         {% endif %}
-    {% else %}
-        <div class="empty">
-            <h2>No courses found</h2>
 
+    {% else %}
+        <div class="empty-state">
+            <div class="empty-state-icon">🔍</div>
+            <h3>No courses found</h3>
             {% if search_query %}
-                <p>No courses found for "{{ search_query }}".</p>
+                <p>We couldn't find any courses matching "<strong>{{ search_query }}</strong>". Try searching for different keywords.</p>
             {% elif category_filter %}
-                <p>No courses available in this category.</p>
+                <p>No courses are currently available in this category. Check back soon!</p>
             {% else %}
-                <p>No courses are currently available.</p>
+                <p>No courses are currently available in the catalog.</p>
             {% endif %}
+            <a href="{% url 'course_list' %}" class="btn btn-primary">Browse All Courses</a>
         </div>
     {% endif %}
+
 </div>
-</body>
-</html>
+{% endblock %}

@@ -1,0 +1,214 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}EduLearn - Learn In-Demand Skills Today{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="hero">
+    <div class="hero-content">
+        <div class="hero-pill">
+            <span>✨</span>
+            <span>Over 1,000+ Students Learning Every Day</span>
+        </div>
+
+        <h1 class="hero-title">
+            Master High-Impact Skills with <span class="gradient-text">World-Class Courses</span>
+        </h1>
+
+        <p class="hero-subtitle">
+            Unlock your full potential with interactive, project-based courses taught by industry veterans. Learn at your own pace and earn career-defining certificates.
+        </p>
+
+        <!-- Hero Instant Course Search -->
+        <form action="{% url 'course_list' %}" method="get" class="hero-search-box">
+            <span style="font-size: 1.25rem; color: var(--slate-400);">🔍</span>
+            <input 
+                type="text" 
+                name="q" 
+                placeholder="What skill or course are you looking for? (e.g. Django, Data Science...)"
+                autocomplete="off"
+            >
+            <button type="submit" class="btn btn-primary">Find Courses</button>
+        </form>
+
+        <!-- Stats Bar -->
+        <div class="hero-stats">
+            <div class="stat-item">
+                <div class="stat-number">{{ total_courses|default:"4" }}+</div>
+                <div class="stat-label">Active Courses</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number">{{ total_students|default:"100" }}+</div>
+                <div class="stat-label">Enrolled Students</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number">100%</div>
+                <div class="stat-label">Verified Certifications</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number">24/7</div>
+                <div class="stat-label">Lifetime Course Access</div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Main Container -->
+<div class="container">
+
+    <!-- Categories Section -->
+    <div class="section-header">
+        <span class="section-tag">Explore Topics</span>
+        <h2 class="section-title">Popular Categories</h2>
+        <p class="section-desc">Choose from our wide variety of disciplines and level up your knowledge.</p>
+    </div>
+
+    <div class="categories-grid">
+        <a href="{% url 'course_list' %}?category=programming" class="category-card">
+            <div class="category-icon">💻</div>
+            <div class="category-name">Programming</div>
+        </a>
+        <a href="{% url 'course_list' %}?category=web_development" class="category-card">
+            <div class="category-icon">🌐</div>
+            <div class="category-name">Web Development</div>
+        </a>
+        <a href="{% url 'course_list' %}?category=data_science" class="category-card">
+            <div class="category-icon">📊</div>
+            <div class="category-name">Data Science</div>
+        </a>
+        <a href="{% url 'course_list' %}?category=design" class="category-card">
+            <div class="category-icon">🎨</div>
+            <div class="category-name">Design</div>
+        </a>
+        <a href="{% url 'course_list' %}?category=business" class="category-card">
+            <div class="category-icon">💼</div>
+            <div class="category-name">Business</div>
+        </a>
+    </div>
+
+    <!-- Featured Courses Section -->
+    <div class="courses-section">
+        <div class="section-header">
+            <span class="section-tag">Top Picks</span>
+            <h2 class="section-title">Featured Courses</h2>
+            <p class="section-desc">Check out our most popular courses curated for your career growth.</p>
+        </div>
+
+        {% if courses %}
+            <div class="course-grid">
+                {% for course in courses %}
+                    <div class="course-card">
+                        <div class="course-card-top bg-{{ course.category|default:'other' }}">
+                            <span class="badge-category">{{ course.get_category_display }}</span>
+                            <span class="course-duration-badge">⏱️ {{ course.duration }}</span>
+                        </div>
+
+                        <div class="course-card-body">
+                            <h3 class="course-title">
+                                <a href="{% url 'course_detail' course.course_id %}">{{ course.title }}</a>
+                            </h3>
+
+                            <p class="course-description">
+                                {{ course.description }}
+                            </p>
+
+                            <div class="course-meta">
+                                <div class="course-instructor">
+                                    <span>👨‍🏫</span>
+                                    <span>
+                                        {% if course.instructor %}
+                                            {{ course.instructor.first_name }} {{ course.instructor.last_name }}
+                                        {% else %}
+                                            Staff Instructor
+                                        {% endif %}
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div class="course-card-footer">
+                                <div class="course-price">₹{{ course.price }}</div>
+                                <div style="display: flex; gap: 0.5rem;">
+                                    <a href="{% url 'course_detail' course.course_id %}" class="btn btn-outline btn-sm">
+                                        View Details
+                                    </a>
+                                    {% if user.is_authenticated %}
+                                        <a href="{% url 'add_to_cart' course.course_id %}" class="btn btn-success btn-sm" title="Add to Cart">
+                                            🛒 Add
+                                        </a>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+
+            <div style="text-align: center; margin-top: 3.5rem;">
+                <a href="{% url 'course_list' %}" class="btn btn-primary btn-lg">
+                    Browse All Available Courses →
+                </a>
+            </div>
+        {% else %}
+            <div class="empty-state">
+                <div class="empty-state-icon">📚</div>
+                <h3>No courses published yet</h3>
+                <p>New courses are coming soon! Check back later.</p>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Features / Value Proposition Section -->
+    <div style="margin-top: 5rem;">
+        <div class="section-header">
+            <span class="section-tag">Why Us</span>
+            <h2 class="section-title">Designed for Your Success</h2>
+            <p class="section-desc">We deliver the tools, curriculum, and structure to help you master new capabilities.</p>
+        </div>
+
+        <div class="features-grid">
+            <div class="feature-box">
+                <div class="feature-box-icon">🚀</div>
+                <h3>Hands-On Projects</h3>
+                <p>Learn by doing with practical assignments and portfolio-ready exercises that demonstrate real skills.</p>
+            </div>
+
+            <div class="feature-box">
+                <div class="feature-box-icon">🛡️</div>
+                <h3>Secure Instant Checkout</h3>
+                <p>Instant, hassle-free enrollments backed by industry-standard 256-bit Razorpay encryption.</p>
+            </div>
+
+            <div class="feature-box">
+                <div class="feature-box-icon">⏱️</div>
+                <h3>Learn on Your Schedule</h3>
+                <p>Lifetime access with no deadlines or rush. Revisit lectures and notes anytime, anywhere.</p>
+            </div>
+
+            <div class="feature-box">
+                <div class="feature-box-icon">📜</div>
+                <h3>Recognized Certificates</h3>
+                <p>Earn certificates of completion upon finishing courses to showcase on your resume and LinkedIn.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Call to Action Banner -->
+    <div class="cta-banner">
+        <div class="cta-banner-content">
+            <h2>Ready to Start Your Learning Journey?</h2>
+            <p>Join students worldwide expanding their careers. Explore courses or create your account in seconds.</p>
+            <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+                {% if user.is_authenticated %}
+                    <a href="{% url 'course_list' %}" class="btn btn-primary btn-lg" style="background: white; color: var(--primary);">Explore All Courses</a>
+                    <a href="{% url 'dashboard' %}" class="btn btn-secondary btn-lg" style="background: rgba(255,255,255,0.15); color: white; border-color: rgba(255,255,255,0.3);">Go to My Dashboard</a>
+                {% else %}
+                    <a href="{% url 'register' %}" class="btn btn-primary btn-lg" style="background: white; color: var(--primary);">Create Free Account</a>
+                    <a href="{% url 'login' %}" class="btn btn-secondary btn-lg" style="background: rgba(255,255,255,0.15); color: white; border-color: rgba(255,255,255,0.3);">Sign In</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

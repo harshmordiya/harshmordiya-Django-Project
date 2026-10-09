@@ -1,0 +1,129 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }} - EduLearn Instructor Portal{% endblock %}
+
+{% block content %}
+<div class="container container-narrow">
+    <div style="margin-bottom: 1.5rem;">
+        <a href="{% url 'instructor_courses' %}" style="font-size: 0.92rem; font-weight: 600; display: inline-flex; align-items: center; gap: 0.35rem;">
+            ← Back to Instructor Dashboard
+        </a>
+    </div>
+
+    <div class="auth-card-modern auth-card-wide" style="margin: 0 auto;">
+        <div class="auth-header" style="text-align: left; margin-bottom: 2rem;">
+            <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 0.5rem;">
+                <span style="font-size: 2rem;">{% if is_edit %}✏️{% else %}🚀{% endif %}</span>
+                <div>
+                    <h1 class="auth-title" style="margin: 0; font-size: 1.85rem;">{{ title }}</h1>
+                    <p class="auth-subtitle" style="margin: 0.25rem 0 0;">{{ subtitle }}</p>
+                </div>
+            </div>
+        </div>
+
+        {% if form.non_field_errors %}
+            <div class="alert alert-danger">
+                <span>⚠️ {{ form.non_field_errors|join:", " }}</span>
+            </div>
+        {% endif %}
+
+        <form method="post" novalidate>
+            {% csrf_token %}
+
+            <!-- Title -->
+            <div class="form-group">
+                <label for="{{ form.title.id_for_label }}">
+                    Course Title <span style="color: var(--danger)">*</span>
+                </label>
+                {{ form.title }}
+                {% if form.title.errors %}
+                    <div style="color: var(--danger); font-size: 0.84rem; margin-top: 0.35rem;">{{ form.title.errors.0 }}</div>
+                {% endif %}
+                <div class="form-help">Choose a clear, compelling title that describes the curriculum.</div>
+            </div>
+
+            <!-- Category & Price in 2 Columns -->
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="{{ form.category.id_for_label }}">
+                        Category <span style="color: var(--danger)">*</span>
+                    </label>
+                    {{ form.category }}
+                    {% if form.category.errors %}
+                        <div style="color: var(--danger); font-size: 0.84rem; margin-top: 0.35rem;">{{ form.category.errors.0 }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="form-group">
+                    <label for="{{ form.price.id_for_label }}">
+                        Price (₹ INR) <span style="color: var(--danger)">*</span>
+                    </label>
+                    {{ form.price }}
+                    {% if form.price.errors %}
+                        <div style="color: var(--danger); font-size: 0.84rem; margin-top: 0.35rem;">{{ form.price.errors.0 }}</div>
+                    {% endif %}
+                    <div class="form-help">Enter 0 for free courses, or course tuition in Indian Rupees.</div>
+                </div>
+            </div>
+
+            <!-- Duration & Availability -->
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="{{ form.duration.id_for_label }}">
+                        Estimated Duration <span style="color: var(--danger)">*</span>
+                    </label>
+                    {{ form.duration }}
+                    {% if form.duration.errors %}
+                        <div style="color: var(--danger); font-size: 0.84rem; margin-top: 0.35rem;">{{ form.duration.errors.0 }}</div>
+                    {% endif %}
+                    <div class="form-help">e.g. "8 weeks", "15 hours", "30 lectures"</div>
+                </div>
+
+                <div class="form-group">
+                    <label for="{{ form.is_active.id_for_label }}">Availability Status</label>
+                    <div style="display: flex; align-items: center; gap: 0.75rem; margin-top: 0.5rem; padding: 0.75rem 1rem; background: var(--slate-50); border: 1px solid var(--slate-200); border-radius: var(--radius-md);">
+                        {{ form.is_active }}
+                        <span style="font-size: 0.92rem; font-weight: 600; color: var(--slate-800);">
+                            Make course active & open for student enrollments
+                        </span>
+                    </div>
+                    {% if form.is_active.errors %}
+                        <div style="color: var(--danger); font-size: 0.84rem; margin-top: 0.35rem;">{{ form.is_active.errors.0 }}</div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Description -->
+            <div class="form-group">
+                <label for="{{ form.description.id_for_label }}">
+                    Comprehensive Course Description & Syllabus <span style="color: var(--danger)">*</span>
+                </label>
+                {{ form.description }}
+                {% if form.description.errors %}
+                    <div style="color: var(--danger); font-size: 0.84rem; margin-top: 0.35rem;">{{ form.description.errors.0 }}</div>
+                {% endif %}
+                <div class="form-help">Provide details about course topics, prerequisites, target audience, and key skills learned.</div>
+            </div>
+
+            <!-- Instructor Note -->
+            <div style="padding: 1rem 1.25rem; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: var(--radius-md); margin-bottom: 2rem; display: flex; align-items: center; gap: 0.75rem;">
+                <span style="font-size: 1.25rem;">👨‍🏫</span>
+                <span style="font-size: 0.88rem; color: #1e40af;">
+                    This course will be published under instructor <strong>{{ instructor.first_name }} {{ instructor.last_name }}</strong> ({{ instructor.email }}).
+                </span>
+            </div>
+
+            <!-- Action Buttons -->
+            <div style="display: flex; gap: 1rem; align-items: center;">
+                <button type="submit" class="btn btn-primary btn-lg" style="flex: 2;">
+                    {% if is_edit %}💾 Update Course Details{% else %}🚀 Publish Course Now{% endif %}
+                </button>
+                <a href="{% url 'instructor_courses' %}" class="btn btn-secondary btn-lg" style="flex: 1;">
+                    Cancel
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
