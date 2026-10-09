@@ -10,6 +10,7 @@ from .models import (
     Cart,
     Payment,
     Enrollment,
+    CourseContent,
 )
 
 @admin.register(Admin)
@@ -39,11 +40,26 @@ class PasswordResetOTPAdmin(admin.ModelAdmin):
     list_filter = ("is_verified", "created_at")
     search_fields = ("user__username", "user__email", "otp")
 
+class CourseContentInline(admin.TabularInline):
+    model = CourseContent
+    extra = 1
+    fields = ("order", "title", "content_type", "duration", "is_free_preview", "video_url")
+
+
 @admin.register(Course)
 class CourseAdmin(admin.ModelAdmin):
     list_display = ("course_id", "title", "category", "price", "instructor", "is_active", "created_at")
     list_filter = ("category", "is_active", "created_at")
     search_fields = ("title", "description")
+    inlines = [CourseContentInline]
+
+
+@admin.register(CourseContent)
+class CourseContentAdmin(admin.ModelAdmin):
+    list_display = ("content_id", "course", "title", "content_type", "order", "duration", "is_free_preview", "created_at")
+    list_filter = ("content_type", "is_free_preview", "created_at")
+    search_fields = ("title", "course__title", "description")
+    ordering = ("course", "order", "content_id")
 
 @admin.register(Cart)
 class CartAdmin(admin.ModelAdmin):

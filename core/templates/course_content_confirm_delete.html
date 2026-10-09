@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Delete Lesson Confirmation - EduLearn{% endblock %}
+
+{% block content %}
+<div class="container container-narrow" style="margin: 2rem auto;">
+    <div style="margin-bottom: 1.5rem;">
+        <a href="{% url 'course_content_manage' course.course_id %}" style="font-size: 0.92rem; font-weight: 600; display: inline-flex; align-items: center; gap: 0.35rem;">
+            ← Back to {{ course.title }} Curriculum
+        </a>
+    </div>
+
+    <div class="auth-card-modern" style="max-width: 600px; margin: 0 auto; border-top: 4px solid var(--danger);">
+        <div style="text-align: center; margin-bottom: 1.75rem;">
+            <div style="width: 64px; height: 64px; border-radius: 50%; background: var(--danger-light); color: var(--danger); display: flex; align-items: center; justify-content: center; font-size: 2rem; margin: 0 auto 1.25rem;">
+                ⚠️
+            </div>
+            <h1 class="auth-title" style="color: var(--danger); font-size: 1.75rem; margin-bottom: 0.5rem;">
+                Delete Lesson?
+            </h1>
+            <p class="auth-subtitle">
+                Are you sure you want to delete this syllabus item? This action cannot be undone.
+            </p>
+        </div>
+
+        <!-- Lesson Summary Box -->
+        <div style="background: var(--slate-50); border: 1px solid var(--slate-200); border-radius: var(--radius-lg); padding: 1.5rem; margin-bottom: 2rem;">
+            <div style="font-size: 1.15rem; font-weight: 700; color: var(--slate-900); margin-bottom: 0.5rem;">
+                {{ content.order }}. {{ content.title }}
+            </div>
+            <div style="display: flex; gap: 1rem; flex-wrap: wrap; font-size: 0.88rem; color: var(--slate-600);">
+                <span>📚 <strong>Course:</strong> {{ course.title }}</span>
+                <span>🏷️ <strong>Type:</strong> {{ content.get_content_type_display }}</span>
+                {% if content.duration %}
+                    <span>⏱️ <strong>Duration:</strong> {{ content.duration }}</span>
+                {% endif %}
+            </div>
+            {% if content.description %}
+                <p style="font-size: 0.86rem; color: var(--slate-500); margin: 0.75rem 0 0 0;">
+                    {{ content.description }}
+                </p>
+            {% endif %}
+        </div>
+
+        <!-- Confirmation Form -->
+        <form method="post">
+            {% csrf_token %}
+            <div style="display: flex; gap: 1rem; align-items: center;">
+                <button type="submit" class="btn btn-danger btn-lg" style="flex: 1;">
+                    🗑️ Yes, Delete Lesson
+                </button>
+                <a href="{% url 'course_content_manage' course.course_id %}" class="btn btn-secondary btn-lg" style="flex: 1; text-align: center;">
+                    Cancel
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

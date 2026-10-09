@@ -33,6 +33,113 @@
                 </div>
             </div>
 
+            <!-- Course Curriculum / Content Section -->
+            <div style="margin-bottom: 2.5rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
+                    <h2 style="font-size: 1.4rem; margin: 0; color: var(--slate-900);">
+                        Course Curriculum
+                        {% if contents %}
+                            <span style="font-size: 0.95rem; font-weight: 500; color: var(--slate-500); margin-left: 0.5rem;">({{ contents|length }} lessons)</span>
+                        {% endif %}
+                    </h2>
+                    {% if is_course_manager %}
+                        <a href="{% url 'course_content_add' course.course_id %}" class="btn btn-secondary btn-sm">
+                            + Add Lesson
+                        </a>
+                    {% endif %}
+                </div>
+
+                {% if contents %}
+                    <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                        {% for content in contents %}
+                            <div style="background: white; border: 1px solid var(--slate-200); border-radius: var(--radius-md); padding: 1.1rem 1.25rem; transition: var(--transition); display: flex; flex-direction: column; gap: 0.5rem;">
+                                <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; flex-wrap: wrap;">
+                                    <div style="display: flex; align-items: center; gap: 0.75rem;">
+                                        <span style="display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 50%; background: #e0e7ff; color: var(--primary); font-size: 0.85rem; font-weight: 700;">
+                                            {{ content.order }}
+                                        </span>
+                                        <div>
+                                            <h4 style="font-size: 1rem; font-weight: 600; margin: 0; color: var(--slate-900);">
+                                                {{ content.title }}
+                                            </h4>
+                                            <div style="display: flex; align-items: center; gap: 0.75rem; font-size: 0.82rem; color: var(--slate-500); margin-top: 0.2rem;">
+                                                <span>
+                                                    {% if content.content_type == 'video' %}🎬 Video
+                                                    {% elif content.content_type == 'document' %}📄 PDF / Doc
+                                                    {% elif content.content_type == 'article' %}📝 Reading
+                                                    {% elif content.content_type == 'quiz' %}❓ Quiz
+                                                    {% elif content.content_type == 'assignment' %}📋 Assignment
+                                                    {% else %}📌 Lesson{% endif %}
+                                                </span>
+                                                {% if content.duration %}
+                                                    <span>• ⏱️ {{ content.duration }}</span>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                        {% if content.is_free_preview %}
+                                            <span style="background: #dcfce7; color: #166534; font-size: 0.75rem; font-weight: 600; padding: 0.2rem 0.6rem; border-radius: 9999px;">
+                                                Free Preview
+                                            </span>
+                                        {% endif %}
+
+                                        {% if is_enrolled or is_course_manager or content.is_free_preview %}
+                                            {% if content.video_url %}
+                                                <a href="{{ content.video_url }}" target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-sm" style="padding: 0.35rem 0.75rem; font-size: 0.82rem;">
+                                                    ▶ Watch
+                                                </a>
+                                            {% elif content.file_url %}
+                                                <a href="{{ content.file_url }}" target="_blank" rel="noopener noreferrer" class="btn btn-secondary btn-sm" style="padding: 0.35rem 0.75rem; font-size: 0.82rem;">
+                                                    📥 Resource
+                                                </a>
+                                            {% endif %}
+                                        {% else %}
+                                            <span style="font-size: 0.82rem; color: var(--slate-400); display: inline-flex; align-items: center; gap: 0.25rem;">
+                                                🔒 Locked
+                                            </span>
+                                        {% endif %}
+
+                                        {% if is_course_manager %}
+                                            <a href="{% url 'course_content_edit' content.content_id %}" style="font-size: 0.82rem; color: var(--primary); margin-left: 0.25rem;">
+                                                Edit
+                                            </a>
+                                        {% endif %}
+                                    </div>
+                                </div>
+
+                                {% if content.description %}
+                                    <p style="font-size: 0.9rem; color: var(--slate-600); margin: 0; padding-left: 2.75rem;">
+                                        {{ content.description }}
+                                    </p>
+                                {% endif %}
+
+                                {% if is_enrolled or is_course_manager or content.is_free_preview %}
+                                    {% if content.text_content %}
+                                        <details style="margin-left: 2.75rem; font-size: 0.88rem; color: var(--slate-700);">
+                                            <summary style="cursor: pointer; color: var(--primary); font-weight: 500;">View Lesson Notes</summary>
+                                            <div style="background: var(--slate-50); border: 1px solid var(--slate-200); border-radius: var(--radius-sm); padding: 0.85rem; margin-top: 0.5rem; white-space: pre-line;">
+                                                {{ content.text_content }}
+                                            </div>
+                                        </details>
+                                    {% endif %}
+                                {% endif %}
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div style="background: var(--slate-50); border: 1px dashed var(--slate-300); border-radius: var(--radius-md); padding: 2rem; text-align: center; color: var(--slate-500);">
+                        <p style="margin: 0; font-size: 0.95rem;">Curriculum is being prepared by the instructor.</p>
+                        {% if is_course_manager %}
+                            <a href="{% url 'course_content_add' course.course_id %}" class="btn btn-primary btn-sm" style="margin-top: 0.75rem;">
+                                ➕ Add First Lesson
+                            </a>
+                        {% endif %}
+                    </div>
+                {% endif %}
+            </div>
+
             <!-- Instructor Profile Box -->
             <div style="background: var(--slate-50); border: 1px solid var(--slate-200); border-radius: var(--radius-lg); padding: 1.75rem; margin-top: 2rem;">
                 <h3 style="font-size: 1.15rem; margin-bottom: 0.85rem; color: var(--slate-900);">About the Instructor</h3>
@@ -104,8 +211,14 @@
                         <span>Instructor Controls</span>
                     </div>
                     <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                        <a href="{% url 'course_content_manage' course.course_id %}" class="btn btn-secondary btn-sm btn-block" style="text-align: center;">
+                            📚 Manage Curriculum ({{ contents|length }})
+                        </a>
+                        <a href="{% url 'course_content_add' course.course_id %}" class="btn btn-secondary btn-sm btn-block" style="text-align: center;">
+                            ➕ Add New Lesson
+                        </a>
                         <a href="{% url 'course_edit' course.course_id %}" class="btn btn-primary btn-sm btn-block">
-                            ✏️ Edit / Update Course
+                            ✏️ Edit Course Details
                         </a>
                         <a href="{% url 'course_delete' course.course_id %}" class="btn btn-danger btn-sm btn-block">
                             🗑️ Delete Course

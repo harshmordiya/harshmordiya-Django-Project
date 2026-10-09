@@ -1,7 +1,7 @@
 from django import forms
 from django.contrib.auth.models import User
 
-from .models import UserProfile, Student, Instructor, Course
+from .models import UserProfile, Student, Instructor, Course, CourseContent
 
 
 class RegistrationForm(forms.Form):
@@ -236,3 +236,65 @@ class CourseForm(forms.ModelForm):
         if len(title) < 3:
             raise forms.ValidationError("Course title must be at least 3 characters long.")
         return title
+
+
+class CourseContentForm(forms.ModelForm):
+    class Meta:
+        model = CourseContent
+        fields = [
+            "title",
+            "content_type",
+            "order",
+            "duration",
+            "is_free_preview",
+            "video_url",
+            "file_url",
+            "description",
+            "text_content",
+        ]
+        widgets = {
+            "title": forms.TextInput(attrs={
+                "class": "form-input",
+                "placeholder": "e.g. Lesson 1: Introduction & Setup",
+            }),
+            "content_type": forms.Select(attrs={
+                "class": "form-select",
+            }),
+            "order": forms.NumberInput(attrs={
+                "class": "form-input",
+                "min": "1",
+                "placeholder": "1",
+            }),
+            "duration": forms.TextInput(attrs={
+                "class": "form-input",
+                "placeholder": "e.g. 15 mins",
+            }),
+            "is_free_preview": forms.CheckboxInput(attrs={
+                "class": "form-checkbox",
+            }),
+            "video_url": forms.URLInput(attrs={
+                "class": "form-input",
+                "placeholder": "https://www.youtube.com/watch?v=... or lecture link",
+            }),
+            "file_url": forms.URLInput(attrs={
+                "class": "form-input",
+                "placeholder": "https://... link to study notes, slides, or PDF",
+            }),
+            "description": forms.Textarea(attrs={
+                "class": "form-textarea",
+                "rows": 3,
+                "placeholder": "Brief summary of what this lesson covers...",
+            }),
+            "text_content": forms.Textarea(attrs={
+                "class": "form-textarea",
+                "rows": 6,
+                "placeholder": "Full lecture notes, code snippets, or reading text...",
+            }),
+        }
+
+    def clean_title(self):
+        title = self.cleaned_data.get("title", "").strip()
+        if len(title) < 2:
+            raise forms.ValidationError("Content title must be at least 2 characters long.")
+        return title
+

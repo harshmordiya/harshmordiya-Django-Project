@@ -1,0 +1,162 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Manage Curriculum - {{ course.title }} - EduLearn{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 1050px; margin: 2rem auto;">
+    
+    <!-- Breadcrumb & Navigation -->
+    <div style="margin-bottom: 1.5rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
+        <div style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.92rem; color: var(--slate-500);">
+            <a href="{% url 'instructor_courses' %}" style="color: var(--primary); font-weight: 500;">Instructor Dashboard</a>
+            <span>/</span>
+            <a href="{% url 'course_detail' course.course_id %}" style="color: var(--primary); font-weight: 500;">{{ course.title }}</a>
+            <span>/</span>
+            <span style="color: var(--slate-800); font-weight: 600;">Curriculum</span>
+        </div>
+
+        <div style="display: flex; gap: 0.5rem;">
+            <a href="{% url 'course_detail' course.course_id %}" class="btn btn-secondary btn-sm">
+                👁️ View Course Page
+            </a>
+            <a href="{% url 'course_content_add' course.course_id %}" class="btn btn-primary btn-sm">
+                ➕ Add New Lesson
+            </a>
+        </div>
+    </div>
+
+    <!-- Header Banner -->
+    <div class="dashboard-header" style="margin-bottom: 2rem;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem;">
+            <div>
+                <span class="badge-category" style="margin-bottom: 0.5rem; display: inline-block;">
+                    {{ course.get_category_display }}
+                </span>
+                <h1 style="font-size: 1.85rem; font-family: var(--font-heading); color: var(--slate-900); margin: 0 0 0.5rem 0;">
+                    Course Curriculum: {{ course.title }}
+                </h1>
+                <p style="color: var(--slate-600); margin: 0; font-size: 0.95rem;">
+                    Organize lessons, video lectures, reading notes, and assignments for your students.
+                </p>
+            </div>
+            
+            <div style="text-align: right;">
+                <span style="display: inline-block; padding: 0.45rem 1rem; border-radius: var(--radius-full); font-size: 0.88rem; font-weight: 700; background: #e0e7ff; color: var(--primary-dark);">
+                    📚 {{ contents|length }} Lessons Total
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lessons List -->
+    {% if contents %}
+        <div style="background: var(--white); border: 1px solid var(--slate-200); border-radius: var(--radius-xl); overflow: hidden; box-shadow: var(--shadow-sm);">
+            <div style="overflow-x: auto;">
+                <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.94rem;">
+                    <thead>
+                        <tr style="background: var(--slate-50); border-bottom: 2px solid var(--slate-200); color: var(--slate-600); font-weight: 700; font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.05em;">
+                            <th style="padding: 1.1rem 1.25rem; width: 80px; text-align: center;">Order</th>
+                            <th style="padding: 1.1rem 1.5rem;">Lesson Title</th>
+                            <th style="padding: 1.1rem 1.25rem;">Type</th>
+                            <th style="padding: 1.1rem 1.25rem;">Duration</th>
+                            <th style="padding: 1.1rem 1.25rem;">Access</th>
+                            <th style="padding: 1.1rem 1.5rem; text-align: right;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in contents %}
+                            <tr style="border-bottom: 1px solid var(--slate-100); transition: background 0.15s ease;" onmouseover="this.style.background='var(--slate-50)'" onmouseout="this.style.background='transparent'">
+                                <td style="padding: 1.25rem 1.25rem; text-align: center;">
+                                    <span style="display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 50%; background: #e0e7ff; color: var(--primary); font-weight: 700; font-size: 0.88rem;">
+                                        {{ item.order }}
+                                    </span>
+                                </td>
+
+                                <td style="padding: 1.25rem 1.5rem;">
+                                    <div style="font-weight: 700; color: var(--slate-900); font-size: 1rem; margin-bottom: 0.2rem;">
+                                        {{ item.title }}
+                                    </div>
+                                    {% if item.description %}
+                                        <div style="font-size: 0.84rem; color: var(--slate-500); max-width: 420px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                            {{ item.description }}
+                                        </div>
+                                    {% endif %}
+                                </td>
+
+                                <td style="padding: 1.25rem 1.25rem;">
+                                    <span style="font-size: 0.82rem; font-weight: 600; padding: 0.25rem 0.65rem; border-radius: var(--radius-full); background: var(--slate-100); color: var(--slate-700);">
+                                        {% if item.content_type == 'video' %}🎬 Video
+                                        {% elif item.content_type == 'document' %}📄 PDF / Doc
+                                        {% elif item.content_type == 'article' %}📝 Reading
+                                        {% elif item.content_type == 'quiz' %}❓ Quiz
+                                        {% elif item.content_type == 'assignment' %}📋 Assignment
+                                        {% else %}📌 Lesson{% endif %}
+                                    </span>
+                                </td>
+
+                                <td style="padding: 1.25rem 1.25rem; color: var(--slate-600); font-size: 0.88rem;">
+                                    {{ item.duration|default:"—" }}
+                                </td>
+
+                                <td style="padding: 1.25rem 1.25rem;">
+                                    {% if item.is_free_preview %}
+                                        <span style="background: #dcfce7; color: #166534; font-size: 0.78rem; font-weight: 700; padding: 0.25rem 0.6rem; border-radius: 9999px;">
+                                            Free Preview
+                                        </span>
+                                    {% else %}
+                                        <span style="background: var(--slate-100); color: var(--slate-600); font-size: 0.78rem; font-weight: 600; padding: 0.25rem 0.6rem; border-radius: 9999px;">
+                                            🔒 Enrolled Only
+                                        </span>
+                                    {% endif %}
+                                </td>
+
+                                <td style="padding: 1.25rem 1.5rem; text-align: right;">
+                                    <div style="display: inline-flex; gap: 0.45rem; align-items: center;">
+                                        {% if item.video_url %}
+                                            <a href="{{ item.video_url }}" target="_blank" rel="noopener noreferrer" class="btn btn-secondary btn-sm" title="Preview Video Link">
+                                                ▶ Video
+                                            </a>
+                                        {% elif item.file_url %}
+                                            <a href="{{ item.file_url }}" target="_blank" rel="noopener noreferrer" class="btn btn-secondary btn-sm" title="Preview Resource">
+                                                📥 Resource
+                                            </a>
+                                        {% endif %}
+
+                                        <a href="{% url 'course_content_edit' item.content_id %}" class="btn btn-primary btn-sm" title="Edit Lesson">
+                                            ✏️ Edit
+                                        </a>
+
+                                        <a href="{% url 'course_content_delete' item.content_id %}" class="btn btn-danger btn-sm" title="Delete Lesson">
+                                            🗑️ Delete
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div style="margin-top: 1.5rem; text-align: center;">
+            <a href="{% url 'course_content_add' course.course_id %}" class="btn btn-primary">
+                ➕ Add Another Lesson
+            </a>
+        </div>
+
+    {% else %}
+        <div class="empty-state" style="padding: 3.5rem 1.5rem; background: var(--white); border: 1px solid var(--slate-200); border-radius: var(--radius-xl); text-align: center;">
+            <div class="empty-state-icon" style="font-size: 3rem; margin-bottom: 1rem;">📖</div>
+            <h3 style="font-size: 1.4rem; color: var(--slate-900); margin-bottom: 0.5rem;">No lessons added yet</h3>
+            <p style="color: var(--slate-600); max-width: 480px; margin: 0 auto 1.5rem auto;">
+                Start building the syllabus for <strong>{{ course.title }}</strong> by adding your first lecture or resource.
+            </p>
+            <a href="{% url 'course_content_add' course.course_id %}" class="btn btn-primary btn-lg">
+                ➕ Add First Lesson
+            </a>
+        </div>
+    {% endif %}
+
+</div>
+{% endblock %}

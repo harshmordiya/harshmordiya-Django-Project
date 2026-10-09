@@ -17,8 +17,8 @@ from django.views.decorators.csrf import csrf_exempt
 
 # Create your views here.
 
-from .forms import RegistrationForm, CourseForm
-from .models import Cart, Course, PasswordResetOTP, Student, UserProfile, Payment, Enrollment, Instructor
+from .forms import RegistrationForm, CourseForm, CourseContentForm
+from .models import Cart, Course, CourseContent, PasswordResetOTP, Student, UserProfile, Payment, Enrollment, Instructor
 
 
 razorpay_client = razorpay.Client(
@@ -317,6 +317,7 @@ def course_detail_view(request, course_id):
 
     # Check if the authenticated user is authorized to manage this course
     is_course_manager = False
+    is_enrolled = False
     if request.user.is_authenticated:
         if request.user.is_staff or request.user.is_superuser:
             is_course_manager = True
@@ -329,15 +330,23 @@ def course_detail_view(request, course_id):
                 if instructor and (course.instructor == instructor or course.instructor is None):
                     is_course_manager = True
 
+        student = Student.objects.filter(email=request.user.email).first()
+        if student:
+            is_enrolled = Enrollment.objects.filter(student=student, course=course, status="active").exists()
+
     # If the course is inactive, only allow course managers to view it
     if not course.is_active and not is_course_manager:
         raise Http404("Course not found or currently unavailable.")
+
+    contents = course.contents.all().order_by("order", "content_id")
 
     return render(
         request,
         "course_detail.html",
         {
             "course": course,
+            "contents": contents,
+            "is_enrolled": is_enrolled,
             "is_course_manager": is_course_manager,
         }
     )
@@ -882,3 +891,131 @@ course_add_view = instructor_course_create_view
 course_update_view = instructor_course_edit_view
 course_edit_view = instructor_course_edit_view
 course_delete_view = instructor_course_delete_view
+
+
+# ---------------------------------------------------------
+# Course Content Management Views
+# ---------------------------------------------------------
+
+@login_required
+def course_content_manage_view(request, course_id):
+    """
+    Manage curriculum and lessons for a specific course.
+    Instructors can only manage contents for their own courses.
+    """
+    course = get_object_or_404(Course, course_id=course_id)
+    allowed, instructor = can_manage_course(request.user, course)
+    if not allowed:
+        messages.error(request, "Unauthorized: You can only manage content for your own courses.")
+        return redirect("instructor_courses")
+
+    contents = course.contents.all().order_by("order", "content_id")
+    return render(
+        request,
+        "course_content_manage.html",
+        {
+            "course": course,
+            "contents": contents,
+            "instructor": course.instructor or instructor,
+        }
+    )
+
+
+@login_required
+def course_content_add_view(request, course_id):
+    """
+    Add a new lesson, video, document, or exercise to a course.
+    """
+    course = get_object_or_404(Course, course_id=course_id)
+    allowed, instructor = can_manage_course(request.user, course)
+    if not allowed:
+        messages.error(request, "Unauthorized: You can only add content to your own courses.")
+        return redirect("instructor_courses")
+
+    if request.method == "POST":
+        form = CourseContentForm(request.POST)
+        if form.is_valid():
+            content = form.save(commit=False)
+            content.course = course
+            content.save()
+            messages.success(request, f'Lesson "{content.title}" was added successfully!')
+            return redirect("course_content_manage", course_id=course.course_id)
+    else:
+        next_order = course.contents.count() + 1
+        form = CourseContentForm(initial={"order": next_order})
+
+    return render(
+        request,
+        "course_content_form.html",
+        {
+            "form": form,
+            "course": course,
+            "title": f"Add Lesson: {course.title}",
+            "subtitle": "Add lecture video link, study documents, reading notes, or assignments.",
+            "is_edit": False,
+        }
+    )
+
+
+@login_required
+def course_content_edit_view(request, content_id):
+    """
+    Edit details of an existing lesson or content module.
+    """
+    content = get_object_or_404(CourseContent, content_id=content_id)
+    course = content.course
+    allowed, instructor = can_manage_course(request.user, course)
+    if not allowed:
+        messages.error(request, "Unauthorized: You can only edit content for your own courses.")
+        return redirect("instructor_courses")
+
+    if request.method == "POST":
+        form = CourseContentForm(request.POST, instance=content)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f'Lesson "{content.title}" updated successfully!')
+            return redirect("course_content_manage", course_id=course.course_id)
+    else:
+        form = CourseContentForm(instance=content)
+
+    return render(
+        request,
+        "course_content_form.html",
+        {
+            "form": form,
+            "course": course,
+            "content": content,
+            "title": f"Edit Lesson: {content.title}",
+            "subtitle": f"Update syllabus content for {course.title}.",
+            "is_edit": True,
+        }
+    )
+
+
+@login_required
+def course_content_delete_view(request, content_id):
+    """
+    Delete a specific lesson or content module with safe confirmation.
+    """
+    content = get_object_or_404(CourseContent, content_id=content_id)
+    course = content.course
+    allowed, instructor = can_manage_course(request.user, course)
+    if not allowed:
+        messages.error(request, "Unauthorized: You can only delete content for your own courses.")
+        return redirect("instructor_courses")
+
+    if request.method == "POST":
+        title = content.title
+        course_id = course.course_id
+        content.delete()
+        messages.success(request, f'Lesson "{title}" was deleted.')
+        return redirect("course_content_manage", course_id=course_id)
+
+    return render(
+        request,
+        "course_content_confirm_delete.html",
+        {
+            "course": course,
+            "content": content,
+        }
+    )

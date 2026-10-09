@@ -256,3 +256,92 @@ class Payment(models.Model):
 
     def __str__(self):
         return f"{self.student} - {self.razorpay_order_id}"
+
+
+class CourseContent(models.Model):
+    CONTENT_TYPE_CHOICES = [
+        ("video", "Video Lesson"),
+        ("document", "Document / PDF"),
+        ("article", "Reading / Article"),
+        ("quiz", "Quiz / Exercise"),
+        ("assignment", "Assignment"),
+        ("other", "Other"),
+    ]
+
+    content_id = models.AutoField(
+        primary_key=True
+    )
+
+    course = models.ForeignKey(
+        Course,
+        on_delete=models.CASCADE,
+        related_name="contents"
+    )
+
+    title = models.CharField(
+        max_length=200
+    )
+
+    description = models.TextField(
+        blank=True,
+        null=True
+    )
+
+    content_type = models.CharField(
+        max_length=30,
+        choices=CONTENT_TYPE_CHOICES,
+        default="video"
+    )
+
+    video_url = models.URLField(
+        max_length=500,
+        blank=True,
+        null=True,
+        help_text="Link to lecture video (YouTube, Vimeo, or external stream)"
+    )
+
+    file_url = models.URLField(
+        max_length=500,
+        blank=True,
+        null=True,
+        help_text="Link to study material, PDF, or resource"
+    )
+
+    text_content = models.TextField(
+        blank=True,
+        null=True,
+        help_text="Lesson notes, article text, or lecture transcript"
+    )
+
+    order = models.PositiveIntegerField(
+        default=1,
+        help_text="Display order in course syllabus"
+    )
+
+    duration = models.CharField(
+        max_length=50,
+        blank=True,
+        null=True,
+        help_text="Estimated duration (e.g. 15 mins)"
+    )
+
+    is_free_preview = models.BooleanField(
+        default=False,
+        help_text="Whether this content is visible before purchasing"
+    )
+
+    created_at = models.DateTimeField(
+        auto_now_add=True
+    )
+
+    updated_at = models.DateTimeField(
+        auto_now=True
+    )
+
+    class Meta:
+        ordering = ["order", "content_id"]
+        verbose_name = "Course Content"
+        verbose_name_plural = "Course Contents"
+
+    def __str__(self):
+        return f"{self.course.title} - {self.title}"

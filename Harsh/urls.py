@@ -67,4 +67,10 @@ urlpatterns = [
     # Instructor Portal
     path("instructor/courses/", views.instructor_courses_view, name="instructor_courses"),
     path("instructor/dashboard/", views.instructor_courses_view, name="instructor_dashboard"),
+
+    # Course Content / Curriculum Management
+    path("courses/<int:course_id>/content/", views.course_content_manage_view, name="course_content_manage"),
+    path("courses/<int:course_id>/content/add/", views.course_content_add_view, name="course_content_add"),
+    path("courses/content/<int:content_id>/edit/", views.course_content_edit_view, name="course_content_edit"),
+    path("courses/content/<int:content_id>/delete/", views.course_content_delete_view, name="course_content_delete"),
 ]
