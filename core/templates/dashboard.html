@@ -66,7 +66,198 @@
             </div>
         </div>
 
-        <!-- My Courses Section -->
+        {% if profile.role == 'instructor' %}
+        <!-- Instructor Authored Courses Section -->
+        <div style="margin-top: 2.5rem; padding-top: 2rem; border-top: 1px solid var(--slate-100);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 0.75rem;">
+                <div>
+                    <span class="section-tag" style="font-size: 0.78rem; margin-bottom: 0.2rem;">Teaching Hub</span>
+                    <h2 style="font-size: 1.35rem; margin-bottom: 0.25rem; color: var(--slate-900);">My Authored Courses</h2>
+                    <p style="color: var(--slate-500); font-size: 0.9rem; margin: 0;">
+                        Manage syllabus, update curriculum materials, and track enrolled students.
+                    </p>
+                </div>
+                <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
+                    <span class="badge-category" style="background: var(--primary-light); color: var(--primary-dark); font-size: 0.8rem;">
+                        {{ total_authored }} {{ total_authored|pluralize:"Course,Courses" }} Created
+                    </span>
+                    <a href="{% url 'instructor_course_create' %}" class="btn btn-primary btn-sm">
+                        ➕ Add Course
+                    </a>
+                </div>
+            </div>
+
+            {% if authored_courses %}
+                <div class="course-grid">
+                    {% for course in authored_courses %}
+                        <div class="course-card">
+                            <div class="course-card-top bg-{{ course.category }}">
+                                <span class="badge-category">{{ course.get_category_display }}</span>
+                                {% if course.is_active %}
+                                    <span class="badge-status status-active">● Active</span>
+                                {% else %}
+                                    <span class="badge-status status-cancelled">○ Draft</span>
+                                {% endif %}
+                            </div>
+
+                            <div class="course-card-body">
+                                <h3 class="course-title">
+                                    <a href="{% url 'course_detail' course.course_id %}">
+                                        {{ course.title }}
+                                    </a>
+                                </h3>
+
+                                <p class="course-description">
+                                    {{ course.description }}
+                                </p>
+
+                                <div style="display: flex; flex-direction: column; gap: 0.6rem; padding: 0.85rem 0; margin-top: auto; border-top: 1px solid var(--slate-100); font-size: 0.86rem;">
+                                    <div style="display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+                                        <div style="font-weight: 800; font-family: var(--font-heading); color: var(--slate-900); font-size: 1.15rem;">
+                                            ₹{{ course.price }}
+                                        </div>
+                                        <div style="color: var(--slate-600); display: flex; align-items: center; gap: 0.35rem; font-size: 0.84rem;">
+                                            <span>⏱️</span>
+                                            <span>{{ course.duration }}</span>
+                                        </div>
+                                    </div>
+
+                                    <div style="display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; flex-wrap: wrap; padding-top: 0.25rem;">
+                                        <div style="color: var(--slate-500); font-size: 0.82rem;">
+                                            📅 Created: <strong style="color: var(--slate-700);">{{ course.created_at|date:"d M Y" }}</strong>
+                                        </div>
+                                        <div>
+                                            <span style="display: inline-flex; align-items: center; gap: 0.35rem; font-weight: 700; color: #065f46; background: #ecfdf5; padding: 0.2rem 0.65rem; border-radius: var(--radius-full); border: 1px solid #a7f3d0; font-size: 0.8rem;">
+                                                👨‍🎓 {{ course.active_enrollments|default:"0" }} Enrolled
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="course-card-footer" style="padding-top: 0.85rem; border-top: 1px solid var(--slate-100); display: flex; justify-content: space-between; gap: 0.5rem; flex-wrap: wrap;">
+                                    <div style="display: flex; gap: 0.4rem; flex-wrap: wrap; width: 100%;">
+                                        <a href="{% url 'course_content_manage' course.course_id %}" class="btn btn-secondary btn-sm" style="flex: 1; text-align: center;" title="Curriculum & Notes">
+                                            📚 Lessons
+                                        </a>
+                                        <a href="{% url 'instructor_course_edit' course.course_id %}" class="btn btn-primary btn-sm" style="flex: 1; text-align: center;" title="Edit Course Details">
+                                            ✏️ Edit
+                                        </a>
+                                        <a href="{% url 'course_detail' course.course_id %}" class="btn btn-outline btn-sm" style="flex: 1; text-align: center;" title="Public Preview">
+                                            👁️ View
+                                        </a>
+                                        <a href="{% url 'instructor_course_delete' course.course_id %}" class="btn btn-danger btn-sm" title="Delete Course">
+                                            🗑️
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="empty-state" style="margin: 1rem auto 0; max-width: 580px; padding: 3rem 2rem;">
+                    <div class="empty-state-icon">📚</div>
+                    <h3 style="font-size: 1.35rem; color: var(--slate-900); margin-bottom: 0.5rem;">No Courses Created Yet</h3>
+                    <p style="color: var(--slate-500); max-width: 440px; margin: 0 auto 1.5rem; font-size: 0.95rem; line-height: 1.6;">
+                        You haven't published any courses yet. Share your expertise and start teaching eager learners today!
+                    </p>
+                    <a href="{% url 'instructor_course_create' %}" class="btn btn-primary">
+                        ➕ Create Your First Course
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+
+        {% if enrollments %}
+        <!-- Enrolled Courses for Instructor (if any) -->
+        <div style="margin-top: 2.5rem; padding-top: 2rem; border-top: 1px solid var(--slate-100);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 0.75rem;">
+                <div>
+                    <span class="section-tag" style="font-size: 0.78rem; margin-bottom: 0.2rem;">Learning</span>
+                    <h2 style="font-size: 1.35rem; margin-bottom: 0.25rem; color: var(--slate-900);">My Enrolled Courses</h2>
+                    <p style="color: var(--slate-500); font-size: 0.9rem; margin: 0;">
+                        Courses you are studying as a student.
+                    </p>
+                </div>
+                <span class="badge-category" style="background: var(--primary-light); color: var(--primary-dark); font-size: 0.8rem;">
+                    {{ total_enrolled }} {{ total_enrolled|pluralize:"Course,Courses" }} Enrolled
+                </span>
+            </div>
+
+            <div class="course-grid">
+                {% for enrollment in enrollments %}
+                    <div class="course-card">
+                        <div class="course-card-top bg-{{ enrollment.course.category }}">
+                            <span class="badge-category">{{ enrollment.course.get_category_display }}</span>
+                            <span class="badge-status status-{{ enrollment.status }}">
+                                {% if enrollment.status == 'active' %}
+                                    ● Active
+                                {% elif enrollment.status == 'completed' %}
+                                    ✓ Completed
+                                {% else %}
+                                    {{ enrollment.get_status_display }}
+                                {% endif %}
+                            </span>
+                        </div>
+
+                        <div class="course-card-body">
+                            <h3 class="course-title">
+                                <a href="{% url 'course_detail' enrollment.course.course_id %}">
+                                    {{ enrollment.course.title }}
+                                </a>
+                            </h3>
+
+                            <p class="course-description">
+                                {{ enrollment.course.description }}
+                            </p>
+
+                            <div style="display: flex; flex-direction: column; gap: 0.6rem; padding: 0.85rem 0; margin-top: auto; border-top: 1px solid var(--slate-100); font-size: 0.86rem;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+                                    <div class="course-instructor">
+                                        <span>👨‍🏫</span>
+                                        <span>
+                                            {% if enrollment.course.instructor %}
+                                                {{ enrollment.course.instructor.first_name }} {{ enrollment.course.instructor.last_name }}
+                                            {% else %}
+                                                Staff Instructor
+                                            {% endif %}
+                                        </span>
+                                    </div>
+                                    <div style="color: var(--slate-600); display: flex; align-items: center; gap: 0.35rem; font-size: 0.84rem;">
+                                        <span>⏱️</span>
+                                        <span>{{ enrollment.course.duration }}</span>
+                                    </div>
+                                </div>
+
+                                <div style="display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; flex-wrap: wrap; color: var(--slate-500); font-size: 0.82rem; padding-top: 0.25rem;">
+                                    <div>
+                                        <span>📅 Enrolled:</span>
+                                        <strong style="color: var(--slate-700);">{{ enrollment.enrollment_date|date:"d M Y" }}</strong>
+                                    </div>
+                                    <div>
+                                        <span>Status:</span>
+                                        <strong style="text-transform: capitalize; color: {% if enrollment.status == 'active' %}#059669{% else %}#4f46e5{% endif %};">
+                                            {{ enrollment.get_status_display }}
+                                        </strong>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="course-card-footer" style="padding-top: 0.85rem; border-top: 1px solid var(--slate-100);">
+                                <a href="{% url 'course_detail' enrollment.course.course_id %}" class="btn btn-primary btn-block" style="text-align: center; text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
+                                    <span>Continue Learning</span>
+                                    <span>→</span>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        {% else %}
+        <!-- Student / General User Enrolled Courses Section -->
         <div style="margin-top: 2.5rem; padding-top: 2rem; border-top: 1px solid var(--slate-100);">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 0.75rem;">
                 <div>
@@ -165,6 +356,7 @@
                 </div>
             {% endif %}
         </div>
+        {% endif %}
     </div>
 </div>
 {% endblock %}

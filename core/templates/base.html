@@ -36,12 +36,19 @@
                         </a>
                     {% endif %}
 
-                    <a href="{% url 'dashboard' %}" class="user-badge" title="User Dashboard">
-                        <span>👤 {{ user.username }}</span>
-                        {% if nav_user_role %}
+                    {% if nav_user_role == 'instructor' %}
+                        <a href="{% url 'instructor_courses' %}" class="user-badge" title="Instructor Portal">
+                            <span>👤 {{ user.username }}</span>
                             <span class="user-role-tag">{{ nav_user_role }}</span>
-                        {% endif %}
-                    </a>
+                        </a>
+                    {% else %}
+                        <a href="{% url 'dashboard' %}" class="user-badge" title="User Dashboard">
+                            <span>👤 {{ user.username }}</span>
+                            {% if nav_user_role %}
+                                <span class="user-role-tag">{{ nav_user_role }}</span>
+                            {% endif %}
+                        </a>
+                    {% endif %}
 
                     {% if nav_user_role == 'instructor' %}
                         <a href="{% url 'course_create' %}" class="btn btn-primary btn-sm" title="Create New Course">

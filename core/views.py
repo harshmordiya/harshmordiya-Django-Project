@@ -138,6 +138,23 @@ def dashboard_view(request):
 
     total_enrolled = enrollments.count()
 
+    # For instructors, also fetch courses they have authored/created
+    instructor = None
+    authored_courses = Course.objects.none()
+    if profile.role == "instructor":
+        instructor = get_instructor_for_user(request.user)
+        if instructor:
+            authored_courses = (
+                Course.objects.filter(instructor=instructor)
+                .annotate(
+                    active_enrollments=Count(
+                        "enrollments",
+                        filter=Q(enrollments__status__in=["active", "completed"])
+                    )
+                )
+                .order_by("-created_at")
+            )
+
     return render(
         request,
         "dashboard.html",
@@ -146,8 +163,12 @@ def dashboard_view(request):
             "student": student,
             "enrollments": enrollments,
             "total_enrolled": total_enrolled,
+            "instructor": instructor,
+            "authored_courses": authored_courses,
+            "total_authored": authored_courses.count(),
         }
     )
+
 
 
 
@@ -822,9 +843,12 @@ def instructor_courses_view(request):
     ).annotate(
         active_enrollments=Count(
             "enrollments",
-            filter=Q(enrollments__status="active")
+            filter=Q(enrollments__status__in=["active", "completed"])
         ),
-        total_enrollments_count=Count("enrollments")
+        total_enrollments_count=Count(
+            "enrollments",
+            filter=Q(enrollments__status__in=["active", "completed"])
+        )
     ).order_by("-created_at")
 
     total_courses = courses.count()
@@ -834,12 +858,12 @@ def instructor_courses_view(request):
     # Real enrollment metrics across all courses by this instructor
     total_enrollments = Enrollment.objects.filter(
         course__instructor=instructor,
-        status="active"
+        status__in=["active", "completed"]
     ).count()
 
     unique_students = Enrollment.objects.filter(
         course__instructor=instructor,
-        status="active"
+        status__in=["active", "completed"]
     ).values("student").distinct().count()
 
     context = {
@@ -893,7 +917,7 @@ def can_manage_course(user, course):
     """
     Determines if a user has permission to manage (edit or delete) a course.
     - Superusers, staff, and admin role users can manage any course.
-    - Instructors can manage courses that belong to them (or unclaimed courses).
+    - Instructors can only manage courses that they authored.
     """
     if not user.is_authenticated:
         return False, None
@@ -904,7 +928,7 @@ def can_manage_course(user, course):
         return True, None
     if profile and profile.role == "instructor":
         instructor = get_instructor_for_user(user)
-        if instructor and (course.instructor == instructor or course.instructor is None):
+        if instructor and course.instructor == instructor:
             return True, instructor
     return False, None
 
@@ -967,7 +991,7 @@ def instructor_course_delete_view(request, course_id):
         messages.error(request, "Unauthorized: You can only delete courses that belong to you.")
         return redirect("instructor_courses")
 
-    enrolled_count = course.enrollments.filter(status="active").count()
+    enrolled_count = course.enrollments.filter(status__in=["active", "completed"]).count()
 
     if request.method == "POST":
         title = course.title
