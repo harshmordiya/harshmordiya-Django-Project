@@ -128,6 +128,10 @@ STATIC_URL = 'static/'
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
+# Notes File Upload Configuration (50 MB limit, allowed extensions)
+MAX_NOTES_FILE_SIZE = 50 * 1024 * 1024  # 50 MB
+ALLOWED_NOTES_EXTENSIONS = ['.pdf', '.docx', '.txt', '.pptx']
+
 
 # Email Configuration
 # https://docs.djangoproject.com/en/6.1/topics/email/#topic-email-configuration

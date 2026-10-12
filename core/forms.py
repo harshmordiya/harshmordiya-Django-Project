@@ -3,6 +3,7 @@ from django import forms
 from django.contrib.auth.models import User
 
 from .models import UserProfile, Student, Instructor, Course, CourseContent
+from .validators import validate_course_notes_file
 
 
 class RegistrationForm(forms.Form):
@@ -280,7 +281,7 @@ class CourseContentForm(forms.ModelForm):
             }),
             "notes_file": forms.ClearableFileInput(attrs={
                 "class": "form-input",
-                "accept": ".pdf,.doc,.docx,.txt,.ppt,.pptx",
+                "accept": ".pdf,.docx,.txt,.pptx",
             }),
             "file_url": forms.URLInput(attrs={
                 "class": "form-input",
@@ -307,15 +308,7 @@ class CourseContentForm(forms.ModelForm):
     def clean_notes_file(self):
         file = self.cleaned_data.get("notes_file")
         if file:
-            valid_extensions = [".pdf", ".doc", ".docx", ".txt", ".ppt", ".pptx"]
-            ext = os.path.splitext(file.name)[1].lower()
-            if ext not in valid_extensions:
-                raise forms.ValidationError(
-                    f"Unsupported file format '{ext}'. Allowed formats: {', '.join(valid_extensions)}"
-                )
-            # 50MB file size limit
-            if file.size > 50 * 1024 * 1024:
-                raise forms.ValidationError("Notes file size cannot exceed 50 MB.")
+            validate_course_notes_file(file)
         return file
 
 
