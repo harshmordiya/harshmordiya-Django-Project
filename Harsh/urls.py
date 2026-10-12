@@ -68,9 +68,19 @@ urlpatterns = [
     path("instructor/courses/", views.instructor_courses_view, name="instructor_courses"),
     path("instructor/dashboard/", views.instructor_courses_view, name="instructor_dashboard"),
 
-    # Course Content / Curriculum Management
+    # Course Content / Curriculum & Notes/Video Upload Management
     path("courses/<int:course_id>/content/", views.course_content_manage_view, name="course_content_manage"),
     path("courses/<int:course_id>/content/add/", views.course_content_add_view, name="course_content_add"),
+    path("courses/<int:course_id>/upload-notes/", views.course_content_add_view, name="course_upload_notes"),
+    path("courses/<int:course_id>/upload-material/", views.course_content_add_view, name="course_upload_material"),
     path("courses/content/<int:content_id>/edit/", views.course_content_edit_view, name="course_content_edit"),
     path("courses/content/<int:content_id>/delete/", views.course_content_delete_view, name="course_content_delete"),
 ]
+
+# Serve user-uploaded media files in development
+from django.conf import settings
+from django.conf.urls.static import static
+
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+

@@ -1,0 +1,24 @@
+Django is free, high-level, open source  web framework that is used to create a website or application. like database, logic or frontend this are marge and run its called Django. there three a marge and  specific structure then give a proper output. Popular sites built with Django include Instagram, Spotify, and parts of YouTube. It is named after the jazz guitarist Django Reinhardt.
+
+MVT is a Django architecture.
+
+M-Model
+V-View
+T-Template
+
+Model :- model means database related any information you can use.
+View :- view means you can use logic. Your logic is run in compile code.
+Template :-create new folder and store created files.
+
+installed Django:-
+
+:- pip install Django (you have already install then check version Django-admin --version)
+
+:-crate a project
+
+	Django-admin startproject desihands (if some error like cig then use pip install dispatch)
+after open your project folder and select desihand 
+
+:- run project server (py manage.py runserver)
+
+ 

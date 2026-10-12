@@ -43,7 +43,7 @@ class PasswordResetOTPAdmin(admin.ModelAdmin):
 class CourseContentInline(admin.TabularInline):
     model = CourseContent
     extra = 1
-    fields = ("order", "title", "content_type", "duration", "is_free_preview", "video_url")
+    fields = ("order", "title", "content_type", "duration", "is_free_preview", "video_url", "notes_file")
 
 
 @admin.register(Course)
@@ -56,7 +56,7 @@ class CourseAdmin(admin.ModelAdmin):
 
 @admin.register(CourseContent)
 class CourseContentAdmin(admin.ModelAdmin):
-    list_display = ("content_id", "course", "title", "content_type", "order", "duration", "is_free_preview", "created_at")
+    list_display = ("content_id", "course", "title", "content_type", "order", "duration", "is_free_preview", "notes_file", "created_at")
     list_filter = ("content_type", "is_free_preview", "created_at")
     search_fields = ("title", "course__title", "description")
     ordering = ("course", "order", "content_id")

@@ -271,7 +271,7 @@ class CourseContent(models.Model):
     content_id = models.AutoField(
         primary_key=True
     )
-
+    
     course = models.ForeignKey(
         Course,
         on_delete=models.CASCADE,
@@ -300,11 +300,18 @@ class CourseContent(models.Model):
         help_text="Link to lecture video (YouTube, Vimeo, or external stream)"
     )
 
+    notes_file = models.FileField(
+        upload_to="course_notes/",
+        blank=True,
+        null=True,
+        help_text="Upload notes document directly (PDF, DOCX, TXT, PPT, etc.)"
+    )
+
     file_url = models.URLField(
         max_length=500,
         blank=True,
         null=True,
-        help_text="Link to study material, PDF, or resource"
+        help_text="Link to external study material, PDF, or resource"
     )
 
     text_content = models.TextField(
@@ -344,4 +351,4 @@ class CourseContent(models.Model):
         verbose_name_plural = "Course Contents"
 
     def __str__(self):
-        return f"{self.course.title} - {self.title}"
+        return f"{self.course.title} - {self.title}"

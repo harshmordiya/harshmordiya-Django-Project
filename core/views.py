@@ -121,13 +121,34 @@ def dashboard_view(request):
         defaults={"role": "student"}
     )
 
+    # Safely query student profile associated by email without auto-creating duplicates
+    student = Student.objects.filter(email=request.user.email).first()
+
+    if student:
+        enrollments = (
+            Enrollment.objects.filter(
+                student=student,
+                status__in=["active", "completed"]
+            )
+            .select_related("course", "course__instructor")
+            .order_by("-enrollment_date")
+        )
+    else:
+        enrollments = Enrollment.objects.none()
+
+    total_enrolled = enrollments.count()
+
     return render(
         request,
         "dashboard.html",
         {
-            "profile": profile
+            "profile": profile,
+            "student": student,
+            "enrollments": enrollments,
+            "total_enrolled": total_enrolled,
         }
     )
+
 
 
 def logout_view(request):
@@ -393,7 +414,7 @@ def course_detail_view(request, course_id):
 
         student = Student.objects.filter(email=request.user.email).first()
         if student:
-            is_enrolled = Enrollment.objects.filter(student=student, course=course, status="active").exists()
+            is_enrolled = Enrollment.objects.filter(student=student, course=course, status__in=["active", "completed"]).exists()
 
     # If the course is inactive, only allow course managers to view it
     if not course.is_active and not is_course_manager:
@@ -1017,12 +1038,12 @@ def course_content_add_view(request, course_id):
         return redirect("instructor_courses")
 
     if request.method == "POST":
-        form = CourseContentForm(request.POST)
+        form = CourseContentForm(request.POST, request.FILES)
         if form.is_valid():
             content = form.save(commit=False)
             content.course = course
             content.save()
-            messages.success(request, f'Lesson "{content.title}" was added successfully!')
+            messages.success(request, f'Lesson "{content.title}" was added successfully with your uploaded materials!')
             return redirect("course_content_manage", course_id=course.course_id)
         else:
             messages.error(request, "Failed to add lesson. Please review the highlighted errors below.")
@@ -1036,8 +1057,8 @@ def course_content_add_view(request, course_id):
         {
             "form": form,
             "course": course,
-            "title": f"Add Lesson: {course.title}",
-            "subtitle": "Add lecture video link, study documents, reading notes, or assignments.",
+            "title": f"Upload Notes & Videos: {course.title}",
+            "subtitle": "Add downloadable notes files (PDF, DOCX), lecture video URLs, and study materials.",
             "is_edit": False,
         }
     )
@@ -1056,10 +1077,10 @@ def course_content_edit_view(request, content_id):
         return redirect("instructor_courses")
 
     if request.method == "POST":
-        form = CourseContentForm(request.POST, instance=content)
+        form = CourseContentForm(request.POST, request.FILES, instance=content)
         if form.is_valid():
             form.save()
-            messages.success(request, f'Lesson "{content.title}" updated successfully!')
+            messages.success(request, f'Lesson "{content.title}" updated successfully with your changes!')
             return redirect("course_content_manage", course_id=course.course_id)
         else:
             messages.error(request, "Failed to update lesson. Please review the highlighted errors below.")
@@ -1107,3 +1128,8 @@ def course_content_delete_view(request, content_id):
             "content": content,
         }
     )
+
+
+# Upload notes & video URL view aliases
+course_upload_notes_view = course_content_add_view
+course_upload_material_view = course_content_add_view

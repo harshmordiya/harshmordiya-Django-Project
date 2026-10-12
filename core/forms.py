@@ -1,3 +1,4 @@
+import os
 from django import forms
 from django.contrib.auth.models import User
 
@@ -248,6 +249,7 @@ class CourseContentForm(forms.ModelForm):
             "duration",
             "is_free_preview",
             "video_url",
+            "notes_file",
             "file_url",
             "description",
             "text_content",
@@ -274,11 +276,15 @@ class CourseContentForm(forms.ModelForm):
             }),
             "video_url": forms.URLInput(attrs={
                 "class": "form-input",
-                "placeholder": "https://www.youtube.com/watch?v=... or lecture link",
+                "placeholder": "https://www.youtube.com/watch?v=... or Vimeo / lecture link",
+            }),
+            "notes_file": forms.ClearableFileInput(attrs={
+                "class": "form-input",
+                "accept": ".pdf,.doc,.docx,.txt,.ppt,.pptx",
             }),
             "file_url": forms.URLInput(attrs={
                 "class": "form-input",
-                "placeholder": "https://... link to study notes, slides, or PDF",
+                "placeholder": "https://... link to external study notes, slides, or PDF",
             }),
             "description": forms.Textarea(attrs={
                 "class": "form-textarea",
@@ -297,4 +303,24 @@ class CourseContentForm(forms.ModelForm):
         if len(title) < 2:
             raise forms.ValidationError("Content title must be at least 2 characters long.")
         return title
+
+    def clean_notes_file(self):
+        file = self.cleaned_data.get("notes_file")
+        if file:
+            valid_extensions = [".pdf", ".doc", ".docx", ".txt", ".ppt", ".pptx"]
+            ext = os.path.splitext(file.name)[1].lower()
+            if ext not in valid_extensions:
+                raise forms.ValidationError(
+                    f"Unsupported file format '{ext}'. Allowed formats: {', '.join(valid_extensions)}"
+                )
+            # 50MB file size limit
+            if file.size > 50 * 1024 * 1024:
+                raise forms.ValidationError("Notes file size cannot exceed 50 MB.")
+        return file
+
+
+# Aliases for explicit notes/video upload forms
+CourseNotesAndVideoForm = CourseContentForm
+CourseMaterialUploadForm = CourseContentForm
+
 

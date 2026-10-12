@@ -124,6 +124,10 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 
+# Media files (Uploaded Notes, Documents, Images)
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
+
 
 # Email Configuration
 # https://docs.djangoproject.com/en/6.1/topics/email/#topic-email-configuration

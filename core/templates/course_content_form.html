@@ -14,7 +14,7 @@
     <div class="auth-card-modern auth-card-wide" style="margin: 0 auto;">
         <div class="auth-header" style="text-align: left; margin-bottom: 2rem;">
             <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 0.5rem;">
-                <span style="font-size: 2rem;">{% if is_edit %}✏️{% else %}🎬{% endif %}</span>
+                <span style="font-size: 2.2rem;">{% if is_edit %}✏️{% else %}📤{% endif %}</span>
                 <div>
                     <h1 class="auth-title" style="margin: 0; font-size: 1.85rem;">{{ title }}</h1>
                     <p class="auth-subtitle" style="margin: 0.25rem 0 0;">{{ subtitle }}</p>
@@ -28,120 +28,168 @@
             </div>
         {% endif %}
 
-        <form method="post" novalidate>
+        <form method="post" enctype="multipart/form-data" novalidate>
             {% csrf_token %}
 
-            <!-- Title -->
-            <div class="form-group">
-                <label for="{{ form.title.id_for_label }}">
-                    Lesson / Content Title <span style="color: var(--danger)">*</span>
-                </label>
-                {{ form.title }}
-                {% if form.title.errors %}
-                    <div style="color: var(--danger); font-size: 0.84rem; margin-top: 0.35rem;">{{ form.title.errors.0 }}</div>
-                {% endif %}
-                <div class="form-help">e.g. "Lecture 1: Setting up Python and Virtual Environments"</div>
-            </div>
+            <!-- Section 1: Basic Information -->
+            <div style="margin-bottom: 1.75rem;">
+                <h3 style="font-size: 1.05rem; font-weight: 700; color: var(--slate-900); margin-bottom: 1rem; padding-bottom: 0.4rem; border-bottom: 2px solid var(--slate-100);">
+                    📌 1. Lesson Overview
+                </h3>
 
-            <!-- Content Type, Order, Duration in 3 Columns -->
-            <div class="form-row" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem;">
+                <!-- Title -->
                 <div class="form-group">
-                    <label for="{{ form.content_type.id_for_label }}">
-                        Content Type <span style="color: var(--danger)">*</span>
+                    <label for="{{ form.title.id_for_label }}">
+                        Lesson / Content Title <span style="color: var(--danger)">*</span>
                     </label>
-                    {{ form.content_type }}
-                    {% if form.content_type.errors %}
-                        <div style="color: var(--danger); font-size: 0.84rem; margin-top: 0.35rem;">{{ form.content_type.errors.0 }}</div>
+                    {{ form.title }}
+                    {% if form.title.errors %}
+                        <div style="color: var(--danger); font-size: 0.84rem; margin-top: 0.35rem;">{{ form.title.errors.0 }}</div>
+                    {% endif %}
+                    <div class="form-help">e.g. "Lecture 1: Introduction, Environment Setup & Variables"</div>
+                </div>
+
+                <!-- Content Type, Order, Duration in 3 Columns -->
+                <div class="form-row" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem;">
+                    <div class="form-group">
+                        <label for="{{ form.content_type.id_for_label }}">
+                            Content Type <span style="color: var(--danger)">*</span>
+                        </label>
+                        {{ form.content_type }}
+                        {% if form.content_type.errors %}
+                            <div style="color: var(--danger); font-size: 0.84rem; margin-top: 0.35rem;">{{ form.content_type.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="form-group">
+                        <label for="{{ form.order.id_for_label }}">
+                            Order / Sequence <span style="color: var(--danger)">*</span>
+                        </label>
+                        {{ form.order }}
+                        {% if form.order.errors %}
+                            <div style="color: var(--danger); font-size: 0.84rem; margin-top: 0.35rem;">{{ form.order.errors.0 }}</div>
+                        {% endif %}
+                        <div class="form-help">Sequence position (1, 2, 3...)</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="{{ form.duration.id_for_label }}">
+                            Estimated Duration
+                        </label>
+                        {{ form.duration }}
+                        {% if form.duration.errors %}
+                            <div style="color: var(--danger); font-size: 0.84rem; margin-top: 0.35rem;">{{ form.duration.errors.0 }}</div>
+                        {% endif %}
+                        <div class="form-help">e.g. "20 mins" or "1 hour"</div>
+                    </div>
+                </div>
+
+                <!-- Free Preview Checkbox -->
+                <div class="form-group" style="background: var(--slate-50); padding: 0.85rem 1rem; border-radius: var(--radius-md); border: 1px solid var(--slate-200);">
+                    <label style="display: flex; align-items: center; gap: 0.75rem; margin: 0; cursor: pointer;">
+                        {{ form.is_free_preview }}
+                        <span style="font-weight: 600; color: var(--slate-800);">Allow Free Preview</span>
+                    </label>
+                    <div style="font-size: 0.82rem; color: var(--slate-500); margin-top: 0.2rem; margin-left: 1.75rem;">
+                        If checked, prospective students can preview this lesson before purchasing the course.
+                    </div>
+                </div>
+
+                <!-- Short Summary -->
+                <div class="form-group" style="margin-top: 1rem;">
+                    <label for="{{ form.description.id_for_label }}">
+                        Short Summary / Objectives (Optional)
+                    </label>
+                    {{ form.description }}
+                    {% if form.description.errors %}
+                        <div style="color: var(--danger); font-size: 0.84rem; margin-top: 0.35rem;">{{ form.description.errors.0 }}</div>
                     {% endif %}
                 </div>
-
-                <div class="form-group">
-                    <label for="{{ form.order.id_for_label }}">
-                        Order / Sequence <span style="color: var(--danger)">*</span>
-                    </label>
-                    {{ form.order }}
-                    {% if form.order.errors %}
-                        <div style="color: var(--danger); font-size: 0.84rem; margin-top: 0.35rem;">{{ form.order.errors.0 }}</div>
-                    {% endif %}
-                    <div class="form-help">Display sequence order (1, 2, 3...)</div>
-                </div>
-
-                <div class="form-group">
-                    <label for="{{ form.duration.id_for_label }}">
-                        Estimated Duration
-                    </label>
-                    {{ form.duration }}
-                    {% if form.duration.errors %}
-                        <div style="color: var(--danger); font-size: 0.84rem; margin-top: 0.35rem;">{{ form.duration.errors.0 }}</div>
-                    {% endif %}
-                    <div class="form-help">e.g. "18 mins" or "30 mins"</div>
-                </div>
             </div>
 
-            <!-- Free Preview Checkbox -->
-            <div class="form-group" style="background: var(--slate-50); padding: 1rem; border-radius: var(--radius-md); border: 1px solid var(--slate-200); margin-bottom: 1.5rem;">
-                <label style="display: flex; align-items: center; gap: 0.75rem; margin: 0; cursor: pointer;">
-                    {{ form.is_free_preview }}
-                    <span style="font-weight: 600; color: var(--slate-800);">Allow Free Preview</span>
-                </label>
-                <div style="font-size: 0.84rem; color: var(--slate-500); margin-top: 0.25rem; margin-left: 1.75rem;">
-                    If checked, prospective students can preview this lesson before enrolling in the course.
-                </div>
-            </div>
+            <!-- Section 2: Video Lecture URL -->
+            <div style="margin-bottom: 1.75rem; background: #f8fafc; border: 1px solid var(--slate-200); border-radius: var(--radius-lg); padding: 1.25rem;">
+                <h3 style="font-size: 1.05rem; font-weight: 700; color: var(--slate-900); margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
+                    <span>🎬</span> 2. Video Lecture URL
+                </h3>
+                <p style="font-size: 0.88rem; color: var(--slate-600); margin-bottom: 1rem;">
+                    Paste a link to your hosted video lecture (YouTube, Vimeo, Google Drive, or any direct MP4/stream URL).
+                </p>
 
-            <!-- Video URL & Resource File URL in 2 Columns -->
-            <div class="form-row" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1rem;">
-                <div class="form-group">
+                <div class="form-group" style="margin-bottom: 0;">
                     <label for="{{ form.video_url.id_for_label }}">
-                        Video Lecture URL (Optional)
+                        Video Stream or Embed URL
                     </label>
                     {{ form.video_url }}
                     {% if form.video_url.errors %}
                         <div style="color: var(--danger); font-size: 0.84rem; margin-top: 0.35rem;">{{ form.video_url.errors.0 }}</div>
                     {% endif %}
-                    <div class="form-help">YouTube, Vimeo, or hosted video link.</div>
+                    <div class="form-help">e.g. <code>https://www.youtube.com/watch?v=rfscVS0vtbw</code> or <code>https://vimeo.com/...</code></div>
+                </div>
+            </div>
+
+            <!-- Section 3: Notes & Study Documents (File Upload & Written Notes) -->
+            <div style="margin-bottom: 1.75rem; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: var(--radius-lg); padding: 1.25rem;">
+                <h3 style="font-size: 1.05rem; font-weight: 700; color: #166534; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
+                    <span>📁</span> 3. Notes & Study Documents
+                </h3>
+                <p style="font-size: 0.88rem; color: #15803d; margin-bottom: 1.25rem;">
+                    Upload notes files directly from your computer, link external cloud documents, and write formatted notes.
+                </p>
+
+                <!-- Direct Notes File Upload -->
+                <div class="form-group" style="background: white; border: 2px dashed #86efac; border-radius: var(--radius-md); padding: 1.25rem; margin-bottom: 1.25rem;">
+                    <label for="{{ form.notes_file.id_for_label }}" style="font-weight: 700; color: #166534; font-size: 0.95rem; display: flex; align-items: center; gap: 0.4rem;">
+                        <span>📥</span> Upload Notes File (PDF, DOCX, TXT, PPT, PPTX)
+                    </label>
+                    <div style="margin-top: 0.5rem;">
+                        {{ form.notes_file }}
+                    </div>
+                    {% if form.notes_file.errors %}
+                        <div style="color: var(--danger); font-size: 0.84rem; margin-top: 0.35rem;">{{ form.notes_file.errors.0 }}</div>
+                    {% endif %}
+                    <div class="form-help" style="margin-top: 0.4rem;">
+                        Max file size: 50MB. Students can view or download this document directly.
+                    </div>
+                    {% if content and content.notes_file %}
+                        <div style="margin-top: 0.75rem; padding: 0.5rem 0.75rem; background: #f0fdf4; border-radius: var(--radius-sm); font-size: 0.88rem; display: flex; align-items: center; justify-content: space-between;">
+                            <span>Current attached file: <strong>{{ content.notes_file.name }}</strong></span>
+                            <a href="{{ content.notes_file.url }}" target="_blank" class="btn btn-secondary btn-sm" style="padding: 0.2rem 0.6rem; font-size: 0.78rem;">
+                                👁️ View File
+                            </a>
+                        </div>
+                    {% endif %}
                 </div>
 
-                <div class="form-group">
-                    <label for="{{ form.file_url.id_for_label }}">
-                        Resource / Document Link (Optional)
+                <!-- External Resource / Document Link -->
+                <div class="form-group" style="margin-bottom: 1.25rem;">
+                    <label for="{{ form.file_url.id_for_label }}" style="font-weight: 600; color: #166534;">
+                        External Resource / Cloud Link (Optional)
                     </label>
                     {{ form.file_url }}
                     {% if form.file_url.errors %}
                         <div style="color: var(--danger); font-size: 0.84rem; margin-top: 0.35rem;">{{ form.file_url.errors.0 }}</div>
                     {% endif %}
-                    <div class="form-help">Link to PDF, cheat sheet, GitHub repo, or slides.</div>
+                    <div class="form-help">e.g. Google Drive, Dropbox, GitHub repo, or Notion notes link.</div>
                 </div>
-            </div>
 
-            <!-- Brief Description -->
-            <div class="form-group">
-                <label for="{{ form.description.id_for_label }}">
-                    Lesson Summary / Overview
-                </label>
-                {{ form.description }}
-                {% if form.description.errors %}
-                    <div style="color: var(--danger); font-size: 0.84rem; margin-top: 0.35rem;">{{ form.description.errors.0 }}</div>
-                {% endif %}
-                <div class="form-help">Short summary displayed directly on the syllabus item.</div>
-            </div>
-
-            <!-- Detailed Notes / Article Content -->
-            <div class="form-group">
-                <label for="{{ form.text_content.id_for_label }}">
-                    Detailed Lecture Notes / Reading Content (Optional)
-                </label>
-                {{ form.text_content }}
-                {% if form.text_content.errors %}
-                    <div style="color: var(--danger); font-size: 0.84rem; margin-top: 0.35rem;">{{ form.text_content.errors.0 }}</div>
-                {% endif %}
-                <div class="form-help">Notes, transcripts, code samples, or exercises visible to enrolled students.</div>
+                <!-- Written Lecture Notes / Transcript -->
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label for="{{ form.text_content.id_for_label }}" style="font-weight: 600; color: #166534;">
+                        Detailed Lecture Notes / Code Snippets / Article Text (Optional)
+                    </label>
+                    {{ form.text_content }}
+                    {% if form.text_content.errors %}
+                        <div style="color: var(--danger); font-size: 0.84rem; margin-top: 0.35rem;">{{ form.text_content.errors.0 }}</div>
+                    {% endif %}
+                    <div class="form-help">Detailed explanations, code examples, transcripts, or summaries.</div>
+                </div>
             </div>
 
             <!-- Submit / Actions -->
             <div style="display: flex; gap: 1rem; align-items: center; margin-top: 2rem; border-top: 1px solid var(--slate-200); padding-top: 1.5rem;">
                 <button type="submit" class="btn btn-primary btn-lg" style="flex: 1;">
-                    {% if is_edit %}💾 Update Lesson{% else %}🚀 Add Lesson{% endif %}
+                    {% if is_edit %}💾 Update Materials & Videos{% else %}🚀 Upload & Publish Lesson{% endif %}
                 </button>
                 <a href="{% url 'course_content_manage' course.course_id %}" class="btn btn-secondary btn-lg" style="flex: 1; text-align: center;">
                     Cancel
