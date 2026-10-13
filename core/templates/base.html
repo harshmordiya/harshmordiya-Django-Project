@@ -28,6 +28,9 @@
                 {% if user.is_authenticated and nav_user_role == 'instructor' %}
                     <li><a href="{% url 'instructor_courses' %}" class="nav-link {% if 'instructor' in request.resolver_match.url_name %}active{% endif %}">Instructor Portal</a></li>
                 {% endif %}
+                {% if user.is_authenticated and nav_user_role == 'admin' %}
+                    <li><a href="{% url 'admin_dashboard' %}" class="nav-link {% if 'admin' in request.resolver_match.url_name %}active{% endif %}">Admin Dashboard</a></li>
+                {% endif %}
             </ul>
 
             <div class="nav-actions">
@@ -39,10 +42,18 @@
                         </a>
                     {% endif %}
 
-                    {% if nav_user_role == 'instructor' %}
+                    {% if nav_user_role == 'admin' %}
+                        <a href="{% url 'admin_dashboard' %}" class="user-badge" title="Administrator Dashboard">
+                            <span>👤 {{ user.username }}</span>
+                            <span class="user-role-tag" style="background: #fee2e2; color: #b91c1c; font-weight: 700;">admin</span>
+                        </a>
+                    {% elif nav_user_role == 'instructor' %}
                         <a href="{% url 'instructor_courses' %}" class="user-badge" title="Instructor Portal">
                             <span>👤 {{ user.username }}</span>
                             <span class="user-role-tag">{{ nav_user_role }}</span>
+                        </a>
+                        <a href="{% url 'course_create' %}" class="btn btn-primary btn-sm" title="Create New Course">
+                            ➕ Add Course
                         </a>
                     {% else %}
                         <a href="{% url 'dashboard' %}" class="user-badge" title="User Dashboard">
@@ -50,12 +61,6 @@
                             {% if nav_user_role %}
                                 <span class="user-role-tag">{{ nav_user_role }}</span>
                             {% endif %}
-                        </a>
-                    {% endif %}
-
-                    {% if nav_user_role == 'instructor' %}
-                        <a href="{% url 'course_create' %}" class="btn btn-primary btn-sm" title="Create New Course">
-                            ➕ Add Course
                         </a>
                     {% endif %}
 

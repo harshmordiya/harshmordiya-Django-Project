@@ -76,6 +76,16 @@ urlpatterns = [
     path("courses/content/<int:content_id>/edit/", views.course_content_edit_view, name="course_content_edit"),
     path("courses/content/<int:content_id>/delete/", views.course_content_delete_view, name="course_content_delete"),
     path("courses/content/<int:content_id>/reorder/<str:direction>/", views.course_content_reorder_view, name="course_content_reorder"),
+
+    # Custom EduLearn Administrator Portal & Dashboards
+    path("admin-dashboard/", views.admin_dashboard_view, name="admin_dashboard"),
+    path("admin-dashboard/students/", views.admin_students_view, name="admin_students"),
+    path("admin-dashboard/instructors/", views.admin_instructors_view, name="admin_instructors"),
+    path("admin-dashboard/courses/", views.admin_courses_view, name="admin_courses"),
+    path("admin-dashboard/courses/<int:course_id>/toggle-status/", views.admin_course_toggle_status_view, name="admin_course_toggle_status"),
+    path("admin-dashboard/enrollments/", views.admin_enrollments_view, name="admin_enrollments"),
+    path("admin-dashboard/enrollments/<int:enrollment_id>/status/<str:new_status>/", views.admin_enrollment_update_status_view, name="admin_enrollment_update_status"),
+    path("admin-dashboard/payments/", views.admin_payments_view, name="admin_payments"),
 ]
 
 # Serve user-uploaded media files in development

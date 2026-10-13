@@ -16,11 +16,21 @@
                         Welcome back, {{ request.user.username }}!
                     </h1>
                     <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
-                        <span class="badge-category" style="background: var(--primary-light); color: var(--primary-dark);">
-                            Role: {{ profile.get_role_display|default:profile.role|title }}
-                        </span>
+                        {% if is_admin or user_role == 'admin' or profile.role == 'admin' %}
+                            <span class="badge-category" style="background: #fee2e2; color: #b91c1c; font-weight: 700; border: 1px solid #fecaca;">
+                                🛡️ Role: Administrator
+                            </span>
+                        {% elif user_role == 'instructor' or profile.role == 'instructor' %}
+                            <span class="badge-category" style="background: #e0e7ff; color: #3730a3; font-weight: 700;">
+                                👨‍🏫 Role: Instructor
+                            </span>
+                        {% else %}
+                            <span class="badge-category" style="background: var(--primary-light); color: var(--primary-dark);">
+                                🎓 Role: Student
+                            </span>
+                        {% endif %}
                         <span style="color: var(--slate-500); font-size: 0.92rem;">
-                            📧 {{ request.user.email }}
+                            📧 {{ request.user.email|default:request.user.username }}
                         </span>
                     </div>
                 </div>
@@ -42,25 +52,23 @@
                     <p style="font-size: 0.85rem; margin: 0;">Browse our full selection of live courses.</p>
                 </a>
 
-                {% if profile.role == 'student' %}
-                    <a href="{% url 'cart' %}" class="feature-box" style="padding: 1.5rem; text-decoration: none;">
-                        <div class="feature-box-icon" style="margin-bottom: 0.75rem;">🛒</div>
-                        <h3 style="font-size: 1.05rem; margin-bottom: 0.35rem;">My Shopping Cart</h3>
-                        <p style="font-size: 0.85rem; margin: 0;">Review courses queued for enrollment.</p>
+                {% if is_admin or user_role == 'admin' or profile.role == 'admin' %}
+                    <a href="{% url 'admin_dashboard' %}" class="feature-box" style="padding: 1.5rem; text-decoration: none; border-left: 4px solid var(--primary);">
+                        <div class="feature-box-icon" style="margin-bottom: 0.75rem;">🛡️</div>
+                        <h3 style="font-size: 1.05rem; margin-bottom: 0.35rem;">EduLearn Admin Dashboard</h3>
+                        <p style="font-size: 0.85rem; margin: 0;">Manage students, instructors, courses, enrollments & payments.</p>
                     </a>
-                {% elif profile.role == 'instructor' %}
+                {% elif user_role == 'instructor' or profile.role == 'instructor' %}
                     <a href="{% url 'instructor_courses' %}" class="feature-box" style="padding: 1.5rem; text-decoration: none;">
                         <div class="feature-box-icon" style="margin-bottom: 0.75rem;">👨‍🏫</div>
                         <h3 style="font-size: 1.05rem; margin-bottom: 0.35rem;">Instructor Portal</h3>
                         <p style="font-size: 0.85rem; margin: 0;">Manage your published courses and materials.</p>
                     </a>
-                {% endif %}
-
-                {% if request.user.is_staff or profile.role == 'admin' %}
-                    <a href="{% url 'admin:index' %}" class="feature-box" style="padding: 1.5rem; text-decoration: none;">
-                        <div class="feature-box-icon" style="margin-bottom: 0.75rem;">⚙️</div>
-                        <h3 style="font-size: 1.05rem; margin-bottom: 0.35rem;">Admin Dashboard</h3>
-                        <p style="font-size: 0.85rem; margin: 0;">Access Django Admin panel to manage data.</p>
+                {% else %}
+                    <a href="{% url 'cart' %}" class="feature-box" style="padding: 1.5rem; text-decoration: none;">
+                        <div class="feature-box-icon" style="margin-bottom: 0.75rem;">🛒</div>
+                        <h3 style="font-size: 1.05rem; margin-bottom: 0.35rem;">My Shopping Cart</h3>
+                        <p style="font-size: 0.85rem; margin: 0;">Review courses queued for enrollment.</p>
                     </a>
                 {% endif %}
             </div>

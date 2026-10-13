@@ -1,4 +1,6 @@
+from decimal import Decimal
 from django.db import models
+from django.utils import timezone
 
 
 class Admin(models.Model):
@@ -17,28 +19,117 @@ class Admin(models.Model):
 class Student(models.Model):
     student_id = models.AutoField(primary_key=True)
     first_name = models.CharField(max_length=100)
-    last_name = models.CharField(max_length=100)
+    last_name = models.CharField(max_length=100, blank=True, default="")
     email = models.EmailField(unique=True)
     date_of_birth = models.DateField(null=True, blank=True)
-    phone = models.CharField(max_length=15)
-    address = models.TextField()
-    enrollment_date = models.DateTimeField(null=True, blank=True)
+    phone = models.CharField(max_length=15, blank=True, default="")
+    address = models.TextField(blank=True, default="")
+    enrollment_date = models.DateTimeField(default=timezone.now, null=True, blank=True)
+
+    class Meta:
+        ordering = ["-student_id"]
+        verbose_name = "Student"
+        verbose_name_plural = "Students"
 
     def __str__(self):
-        return f"{self.first_name} {self.last_name}"
+        full = f"{self.first_name} {self.last_name}".strip()
+        return full if full else self.email
+
+    @property
+    def full_name(self):
+        full = f"{self.first_name} {self.last_name}".strip()
+        return full if full else self.email
+
+    @property
+    def enrolled_courses_count(self):
+        if "enrolled_courses_count" in self.__dict__:
+            return self.__dict__["enrolled_courses_count"]
+        return self.enrollments.filter(status__in=["active", "completed"]).count()
+
+    @enrolled_courses_count.setter
+    def enrolled_courses_count(self, value):
+        self.__dict__["enrolled_courses_count"] = value
+
+    @property
+    def enrollments_count(self):
+        if "enrollments_count" in self.__dict__:
+            return self.__dict__["enrollments_count"]
+        return self.enrolled_courses_count
+
+    @enrollments_count.setter
+    def enrollments_count(self, value):
+        self.__dict__["enrollments_count"] = value
+
+    @property
+    def total_paid_amount(self):
+        if "total_paid_amount" in self.__dict__:
+            return self.__dict__["total_paid_amount"]
+        total = self.payments.filter(status__iexact="paid").aggregate(models.Sum("amount"))["amount__sum"]
+        return total or Decimal("0.00")
+
+    @total_paid_amount.setter
+    def total_paid_amount(self, value):
+        self.__dict__["total_paid_amount"] = value
+
+    @property
+    def paid_total(self):
+        if "paid_total" in self.__dict__:
+            return self.__dict__["paid_total"]
+        return self.total_paid_amount
+
+    @paid_total.setter
+    def paid_total(self, value):
+        self.__dict__["paid_total"] = value
 
 
 class Instructor(models.Model):
     instructor_id = models.AutoField(primary_key=True)
     first_name = models.CharField(max_length=100)
-    last_name = models.CharField(max_length=100)
+    last_name = models.CharField(max_length=100, blank=True, default="")
     email = models.EmailField(unique=True)
-    phone = models.CharField(max_length=15)
-    specialization = models.CharField(max_length=150)
+    phone = models.CharField(max_length=15, blank=True, default="")
+    specialization = models.CharField(max_length=150, blank=True, default="General")
     hire_date = models.DateTimeField(auto_now_add=True)
 
+    class Meta:
+        ordering = ["-instructor_id"]
+        verbose_name = "Instructor"
+        verbose_name_plural = "Instructors"
+
     def __str__(self):
-        return f"{self.first_name} {self.last_name}"
+        full = f"{self.first_name} {self.last_name}".strip()
+        return full if full else self.email
+
+    @property
+    def full_name(self):
+        full = f"{self.first_name} {self.last_name}".strip()
+        return full if full else self.email
+
+    @property
+    def courses(self):
+        return self.course_set.all()
+
+    @property
+    def courses_count(self):
+        if "courses_count" in self.__dict__:
+            return self.__dict__["courses_count"]
+        return self.course_set.count()
+
+    @courses_count.setter
+    def courses_count(self, value):
+        self.__dict__["courses_count"] = value
+
+    @property
+    def students_count(self):
+        if "students_count" in self.__dict__:
+            return self.__dict__["students_count"]
+        return self.course_set.filter(
+            enrollments__status__in=["active", "completed"]
+        ).values("enrollments__student").distinct().count()
+
+    @students_count.setter
+    def students_count(self, value):
+        self.__dict__["students_count"] = value
 
 
 class UserProfile(models.Model):

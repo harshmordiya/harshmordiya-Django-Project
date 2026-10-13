@@ -1,6 +1,7 @@
 import random 
 import razorpay
 
+from decimal import Decimal
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import Http404
 from django.contrib.auth import authenticate, login, logout
@@ -9,16 +10,88 @@ from django.contrib.auth.models import User
 from django.core.mail import send_mail
 from django.utils import timezone
 from functools import wraps
-from django.db.models import Q, Count
+from django.db.models import Q, Count, Sum
 from django.core.paginator import Paginator
 from django.contrib import messages
 from django.conf import settings
 from django.views.decorators.csrf import csrf_exempt
+from django.urls import reverse
 
 # Create your views here.
 
 from .forms import RegistrationForm, CourseForm, CourseContentForm
 from .models import Cart, Course, CourseContent, PasswordResetOTP, Student, UserProfile, Payment, Enrollment, Instructor
+
+
+def get_user_role(user):
+    """
+    Safely determine the effective role of a user: 'admin', 'instructor', or 'student'.
+    - Superusers and staff members are always recognized as 'admin'.
+    - Users with UserProfile role 'admin' are 'admin'.
+    - Users with UserProfile role 'instructor' or an Instructor record are 'instructor'.
+    - Default fallback is 'student'.
+    """
+    if not user or not user.is_authenticated:
+        return None
+    if user.is_superuser or user.is_staff:
+        return "admin"
+    profile = UserProfile.objects.filter(user=user).first()
+    if profile:
+        return profile.role
+    if Instructor.objects.filter(email=user.email).exists():
+        return "instructor"
+    return "student"
+
+
+def is_admin_user(user):
+    """
+    Check if a user is an authorized administrator.
+    True if user is superuser, staff, or has UserProfile role == 'admin'.
+    """
+    if not user or not user.is_authenticated:
+        return False
+    if user.is_superuser or user.is_staff:
+        return True
+    profile = UserProfile.objects.filter(user=user).first()
+    return bool(profile and profile.role == "admin")
+
+
+def ensure_user_profile(user):
+    """
+    Safely retrieves or heals the UserProfile for an authenticated user.
+    Ensures superusers/staff are automatically synchronized to 'admin' role
+    so they are never erroneously displayed or treated as a student.
+    """
+    if not user or not user.is_authenticated:
+        return None
+    role = get_user_role(user)
+    profile = UserProfile.objects.filter(user=user).first()
+    if profile:
+        if (user.is_superuser or user.is_staff) and profile.role != "admin":
+            profile.role = "admin"
+            profile.save(update_fields=["role"])
+        return profile
+    profile, _ = UserProfile.objects.get_or_create(
+        user=user,
+        defaults={"role": role}
+    )
+    return profile
+
+
+def admin_required(view_func):
+    """
+    Decorator to ensure the logged-in user is authenticated and is an administrator.
+    Strictly denies access to ordinary students and instructors.
+    """
+    @wraps(view_func)
+    def _wrapped_view(request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return redirect(f"{reverse('login')}?next={request.path}")
+        if not is_admin_user(request.user):
+            messages.error(request, "Access restricted: Administrator privileges are required to view that page.")
+            return redirect("dashboard")
+        return view_func(request, *args, **kwargs)
+    return _wrapped_view
 
 
 razorpay_client = razorpay.Client(
@@ -93,14 +166,17 @@ def login_view(request):
 
         if user is not None:
             login(request, user)
-            profile = UserProfile.objects.filter(user=user).first()
-            role_display = f" ({profile.role.title()})" if profile else ""
+            profile = ensure_user_profile(user)
+            role = get_user_role(user)
+            role_display = f" ({role.title()})" if role else ""
             messages.success(request, f"Welcome back, {user.first_name or user.username}! You are now signed in{role_display}.")
 
             next_url = request.GET.get("next")
             if next_url:
                 return redirect(next_url)
-            if profile and profile.role == "instructor":
+            if is_admin_user(user):
+                return redirect("admin_dashboard")
+            if role == "instructor":
                 return redirect("instructor_courses")
             return redirect("dashboard")
 
@@ -116,13 +192,12 @@ def login_view(request):
 
 @login_required
 def dashboard_view(request):
-    profile, created = UserProfile.objects.get_or_create(
-        user=request.user,
-        defaults={"role": "student"}
-    )
+    profile = ensure_user_profile(request.user)
+    user_role = get_user_role(request.user)
+    is_admin = is_admin_user(request.user)
 
-    # Safely query student profile associated by email without auto-creating duplicates
-    student = Student.objects.filter(email=request.user.email).first()
+    # Safely query student profile associated with user without creating duplicates
+    student = get_student_for_user(request.user)
 
     if student:
         enrollments = (
@@ -141,7 +216,7 @@ def dashboard_view(request):
     # For instructors, also fetch courses they have authored/created
     instructor = None
     authored_courses = Course.objects.none()
-    if profile.role == "instructor":
+    if user_role == "instructor":
         instructor = get_instructor_for_user(request.user)
         if instructor:
             authored_courses = (
@@ -160,6 +235,8 @@ def dashboard_view(request):
         "dashboard.html",
         {
             "profile": profile,
+            "user_role": user_role,
+            "is_admin": is_admin,
             "student": student,
             "enrollments": enrollments,
             "total_enrolled": total_enrolled,
@@ -456,9 +533,7 @@ def course_detail_view(request, course_id):
 
 @login_required
 def add_to_cart(request, course_id):
-    student = Student.objects.filter(
-        email=request.user.email
-    ).first()
+    student = get_student_for_user(request.user)
 
     if not student:
         messages.error(
@@ -580,9 +655,7 @@ def remove_from_cart(request, cart_id):
 @login_required
 def cart_view(request):
 
-    student = Student.objects.filter(
-        email=request.user.email
-    ).first()
+    student = get_student_for_user(request.user)
 
     if not student:
         messages.error(
@@ -606,9 +679,7 @@ def cart_view(request):
 @login_required
 def checkout_view(request):
 
-    student = Student.objects.filter(
-        email=request.user.email
-    ).first()
+    student = get_student_for_user(request.user)
 
     if not student:
         messages.error(
@@ -775,6 +846,32 @@ def payment_callback(request):
 # ==============================================================================
 # Instructor Portal Helpers, Decorators, and Views
 # ==============================================================================
+
+def get_student_for_user(user):
+    """
+    Safely retrieves the Student profile for an authenticated user.
+    If the user has role 'student' in UserProfile but lacks a Student record,
+    it safely auto-heals and creates one using the user's details without creating duplicates.
+    """
+    if not user or not user.is_authenticated:
+        return None
+
+    student = Student.objects.filter(email__iexact=user.email).first()
+    if not student:
+        role = get_user_role(user)
+        if role == "student":
+            student, _ = Student.objects.get_or_create(
+                email=user.email,
+                defaults={
+                    "first_name": user.first_name or user.username,
+                    "last_name": user.last_name or "",
+                    "phone": "",
+                    "address": "",
+                    "enrollment_date": timezone.now(),
+                }
+            )
+    return student
+
 
 def get_instructor_for_user(user):
     """
@@ -1206,4 +1303,275 @@ def course_content_reorder_view(request, content_id, direction):
 
 # Upload notes & video URL view aliases
 course_upload_notes_view = course_content_add_view
-course_upload_material_view = course_content_add_view
+course_upload_material_view = course_content_add_view
+
+
+# ---------------------------------------------------------
+# Custom EduLearn Administrator Portal Views
+# ---------------------------------------------------------
+
+@admin_required
+def admin_dashboard_view(request):
+    """
+    Main EduLearn Custom Admin Dashboard overview with live KPI metrics,
+    recent enrollments, recent payments, and system health statistics.
+    """
+    total_students = Student.objects.count()
+    total_instructors = Instructor.objects.count()
+    total_courses = Course.objects.count()
+    active_courses = Course.objects.filter(is_active=True).count()
+    inactive_courses = Course.objects.filter(is_active=False).count()
+
+    total_enrollments = Enrollment.objects.count()
+    active_enrollments = Enrollment.objects.filter(status="active").count()
+    completed_enrollments = Enrollment.objects.filter(status="completed").count()
+    cancelled_enrollments = Enrollment.objects.filter(status="cancelled").count()
+
+    total_payments = Payment.objects.count()
+    paid_payments = Payment.objects.filter(status__iexact="paid")
+    total_revenue = paid_payments.aggregate(total=Sum("amount"))["total"] or Decimal("0.00")
+    total_users = User.objects.count()
+
+    recent_enrollments = (
+        Enrollment.objects.select_related("student", "course", "course__instructor")
+        .order_by("-enrollment_date")[:8]
+    )
+    recent_payments = (
+        Payment.objects.select_related("student")
+        .order_by("-created_at")[:8]
+    )
+    recent_courses = (
+        Course.objects.select_related("instructor")
+        .annotate(enrolled_count=Count("enrollments"))
+        .order_by("-created_at")[:6]
+    )
+    recent_students = (
+        Student.objects.annotate(enrolled_count=Count("enrollments"))
+        .order_by("-student_id")[:6]
+    )
+
+    context = {
+        "total_students": total_students,
+        "total_instructors": total_instructors,
+        "total_courses": total_courses,
+        "active_courses": active_courses,
+        "inactive_courses": inactive_courses,
+        "total_enrollments": total_enrollments,
+        "active_enrollments": active_enrollments,
+        "completed_enrollments": completed_enrollments,
+        "cancelled_enrollments": cancelled_enrollments,
+        "total_payments": total_payments,
+        "paid_payments_count": paid_payments.count(),
+        "total_revenue": total_revenue,
+        "total_users": total_users,
+        "recent_enrollments": recent_enrollments,
+        "recent_payments": recent_payments,
+        "recent_courses": recent_courses,
+        "recent_students": recent_students,
+        "active_tab": "dashboard",
+    }
+    return render(request, "admin_dashboard.html", context)
+
+
+@admin_required
+def admin_students_view(request):
+    """
+    Administrator student management page.
+    Lists all registered students with live course enrollments and payment statistics.
+    """
+    q = request.GET.get("q", "").strip()
+    students_qs = Student.objects.annotate(
+        enrollments_count=Count("enrollments", distinct=True),
+        paid_total=Sum("payments__amount", filter=Q(payments__status__iexact="paid"))
+    ).order_by("-student_id")
+
+    if q:
+        students_qs = students_qs.filter(
+            Q(first_name__icontains=q) |
+            Q(last_name__icontains=q) |
+            Q(email__icontains=q) |
+            Q(phone__icontains=q)
+        )
+
+    context = {
+        "students": students_qs,
+        "total_count": students_qs.count(),
+        "search_query": q,
+        "active_tab": "students",
+    }
+    return render(request, "admin_students.html", context)
+
+
+@admin_required
+def admin_instructors_view(request):
+    """
+    Administrator instructor management page.
+    Lists all registered instructors with courses taught and student reach.
+    """
+    q = request.GET.get("q", "").strip()
+    instructors_qs = Instructor.objects.annotate(
+        courses_count=Count("course", distinct=True),
+        students_count=Count("course__enrollments", filter=Q(course__enrollments__status__in=["active", "completed"]), distinct=True)
+    ).order_by("-instructor_id")
+
+    if q:
+        instructors_qs = instructors_qs.filter(
+            Q(first_name__icontains=q) |
+            Q(last_name__icontains=q) |
+            Q(email__icontains=q) |
+            Q(specialization__icontains=q)
+        )
+
+    context = {
+        "instructors": instructors_qs,
+        "total_count": instructors_qs.count(),
+        "search_query": q,
+        "active_tab": "instructors",
+    }
+    return render(request, "admin_instructors.html", context)
+
+
+@admin_required
+def admin_courses_view(request):
+    """
+    Administrator course catalog management page.
+    Displays all courses, pricing, instructor details, enrollment counts, and status controls.
+    """
+    q = request.GET.get("q", "").strip()
+    status_filter = request.GET.get("status", "all")
+
+    courses_qs = Course.objects.select_related("instructor").annotate(
+        active_enrollments=Count("enrollments", filter=Q(enrollments__status__in=["active", "completed"]), distinct=True),
+        lessons_count=Count("contents", distinct=True)
+    ).order_by("-created_at")
+
+    if status_filter == "active":
+        courses_qs = courses_qs.filter(is_active=True)
+    elif status_filter == "inactive":
+        courses_qs = courses_qs.filter(is_active=False)
+
+    if q:
+        courses_qs = courses_qs.filter(
+            Q(title__icontains=q) |
+            Q(category__icontains=q) |
+            Q(instructor__first_name__icontains=q) |
+            Q(instructor__last_name__icontains=q)
+        )
+
+    context = {
+        "courses": courses_qs,
+        "total_count": courses_qs.count(),
+        "active_courses_count": Course.objects.filter(is_active=True).count(),
+        "inactive_courses_count": Course.objects.filter(is_active=False).count(),
+        "status_filter": status_filter,
+        "search_query": q,
+        "active_tab": "courses",
+    }
+    return render(request, "admin_courses.html", context)
+
+
+@admin_required
+def admin_course_toggle_status_view(request, course_id):
+    """
+    Toggles course visibility status between Active and Draft/Inactive.
+    """
+    course = get_object_or_404(Course, course_id=course_id)
+    course.is_active = not course.is_active
+    course.save(update_fields=["is_active"])
+    status_label = "Active (Published)" if course.is_active else "Draft (Hidden)"
+    messages.success(request, f'Course "{course.title}" status changed to {status_label}.')
+    return redirect("admin_courses")
+
+
+@admin_required
+def admin_enrollments_view(request):
+    """
+    Administrator enrollment tracking page.
+    Shows all student enrollments, course affiliations, dates, and status management.
+    """
+    q = request.GET.get("q", "").strip()
+    status_filter = request.GET.get("status", "all")
+
+    enrollments_qs = Enrollment.objects.select_related(
+        "student", "course", "course__instructor"
+    ).order_by("-enrollment_date")
+
+    if status_filter in ["active", "completed", "cancelled"]:
+        enrollments_qs = enrollments_qs.filter(status=status_filter)
+
+    if q:
+        enrollments_qs = enrollments_qs.filter(
+            Q(student__first_name__icontains=q) |
+            Q(student__last_name__icontains=q) |
+            Q(student__email__icontains=q) |
+            Q(course__title__icontains=q)
+        )
+
+    context = {
+        "enrollments": enrollments_qs,
+        "total_count": enrollments_qs.count(),
+        "active_count": Enrollment.objects.filter(status="active").count(),
+        "completed_count": Enrollment.objects.filter(status="completed").count(),
+        "cancelled_count": Enrollment.objects.filter(status="cancelled").count(),
+        "status_filter": status_filter,
+        "search_query": q,
+        "active_tab": "enrollments",
+    }
+    return render(request, "admin_enrollments.html", context)
+
+
+@admin_required
+def admin_enrollment_update_status_view(request, enrollment_id, new_status):
+    """
+    Updates the status of an enrollment record (active, completed, cancelled).
+    """
+    enrollment = get_object_or_404(Enrollment, enrollment_id=enrollment_id)
+    if new_status in ["active", "completed", "cancelled"]:
+        enrollment.status = new_status
+        enrollment.save(update_fields=["status"])
+        messages.success(request, f'Enrollment #{enrollment.enrollment_id} updated to {new_status.title()}.')
+    else:
+        messages.error(request, f'Invalid status choice: {new_status}')
+    return redirect("admin_enrollments")
+
+
+@admin_required
+def admin_payments_view(request):
+    """
+    Administrator payment and revenue reconciliation page.
+    Tracks all transaction orders, payment IDs, amounts, and statuses.
+    """
+    q = request.GET.get("q", "").strip()
+    status_filter = request.GET.get("status", "all")
+
+    payments_qs = Payment.objects.select_related("student").order_by("-created_at")
+
+    if status_filter != "all":
+        payments_qs = payments_qs.filter(status__iexact=status_filter)
+
+    if q:
+        payments_qs = payments_qs.filter(
+            Q(razorpay_order_id__icontains=q) |
+            Q(razorpay_payment_id__icontains=q) |
+            Q(student__email__icontains=q) |
+            Q(student__first_name__icontains=q) |
+            Q(student__last_name__icontains=q)
+        )
+
+    total_volume = Payment.objects.aggregate(total=Sum("amount"))["total"] or Decimal("0.00")
+    paid_volume = Payment.objects.filter(status__iexact="paid").aggregate(total=Sum("amount"))["total"] or Decimal("0.00")
+    total_tx = Payment.objects.count()
+    paid_tx = Payment.objects.filter(status__iexact="paid").count()
+
+    context = {
+        "payments": payments_qs,
+        "total_count": payments_qs.count(),
+        "total_volume": total_volume,
+        "paid_volume": paid_volume,
+        "total_tx": total_tx,
+        "paid_tx": paid_tx,
+        "status_filter": status_filter,
+        "search_query": q,
+        "active_tab": "payments",
+    }
+    return render(request, "admin_payments.html", context)

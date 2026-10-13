@@ -1,0 +1,258 @@
+{% extends 'admin_base.html' %}
+{% load static %}
+
+{% block title %}Course Catalog - EduLearn Administrator Portal{% endblock %}
+
+{% block admin_content %}
+<div class="mb-4">
+
+    <!-- Page Heading & Top Action -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+        <div>
+            <h1 class="h3 fw-bold text-dark mb-1">
+                Course Catalog Management
+            </h1>
+            <p class="text-muted small mb-0">
+                Publish new courses, manage pricing and curriculum, track student enrollment volumes, and control course availability.
+            </p>
+        </div>
+        <div>
+            <a href="{% url 'course_create' %}" class="btn btn-edu-primary d-inline-flex align-items-center gap-2 shadow-sm px-4 py-2">
+                <i class="bi bi-plus-lg fs-6"></i>
+                <span>Add New Course</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Search & Status Filters Toolbar Card -->
+    <div class="admin-card p-3.5 mb-4">
+        <div class="row align-items-center justify-content-between g-3">
+            <!-- Status Filter Pills -->
+            <div class="col-lg-6">
+                <div class="d-flex align-items-center gap-1.5 flex-wrap">
+                    <span class="text-muted small fw-semibold me-1">Filter:</span>
+                    <a href="{% url 'admin_courses' %}{% if search_query %}?q={{ search_query }}{% endif %}" 
+                       class="btn btn-sm rounded-pill px-3 fw-semibold {% if status_filter == 'all' %}btn-primary{% else %}btn-outline-secondary border-0 bg-light text-secondary{% endif %}">
+                        All Courses <span class="badge rounded-pill ms-1 {% if status_filter == 'all' %}bg-white text-primary{% else %}bg-secondary-subtle text-secondary{% endif %}">{{ total_count }}</span>
+                    </a>
+                    <a href="{% url 'admin_courses' %}?status=active{% if search_query %}&q={{ search_query }}{% endif %}" 
+                       class="btn btn-sm rounded-pill px-3 fw-semibold {% if status_filter == 'active' %}btn-success{% else %}btn-outline-secondary border-0 bg-light text-secondary{% endif %}">
+                        <i class="bi bi-check-circle-fill me-1"></i> Active <span class="badge rounded-pill ms-1 {% if status_filter == 'active' %}bg-white text-success{% else %}bg-secondary-subtle text-secondary{% endif %}">{{ active_courses_count }}</span>
+                    </a>
+                    <a href="{% url 'admin_courses' %}?status=inactive{% if search_query %}&q={{ search_query }}{% endif %}" 
+                       class="btn btn-sm rounded-pill px-3 fw-semibold {% if status_filter == 'inactive' %}btn-secondary{% else %}btn-outline-secondary border-0 bg-light text-secondary{% endif %}">
+                        <i class="bi bi-eye-slash-fill me-1"></i> Drafts <span class="badge rounded-pill ms-1 {% if status_filter == 'inactive' %}bg-white text-dark{% else %}bg-secondary-subtle text-secondary{% endif %}">{{ inactive_courses_count }}</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Search Form Toolbar -->
+            <div class="col-lg-6 col-xl-5">
+                <form method="get" class="d-flex gap-2">
+                    {% if status_filter != 'all' %}
+                        <input type="hidden" name="status" value="{{ status_filter }}">
+                    {% endif %}
+                    <div class="input-group">
+                        <span class="input-group-text bg-white border-end-0 text-muted ps-3">
+                            <i class="bi bi-search"></i>
+                        </span>
+                        <input type="text" name="q" value="{{ search_query }}" class="form-control border-start-0 ps-1" placeholder="Search by course title, category, or instructor..." aria-label="Search courses">
+                    </div>
+                    <button type="submit" class="btn btn-primary rounded-pill px-3.5 fw-semibold">Search</button>
+                    {% if search_query or status_filter != 'all' %}
+                        <a href="{% url 'admin_courses' %}" class="btn btn-outline-secondary rounded-pill px-3" title="Clear Filters & Search">
+                            <i class="bi bi-arrow-counterclockwise"></i>
+                        </a>
+                    {% endif %}
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Courses Table Card -->
+    <div class="admin-card">
+        <div class="card-header bg-white py-3 px-4 border-bottom d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div class="fw-bold text-dark d-flex align-items-center gap-2">
+                <i class="bi bi-journal-bookmark-fill text-primary"></i>
+                <span>Course Directory</span>
+                <span class="badge bg-light text-muted border rounded-pill">{{ courses|length }} displaying</span>
+            </div>
+            <div class="text-muted small">
+                Showing live catalog courses from database
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table admin-table mb-0 align-middle">
+                <thead>
+                    <tr>
+                        <th style="width: 80px;">ID</th>
+                        <th style="min-width: 240px;">Course Details</th>
+                        <th style="min-width: 170px;">Instructor</th>
+                        <th style="width: 120px;">Price</th>
+                        <th style="width: 130px;">Curriculum</th>
+                        <th style="width: 130px;">Enrollment</th>
+                        <th style="width: 110px;">Status</th>
+                        <th class="text-end" style="min-width: 220px;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for course in courses %}
+                        <tr>
+                            <!-- Course ID -->
+                            <td>
+                                <span class="badge bg-light text-secondary border rounded-pill px-2 py-1">
+                                    #{{ course.course_id }}
+                                </span>
+                            </td>
+
+                            <!-- Course Title & Category -->
+                            <td>
+                                <div class="fw-bold text-dark fs-6 mb-0.5">{{ course.title }}</div>
+                                <div class="d-flex align-items-center gap-1.5 flex-wrap">
+                                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-2 py-0.5" style="font-size: 0.72rem;">
+                                        {{ course.get_category_display }}
+                                    </span>
+                                    {% if course.duration %}
+                                        <span class="text-muted small" style="font-size: 0.75rem;">
+                                            <i class="bi bi-clock me-0.5"></i>{{ course.duration }}
+                                        </span>
+                                    {% endif %}
+                                </div>
+                            </td>
+
+                            <!-- Instructor -->
+                            <td>
+                                {% if course.instructor %}
+                                    <div class="fw-semibold text-dark">{{ course.instructor.first_name }} {{ course.instructor.last_name }}</div>
+                                    <div class="text-muted small" style="font-size: 0.78rem;">{{ course.instructor.email }}</div>
+                                {% else %}
+                                    <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-pill px-2 py-0.5">
+                                        Unassigned
+                                    </span>
+                                {% endif %}
+                            </td>
+
+                            <!-- Price -->
+                            <td>
+                                <span class="fw-bold text-dark fs-6">₹{{ course.price }}</span>
+                            </td>
+
+                            <!-- Curriculum / Lessons -->
+                            <td>
+                                <a href="{% url 'course_content_manage' course.course_id %}" class="btn btn-outline-primary btn-sm rounded-pill px-2.5 py-1 text-decoration-none" title="Manage Lessons and Materials">
+                                    <i class="bi bi-collection-play me-1"></i>{{ course.lessons_count }} Lessons
+                                </a>
+                            </td>
+
+                            <!-- Active Enrollments -->
+                            <td>
+                                <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-2.5 py-1 fw-bold">
+                                    {{ course.active_enrollments }} Enrolled
+                                </span>
+                            </td>
+
+                            <!-- Status Badge -->
+                            <td>
+                                {% if course.is_active %}
+                                    <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2.5 py-1 fw-semibold">
+                                        ● Active
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-secondary-subtle text-secondary border rounded-pill px-2.5 py-1">
+                                        ○ Draft
+                                    </span>
+                                {% endif %}
+                            </td>
+
+                            <!-- Compact Consistent Actions -->
+                            <td class="text-end">
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <!-- Public Preview -->
+                                    <a href="{% url 'course_detail' course.course_id %}" target="_blank" class="btn btn-outline-secondary" title="View Public Course Page">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+
+                                    <!-- Edit Details -->
+                                    <a href="{% url 'course_edit' course.course_id %}" class="btn btn-outline-primary" title="Edit Course Details">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+
+                                    <!-- Manage Curriculum Lessons -->
+                                    <a href="{% url 'course_content_manage' course.course_id %}" class="btn btn-outline-secondary" title="Manage Lessons & Uploads">
+                                        <i class="bi bi-list-check"></i>
+                                    </a>
+
+                                    <!-- Activate / Deactivate Toggle -->
+                                    <a href="{% url 'admin_course_toggle_status' course.course_id %}" 
+                                       class="btn {% if course.is_active %}btn-outline-warning text-dark{% else %}btn-outline-success{% endif %}" 
+                                       title="{% if course.is_active %}Unpublish to Draft{% else %}Publish Course Active{% endif %}">
+                                        {% if course.is_active %}
+                                            <i class="bi bi-pause-circle"></i>
+                                        {% else %}
+                                            <i class="bi bi-play-circle"></i>
+                                        {% endif %}
+                                    </a>
+
+                                    <!-- Delete Action with Modal Confirmation Trigger -->
+                                    <button type="button" 
+                                            class="btn btn-outline-danger" 
+                                            data-bs-toggle="modal" 
+                                            data-bs-target="#deleteCourseModal{{ course.course_id }}" 
+                                            title="Delete Course">
+                                        <i class="bi bi-trash3"></i>
+                                    </button>
+                                </div>
+
+                                <!-- Delete Confirmation Modal -->
+                                <div class="modal fade text-start" id="deleteCourseModal{{ course.course_id }}" tabindex="-1" aria-labelledby="deleteModalLabel{{ course.course_id }}" aria-hidden="true">
+                                    <div class="modal-dialog modal-dialog-centered">
+                                        <div class="modal-content rounded-4 border-0 shadow">
+                                            <div class="modal-header border-bottom py-3 px-4">
+                                                <h5 class="modal-title fw-bold text-danger d-flex align-items-center gap-2" id="deleteModalLabel{{ course.course_id }}">
+                                                    <i class="bi bi-exclamation-triangle-fill"></i> Delete Course?
+                                                </h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                            </div>
+                                            <div class="modal-body p-4">
+                                                <p class="mb-2">
+                                                    Are you sure you want to permanently delete course <strong>"{{ course.title }}"</strong>?
+                                                </p>
+                                                <div class="alert alert-danger py-2 px-3 rounded-3 small mb-0">
+                                                    <i class="bi bi-shield-exclamation me-1"></i>
+                                                    This will also remove associated syllabus lessons and materials. This action cannot be reversed.
+                                                </div>
+                                            </div>
+                                            <div class="modal-footer border-top py-2.5 px-4 bg-light">
+                                                <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill px-3" data-bs-dismiss="modal">Cancel</button>
+                                                <form method="post" action="{% url 'course_delete' course.course_id %}" class="d-inline">
+                                                    {% csrf_token %}
+                                                    <button type="submit" class="btn btn-danger btn-sm rounded-pill px-3">
+                                                        <i class="bi bi-trash3-fill me-1"></i> Permanently Delete
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="8" class="text-center py-5 text-muted">
+                                <div class="fs-1 mb-2">📚</div>
+                                <h5 class="fw-bold text-dark">No courses found</h5>
+                                <p class="small mb-3">No course offerings match the active filter or search query.</p>
+                                <a href="{% url 'course_create' %}" class="btn btn-edu-primary btn-sm">
+                                    <i class="bi bi-plus-lg me-1"></i> Create First Course
+                                </a>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

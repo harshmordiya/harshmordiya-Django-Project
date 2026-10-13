@@ -11,11 +11,26 @@ def site_context(request):
     }
     
     if request.user.is_authenticated:
-        # Determine user role
-        profile = UserProfile.objects.filter(user=request.user).first()
-        if profile:
-            context["nav_user_role"] = profile.role
-        
+        # Determine user role accurately
+        if request.user.is_superuser or request.user.is_staff:
+            role = "admin"
+            profile = UserProfile.objects.filter(user=request.user).first()
+            if not profile:
+                UserProfile.objects.create(user=request.user, role="admin")
+            elif profile.role != "admin":
+                profile.role = "admin"
+                profile.save(update_fields=["role"])
+        else:
+            profile = UserProfile.objects.filter(user=request.user).first()
+            if profile:
+                role = profile.role
+            elif Student.objects.filter(email=request.user.email).exists():
+                role = "student"
+            else:
+                role = "student"
+
+        context["nav_user_role"] = role
+
         # Calculate cart items for students
         student = Student.objects.filter(email=request.user.email).first()
         if student:

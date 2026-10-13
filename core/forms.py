@@ -1,6 +1,7 @@
 import os
 from django import forms
 from django.contrib.auth.models import User
+from django.utils import timezone
 
 from .models import UserProfile, Student, Instructor, Course, CourseContent
 from .validators import validate_course_notes_file
@@ -160,12 +161,15 @@ class RegistrationForm(forms.Form):
 
         # Create Student profile automatically
         if role == "student":
-            Student.objects.create(
-                first_name=self.cleaned_data["first_name"],
-                last_name=self.cleaned_data.get("last_name", ""),
+            Student.objects.get_or_create(
                 email=self.cleaned_data["email"],
-                phone=self.cleaned_data["phone"],
-                address=self.cleaned_data.get("address", ""),
+                defaults={
+                    "first_name": self.cleaned_data["first_name"],
+                    "last_name": self.cleaned_data.get("last_name", ""),
+                    "phone": self.cleaned_data["phone"],
+                    "address": self.cleaned_data.get("address", ""),
+                    "enrollment_date": timezone.now(),
+                }
             )
 
         # Create Instructor profile automatically

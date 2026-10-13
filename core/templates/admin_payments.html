@@ -1,0 +1,258 @@
+{% extends 'admin_base.html' %}
+{% load static %}
+
+{% block title %}Payments & Revenue - EduLearn Administrator Portal{% endblock %}
+
+{% block admin_content %}
+<div class="mb-4">
+
+    <!-- Page Heading & Top Information -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+        <div>
+            <h1 class="h3 fw-bold text-dark mb-1">
+                Payments & Revenue Reconciliation
+            </h1>
+            <p class="text-muted small mb-0">
+                Audit live Razorpay transaction orders, verify customer payment IDs, and track realized platform revenue.
+            </p>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-3 py-2 fw-bold">
+                <i class="bi bi-shield-check me-1"></i> Razorpay Payment Gateway Synced
+            </span>
+        </div>
+    </div>
+
+    <!-- Revenue KPI Cards Grid -->
+    <div class="row g-3 mb-4">
+        <div class="col-sm-6 col-xl-3">
+            <div class="admin-card p-3.5 h-100">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="text-muted small fw-semibold">Realized Revenue</span>
+                    <span class="badge bg-success-subtle text-success rounded-pill px-2 py-0.5">Paid</span>
+                </div>
+                <div class="fs-3 fw-bold text-success lh-1 mb-1">
+                    ₹{{ paid_volume|floatformat:2 }}
+                </div>
+                <div class="text-muted small" style="font-size: 0.78rem;">
+                    <i class="bi bi-check-circle-fill text-success me-1"></i>Verified bank collections
+                </div>
+            </div>
+        </div>
+
+        <div class="col-sm-6 col-xl-3">
+            <div class="admin-card p-3.5 h-100">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="text-muted small fw-semibold">Gross Order Volume</span>
+                    <span class="badge bg-light text-secondary border rounded-pill px-2 py-0.5">All Orders</span>
+                </div>
+                <div class="fs-3 fw-bold text-dark lh-1 mb-1">
+                    ₹{{ total_volume|floatformat:2 }}
+                </div>
+                <div class="text-muted small" style="font-size: 0.78rem;">
+                    Total cart checkouts initialized
+                </div>
+            </div>
+        </div>
+
+        <div class="col-sm-6 col-xl-3">
+            <div class="admin-card p-3.5 h-100">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="text-muted small fw-semibold">Successful Invoices</span>
+                    <span class="badge bg-primary-subtle text-primary rounded-pill px-2 py-0.5">Captured</span>
+                </div>
+                <div class="fs-3 fw-bold text-primary lh-1 mb-1">
+                    {{ paid_tx }}
+                </div>
+                <div class="text-muted small" style="font-size: 0.78rem;">
+                    Completed customer payments
+                </div>
+            </div>
+        </div>
+
+        <div class="col-sm-6 col-xl-3">
+            <div class="admin-card p-3.5 h-100">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="text-muted small fw-semibold">Total Orders</span>
+                    <span class="badge bg-secondary-subtle text-secondary rounded-pill px-2 py-0.5">Razorpay</span>
+                </div>
+                <div class="fs-3 fw-bold text-secondary lh-1 mb-1">
+                    {{ total_tx }}
+                </div>
+                <div class="text-muted small" style="font-size: 0.78rem;">
+                    Total transaction references
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter & Search Toolbar Card -->
+    <div class="admin-card p-3.5 mb-4">
+        <div class="row align-items-center justify-content-between g-3">
+            <!-- Status Filter Pills -->
+            <div class="col-lg-5">
+                <div class="d-flex align-items-center gap-1.5 flex-wrap">
+                    <span class="text-muted small fw-semibold me-1">Status:</span>
+                    <a href="{% url 'admin_payments' %}{% if search_query %}?q={{ search_query }}{% endif %}" 
+                       class="btn btn-sm rounded-pill px-3 fw-semibold {% if status_filter == 'all' %}btn-primary{% else %}btn-outline-secondary border-0 bg-light text-secondary{% endif %}">
+                        All <span class="badge rounded-pill ms-1 {% if status_filter == 'all' %}bg-white text-primary{% else %}bg-secondary-subtle text-secondary{% endif %}">{{ total_count }}</span>
+                    </a>
+                    <a href="{% url 'admin_payments' %}?status=paid{% if search_query %}&q={{ search_query }}{% endif %}" 
+                       class="btn btn-sm rounded-pill px-3 fw-semibold {% if status_filter == 'paid' %}btn-success{% else %}btn-outline-secondary border-0 bg-light text-secondary{% endif %}">
+                        <i class="bi bi-check-circle-fill me-1"></i> Paid <span class="badge rounded-pill ms-1 {% if status_filter == 'paid' %}bg-white text-success{% else %}bg-secondary-subtle text-secondary{% endif %}">{{ paid_tx }}</span>
+                    </a>
+                    <a href="{% url 'admin_payments' %}?status=created{% if search_query %}&q={{ search_query }}{% endif %}" 
+                       class="btn btn-sm rounded-pill px-3 fw-semibold {% if status_filter == 'created' %}btn-warning text-dark{% else %}btn-outline-secondary border-0 bg-light text-secondary{% endif %}">
+                        Pending / Created
+                    </a>
+                </div>
+            </div>
+
+            <!-- Search Form -->
+            <div class="col-lg-7 col-xl-6">
+                <form method="get" class="d-flex gap-2">
+                    {% if status_filter != 'all' %}
+                        <input type="hidden" name="status" value="{{ status_filter }}">
+                    {% endif %}
+                    <div class="input-group">
+                        <span class="input-group-text bg-white border-end-0 text-muted ps-3">
+                            <i class="bi bi-search"></i>
+                        </span>
+                        <input type="text" name="q" value="{{ search_query }}" class="form-control border-start-0 ps-1" placeholder="Search order ID, payment ID, or email..." aria-label="Search payments">
+                    </div>
+                    <button type="submit" class="btn btn-primary rounded-pill px-3.5 fw-semibold">Search</button>
+                    {% if search_query or status_filter != 'all' %}
+                        <a href="{% url 'admin_payments' %}" class="btn btn-outline-secondary rounded-pill px-3" title="Clear Filters & Search">
+                            <i class="bi bi-arrow-counterclockwise"></i>
+                        </a>
+                    {% endif %}
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Payments Table Card -->
+    <div class="admin-card">
+        <div class="card-header bg-white py-3 px-4 border-bottom d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div class="fw-bold text-dark d-flex align-items-center gap-2">
+                <i class="bi bi-credit-card-2-front-fill text-primary"></i>
+                <span>Transaction History</span>
+                <span class="badge bg-light text-muted border rounded-pill">{{ payments|length }} records</span>
+            </div>
+            <div class="text-muted small">
+                All records backed by live Razorpay payment orders
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table admin-table mb-0 align-middle">
+                <thead>
+                    <tr>
+                        <th style="width: 80px;">ID</th>
+                        <th style="min-width: 220px;">Student Details</th>
+                        <th style="min-width: 190px;">Razorpay Order ID</th>
+                        <th style="min-width: 190px;">Payment ID</th>
+                        <th style="width: 130px;">Amount</th>
+                        <th style="width: 130px;">Status</th>
+                        <th style="width: 150px;">Timestamp</th>
+                        <th class="text-end" style="width: 110px;">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for pay in payments %}
+                        <tr>
+                            <!-- Payment ID -->
+                            <td>
+                                <span class="badge bg-light text-secondary border rounded-pill px-2 py-1">
+                                    #{{ pay.payment_id }}
+                                </span>
+                            </td>
+
+                            <!-- Student Info -->
+                            <td>
+                                <div class="d-flex align-items-center gap-2.5">
+                                    <div class="rounded-circle d-inline-flex align-items-center justify-content-center text-white fw-bold shadow-sm" style="width: 34px; height: 34px; background: linear-gradient(135deg, #10b981, #059669); font-size: 0.8rem; flex-shrink: 0;">
+                                        {{ pay.student.first_name|first|upper }}{{ pay.student.last_name|first|upper }}
+                                    </div>
+                                    <div class="min-w-0">
+                                        <div class="fw-bold text-dark fs-6 text-truncate">{{ pay.student.first_name }} {{ pay.student.last_name }}</div>
+                                        <div class="text-muted small text-truncate" style="font-size: 0.78rem;">
+                                            <i class="bi bi-envelope me-0.5"></i>{{ pay.student.email }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+
+                            <!-- Order ID -->
+                            <td>
+                                <code class="text-dark bg-light px-2 py-1 rounded small border">{{ pay.razorpay_order_id }}</code>
+                            </td>
+
+                            <!-- Payment ID -->
+                            <td>
+                                {% if pay.razorpay_payment_id %}
+                                    <code class="text-success bg-success-subtle px-2 py-1 rounded small border border-success-subtle">{{ pay.razorpay_payment_id }}</code>
+                                {% else %}
+                                    <span class="text-muted small">—</span>
+                                {% endif %}
+                            </td>
+
+                            <!-- Amount -->
+                            <td>
+                                <span class="fw-bold fs-6 text-dark">
+                                    ₹{{ pay.amount }}
+                                </span>
+                            </td>
+
+                            <!-- Status Badge -->
+                            <td>
+                                {% if pay.status == 'paid' %}
+                                    <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2.5 py-1 fw-semibold">
+                                        ● Paid
+                                    </span>
+                                {% elif pay.status == 'created' %}
+                                    <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-pill px-2.5 py-1">
+                                        ○ Created
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill px-2.5 py-1">
+                                        {{ pay.status }}
+                                    </span>
+                                {% endif %}
+                            </td>
+
+                            <!-- Timestamp -->
+                            <td>
+                                <span class="text-muted small">
+                                    {{ pay.created_at|date:"d M, Y H:i" }}
+                                </span>
+                            </td>
+
+                            <!-- Action -->
+                            <td class="text-end">
+                                <a href="{% url 'admin_enrollments' %}?q={{ pay.student.email }}" class="btn btn-outline-primary btn-sm rounded-pill px-2.5 py-1" title="View Associated Enrollments">
+                                    <i class="bi bi-clipboard-check me-1"></i> Enrollments
+                                </a>
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="8" class="text-center py-5 text-muted">
+                                <div class="fs-1 mb-2">💳</div>
+                                <h5 class="fw-bold text-dark">No transactions found</h5>
+                                <p class="small mb-3">No payment records match your current filter or search criteria.</p>
+                                {% if search_query or status_filter != 'all' %}
+                                    <a href="{% url 'admin_payments' %}" class="btn btn-outline-secondary btn-sm rounded-pill px-3">
+                                        <i class="bi bi-arrow-counterclockwise me-1"></i> Reset Filters
+                                    </a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

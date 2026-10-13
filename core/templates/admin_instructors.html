@@ -1,0 +1,176 @@
+{% extends 'admin_base.html' %}
+{% load static %}
+
+{% block title %}Faculty & Instructors - EduLearn Administrator Portal{% endblock %}
+
+{% block admin_content %}
+<div class="mb-4">
+
+    <!-- Page Heading & Top Information -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+        <div>
+            <h1 class="h3 fw-bold text-dark mb-1">
+                Faculty & Instructors Directory
+            </h1>
+            <p class="text-muted small mb-0">
+                Manage academic faculty, domain specializations, assigned course curricula, and total student reach.
+            </p>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle rounded-pill px-3 py-2 fw-bold">
+                <i class="bi bi-person-workspace me-1"></i> {{ total_count }} Total Instructors
+            </span>
+        </div>
+    </div>
+
+    <!-- Search Toolbar Card -->
+    <div class="admin-card p-3.5 mb-4">
+        <div class="row align-items-center justify-content-between g-3">
+            <div class="col-md-5">
+                <div class="d-flex align-items-center gap-2 text-muted small">
+                    <i class="bi bi-info-circle text-primary"></i>
+                    <span>Search instructors by name, email, or domain specialization.</span>
+                </div>
+            </div>
+
+            <!-- Search Form -->
+            <div class="col-md-7 col-lg-6">
+                <form method="get" class="d-flex gap-2">
+                    <div class="input-group">
+                        <span class="input-group-text bg-white border-end-0 text-muted ps-3">
+                            <i class="bi bi-search"></i>
+                        </span>
+                        <input type="text" name="q" value="{{ search_query }}" class="form-control border-start-0 ps-1" placeholder="Search by name, email, or specialization..." aria-label="Search instructors">
+                    </div>
+                    <button type="submit" class="btn btn-primary rounded-pill px-3.5 fw-semibold">Search</button>
+                    {% if search_query %}
+                        <a href="{% url 'admin_instructors' %}" class="btn btn-outline-secondary rounded-pill px-3" title="Clear Search">
+                            <i class="bi bi-arrow-counterclockwise"></i>
+                        </a>
+                    {% endif %}
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Instructors Table Card -->
+    <div class="admin-card">
+        <div class="card-header bg-white py-3 px-4 border-bottom d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div class="fw-bold text-dark d-flex align-items-center gap-2">
+                <i class="bi bi-person-workspace text-primary"></i>
+                <span>Registered Faculty</span>
+                <span class="badge bg-light text-muted border rounded-pill">{{ instructors|length }} records</span>
+            </div>
+            <div class="text-muted small">
+                Data synchronized live from instructor records
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table admin-table mb-0 align-middle">
+                <thead>
+                    <tr>
+                        <th style="width: 80px;">ID</th>
+                        <th style="min-width: 220px;">Faculty Member</th>
+                        <th style="min-width: 220px;">Email & Phone</th>
+                        <th style="width: 170px;">Specialization</th>
+                        <th style="width: 160px;">Courses Published</th>
+                        <th style="width: 150px;">Students Reached</th>
+                        <th style="width: 140px;">Hire Date</th>
+                        <th class="text-end" style="width: 100px;">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for instructor in instructors %}
+                        <tr>
+                            <!-- Instructor ID -->
+                            <td>
+                                <span class="badge bg-light text-secondary border rounded-pill px-2 py-1">
+                                    #{{ instructor.instructor_id }}
+                                </span>
+                            </td>
+
+                            <!-- Instructor Avatar & Name -->
+                            <td>
+                                <div class="d-flex align-items-center gap-2.5">
+                                    <div class="rounded-circle d-inline-flex align-items-center justify-content-center text-white fw-bold shadow-sm" style="width: 38px; height: 38px; background: linear-gradient(135deg, #0284c7, #4f46e5); font-size: 0.85rem; flex-shrink: 0;">
+                                        {{ instructor.first_name|first|upper }}{{ instructor.last_name|first|upper }}
+                                    </div>
+                                    <div class="min-w-0">
+                                        <div class="fw-bold text-dark fs-6 text-truncate">{{ instructor.first_name }} {{ instructor.last_name }}</div>
+                                        <span class="badge bg-light text-muted border rounded-pill px-2 py-0.5" style="font-size: 0.72rem;">
+                                            Faculty
+                                        </span>
+                                    </div>
+                                </div>
+                            </td>
+
+                            <!-- Email & Phone -->
+                            <td>
+                                <div class="d-flex align-items-center gap-1.5 text-dark fw-medium" style="font-size: 0.88rem;">
+                                    <i class="bi bi-envelope text-muted"></i>
+                                    <span>{{ instructor.email }}</span>
+                                </div>
+                                {% if instructor.phone %}
+                                    <div class="text-muted small mt-0.5" style="font-size: 0.78rem;">
+                                        <i class="bi bi-telephone me-1"></i>{{ instructor.phone }}
+                                    </div>
+                                {% endif %}
+                            </td>
+
+                            <!-- Specialization -->
+                            <td>
+                                <span class="badge bg-light text-dark border rounded-pill px-2.5 py-1">
+                                    {{ instructor.specialization|default:"General Instruction" }}
+                                </span>
+                            </td>
+
+                            <!-- Courses Published -->
+                            <td>
+                                <a href="{% url 'admin_courses' %}?q={{ instructor.first_name }}" class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill text-decoration-none px-2.5 py-1.5 fw-bold" title="View courses taught by this instructor">
+                                    <i class="bi bi-journal-bookmark me-1"></i>{{ instructor.courses_count }} {{ instructor.courses_count|pluralize:"Course,Courses" }}
+                                </a>
+                            </td>
+
+                            <!-- Students Reached -->
+                            <td>
+                                <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2.5 py-1 fw-semibold">
+                                    <i class="bi bi-people me-1"></i>{{ instructor.students_count }} {{ instructor.students_count|pluralize:"Learner,Learners" }}
+                                </span>
+                            </td>
+
+                            <!-- Hire Date -->
+                            <td>
+                                <span class="text-muted small">
+                                    {{ instructor.hire_date|date:"d M, Y"|default:"—" }}
+                                </span>
+                            </td>
+
+                            <!-- Actions -->
+                            <td class="text-end">
+                                <a href="{% url 'admin_courses' %}?q={{ instructor.first_name }}" class="btn btn-outline-primary btn-sm rounded-pill px-3" title="View Assigned Courses">
+                                    <i class="bi bi-journal-text me-1"></i> Courses
+                                </a>
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="8" class="text-center py-5 text-muted">
+                                <div class="fs-1 mb-2">👨‍🏫</div>
+                                <h5 class="fw-bold text-dark">No instructors found</h5>
+                                <p class="small mb-3">No instructor profiles match your current search query.</p>
+                                {% if search_query %}
+                                    <a href="{% url 'admin_instructors' %}" class="btn btn-outline-secondary btn-sm rounded-pill px-3">
+                                        <i class="bi bi-arrow-counterclockwise me-1"></i> Reset Search
+                                    </a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

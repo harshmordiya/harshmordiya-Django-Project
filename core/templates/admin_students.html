@@ -1,0 +1,175 @@
+{% extends 'admin_base.html' %}
+{% load static %}
+
+{% block title %}Students Directory - EduLearn Administrator Portal{% endblock %}
+
+{% block admin_content %}
+<div class="mb-4">
+
+    <!-- Page Heading & Top Information -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+        <div>
+            <h1 class="h3 fw-bold text-dark mb-1">
+                Students Directory
+            </h1>
+            <p class="text-muted small mb-0">
+                View registered students, their enrolled courses, verified payment totals, and enrollment timelines.
+            </p>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-3 py-2 fw-bold">
+                <i class="bi bi-people-fill me-1"></i> {{ total_count }} Total Students
+            </span>
+        </div>
+    </div>
+
+    <!-- Search Toolbar Card -->
+    <div class="admin-card p-3.5 mb-4">
+        <div class="row align-items-center justify-content-between g-3">
+            <div class="col-md-5">
+                <div class="d-flex align-items-center gap-2 text-muted small">
+                    <i class="bi bi-info-circle text-primary"></i>
+                    <span>Search students by full name, email address, or contact phone number.</span>
+                </div>
+            </div>
+
+            <!-- Search Form -->
+            <div class="col-md-7 col-lg-6">
+                <form method="get" class="d-flex gap-2">
+                    <div class="input-group">
+                        <span class="input-group-text bg-white border-end-0 text-muted ps-3">
+                            <i class="bi bi-search"></i>
+                        </span>
+                        <input type="text" name="q" value="{{ search_query }}" class="form-control border-start-0 ps-1" placeholder="Search by name, email, or phone..." aria-label="Search students">
+                    </div>
+                    <button type="submit" class="btn btn-primary rounded-pill px-3.5 fw-semibold">Search</button>
+                    {% if search_query %}
+                        <a href="{% url 'admin_students' %}" class="btn btn-outline-secondary rounded-pill px-3" title="Clear Search">
+                            <i class="bi bi-arrow-counterclockwise"></i>
+                        </a>
+                    {% endif %}
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Students Table Card -->
+    <div class="admin-card">
+        <div class="card-header bg-white py-3 px-4 border-bottom d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div class="fw-bold text-dark d-flex align-items-center gap-2">
+                <i class="bi bi-people-fill text-primary"></i>
+                <span>Registered Learners</span>
+                <span class="badge bg-light text-muted border rounded-pill">{{ students|length }} records</span>
+            </div>
+            <div class="text-muted small">
+                Data synchronized live from student profiles
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table admin-table mb-0 align-middle">
+                <thead>
+                    <tr>
+                        <th style="width: 80px;">ID</th>
+                        <th style="min-width: 220px;">Student Details</th>
+                        <th style="min-width: 220px;">Email & Contact</th>
+                        <th style="width: 150px;">Enrolled Courses</th>
+                        <th style="width: 140px;">Total Paid</th>
+                        <th style="width: 140px;">Joined Date</th>
+                        <th class="text-end" style="width: 140px;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for student in students %}
+                        <tr>
+                            <!-- Student ID -->
+                            <td>
+                                <span class="badge bg-light text-secondary border rounded-pill px-2 py-1">
+                                    #{{ student.student_id }}
+                                </span>
+                            </td>
+
+                            <!-- Student Name & Avatar -->
+                            <td>
+                                <div class="d-flex align-items-center gap-2.5">
+                                    <div class="rounded-circle d-inline-flex align-items-center justify-content-center text-white fw-bold shadow-sm" style="width: 38px; height: 38px; background: linear-gradient(135deg, #4f46e5, #06b6d4); font-size: 0.85rem; flex-shrink: 0;">
+                                        {{ student.first_name|first|upper }}{{ student.last_name|first|upper }}
+                                    </div>
+                                    <div class="min-w-0">
+                                        <div class="fw-bold text-dark fs-6 text-truncate">{{ student.first_name }} {{ student.last_name }}</div>
+                                        {% if student.address %}
+                                            <div class="text-muted small text-truncate" style="max-width: 180px; font-size: 0.78rem;">
+                                                <i class="bi bi-geo-alt me-0.5"></i>{{ student.address }}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </td>
+
+                            <!-- Email & Phone -->
+                            <td>
+                                <div class="d-flex align-items-center gap-1.5 text-dark fw-medium" style="font-size: 0.88rem;">
+                                    <i class="bi bi-envelope text-muted"></i>
+                                    <span>{{ student.email }}</span>
+                                </div>
+                                {% if student.phone %}
+                                    <div class="text-muted small mt-0.5" style="font-size: 0.78rem;">
+                                        <i class="bi bi-telephone me-1"></i>{{ student.phone }}
+                                    </div>
+                                {% endif %}
+                            </td>
+
+                            <!-- Enrolled Courses -->
+                            <td>
+                                <a href="{% url 'admin_enrollments' %}?q={{ student.email }}" class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill text-decoration-none px-2.5 py-1.5 fw-bold" title="View enrollments for this student">
+                                    <i class="bi bi-journal-check me-1"></i>{{ student.enrollments_count }} {{ student.enrollments_count|pluralize:"Course,Courses" }}
+                                </a>
+                            </td>
+
+                            <!-- Total Paid -->
+                            <td>
+                                <span class="fw-bold text-success fs-6">
+                                    ₹{{ student.paid_total|default:"0.00" }}
+                                </span>
+                            </td>
+
+                            <!-- Joined Date -->
+                            <td>
+                                <span class="text-muted small">
+                                    {{ student.enrollment_date|date:"d M, Y"|default:"—" }}
+                                </span>
+                            </td>
+
+                            <!-- Actions -->
+                            <td class="text-end">
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <a href="{% url 'admin_enrollments' %}?q={{ student.email }}" class="btn btn-outline-primary" title="View Course Enrollments">
+                                        <i class="bi bi-clipboard-check"></i>
+                                    </a>
+                                    <a href="{% url 'admin_payments' %}?q={{ student.email }}" class="btn btn-outline-secondary" title="View Payment Receipts">
+                                        <i class="bi bi-receipt"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center py-5 text-muted">
+                                <div class="fs-1 mb-2">🎓</div>
+                                <h5 class="fw-bold text-dark">No students found</h5>
+                                <p class="small mb-3">No student records match your current search query.</p>
+                                {% if search_query %}
+                                    <a href="{% url 'admin_students' %}" class="btn btn-outline-secondary btn-sm rounded-pill px-3">
+                                        <i class="bi bi-arrow-counterclockwise me-1"></i> Reset Search
+                                    </a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

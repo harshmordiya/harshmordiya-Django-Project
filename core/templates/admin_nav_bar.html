@@ -1,0 +1,47 @@
+{% load static %}
+<div class="admin-top-nav mb-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-center pb-3 border-bottom gap-2">
+        <div>
+            <div class="d-flex align-items-center gap-2">
+                <span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill px-2.5 py-1 fw-bold text-uppercase" style="font-size: 0.72rem;">
+                    🛡️ Administrator Portal
+                </span>
+                <span class="text-muted small">Logged in as <strong>{{ request.user.username }}</strong></span>
+            </div>
+            <h2 class="h3 fw-bold text-dark mt-1 mb-0">
+                EduLearn Management Center
+            </h2>
+        </div>
+
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+            <a href="{% url 'course_create' %}" class="btn btn-primary btn-sm rounded-pill px-3 shadow-sm" title="Add Course">
+                <i class="bi bi-plus-lg me-1"></i> Add Course
+            </a>
+            <a href="{% url 'home' %}" class="btn btn-outline-secondary btn-sm rounded-pill px-3" title="View Public Platform">
+                <i class="bi bi-globe me-1"></i> Public Site
+            </a>
+        </div>
+    </div>
+
+    <!-- Navigation Tabs / Pills Bar -->
+    <div class="nav nav-pills mt-3 flex-wrap gap-1 p-1 bg-white border rounded-pill shadow-sm" style="width: fit-content;">
+        <a class="nav-link rounded-pill px-3 py-1.5 fw-semibold {% if active_tab == 'dashboard' %}active bg-primary text-white{% else %}text-secondary{% endif %}" href="{% url 'admin_dashboard' %}">
+            <i class="bi bi-speedometer2 me-1"></i> Overview
+        </a>
+        <a class="nav-link rounded-pill px-3 py-1.5 fw-semibold {% if active_tab == 'students' %}active bg-primary text-white{% else %}text-secondary{% endif %}" href="{% url 'admin_students' %}">
+            <i class="bi bi-people-fill me-1"></i> Students
+        </a>
+        <a class="nav-link rounded-pill px-3 py-1.5 fw-semibold {% if active_tab == 'instructors' %}active bg-primary text-white{% else %}text-secondary{% endif %}" href="{% url 'admin_instructors' %}">
+            <i class="bi bi-person-workspace me-1"></i> Instructors
+        </a>
+        <a class="nav-link rounded-pill px-3 py-1.5 fw-semibold {% if active_tab == 'courses' %}active bg-primary text-white{% else %}text-secondary{% endif %}" href="{% url 'admin_courses' %}">
+            <i class="bi bi-journal-bookmark-fill me-1"></i> Courses
+        </a>
+        <a class="nav-link rounded-pill px-3 py-1.5 fw-semibold {% if active_tab == 'enrollments' %}active bg-primary text-white{% else %}text-secondary{% endif %}" href="{% url 'admin_enrollments' %}">
+            <i class="bi bi-clipboard-check-fill me-1"></i> Enrollments
+        </a>
+        <a class="nav-link rounded-pill px-3 py-1.5 fw-semibold {% if active_tab == 'payments' %}active bg-primary text-white{% else %}text-secondary{% endif %}" href="{% url 'admin_payments' %}">
+            <i class="bi bi-credit-card-2-front-fill me-1"></i> Payments & Revenue
+        </a>
+    </div>
+</div>

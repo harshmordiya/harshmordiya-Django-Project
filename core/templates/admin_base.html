@@ -1,0 +1,496 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}EduLearn Admin Portal{% endblock %}</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Bootstrap 5.3.3 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+    <style>
+        :root {
+            --admin-sidebar-bg: #0f172a;
+            --admin-sidebar-border: #1e293b;
+            --admin-sidebar-text: #94a3b8;
+            --admin-sidebar-text-hover: #ffffff;
+            --admin-primary: #4f46e5;
+            --admin-primary-hover: #4338ca;
+            --admin-primary-light: #eef2ff;
+            --admin-body-bg: #f8fafc;
+            --admin-card-bg: #ffffff;
+            --admin-border-color: #e2e8f0;
+            --admin-text-dark: #0f172a;
+            --admin-text-muted: #64748b;
+            --font-heading: 'Plus Jakarta Sans', system-ui, sans-serif;
+            --font-body: 'Inter', system-ui, sans-serif;
+        }
+
+        body {
+            font-family: var(--font-body);
+            background-color: var(--admin-body-bg);
+            color: var(--admin-text-dark);
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+        }
+
+        h1, h2, h3, h4, h5, h6 {
+            font-family: var(--font-heading);
+            font-weight: 700;
+        }
+
+        /* App Layout Shell */
+        .admin-layout-container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Sidebar Styling */
+        .admin-sidebar {
+            width: 270px;
+            background-color: var(--admin-sidebar-bg);
+            border-right: 1px solid var(--admin-sidebar-border);
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+            position: sticky;
+            top: 0;
+            height: 100vh;
+            overflow-y: auto;
+            z-index: 1030;
+            transition: all 0.25s ease-in-out;
+        }
+
+        .sidebar-brand-wrapper {
+            padding: 1.5rem 1.35rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid var(--admin-sidebar-border);
+        }
+
+        .sidebar-brand {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            text-decoration: none;
+            color: #ffffff;
+        }
+
+        .sidebar-brand-icon {
+            width: 38px;
+            height: 38px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #4f46e5, #818cf8);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+            color: #ffffff;
+            box-shadow: 0 4px 10px rgba(79, 70, 229, 0.35);
+        }
+
+        .sidebar-brand-title {
+            font-family: var(--font-heading);
+            font-size: 1.2rem;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            line-height: 1.1;
+        }
+
+        .sidebar-brand-tag {
+            font-size: 0.65rem;
+            font-weight: 700;
+            background: rgba(99, 102, 241, 0.25);
+            color: #a5b4fc;
+            padding: 0.15rem 0.45rem;
+            border-radius: 4px;
+            letter-spacing: 0.05em;
+        }
+
+        .sidebar-menu {
+            padding: 1.25rem 0.85rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.35rem;
+            flex-grow: 1;
+        }
+
+        .sidebar-section-title {
+            font-size: 0.72rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: #64748b;
+            padding: 0.65rem 0.75rem 0.25rem;
+            margin-top: 0.5rem;
+        }
+
+        .sidebar-nav-link {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 0.95rem;
+            color: var(--admin-sidebar-text);
+            text-decoration: none;
+            font-size: 0.92rem;
+            font-weight: 600;
+            border-radius: 10px;
+            transition: all 0.15s ease;
+        }
+
+        .sidebar-nav-link i {
+            font-size: 1.1rem;
+            width: 20px;
+            text-align: center;
+        }
+
+        .sidebar-nav-link:hover {
+            color: var(--admin-sidebar-text-hover);
+            background: rgba(255, 255, 255, 0.06);
+        }
+
+        .sidebar-nav-link.active {
+            color: #ffffff;
+            background: linear-gradient(135deg, #4f46e5, #4338ca);
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+        }
+
+        .sidebar-profile-card {
+            padding: 1.15rem 1.25rem;
+            border-top: 1px solid var(--admin-sidebar-border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(15, 23, 42, 0.6);
+        }
+
+        .sidebar-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #4f46e5, #06b6d4);
+            color: #ffffff;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.95rem;
+        }
+
+        /* Main Content Wrapper */
+        .admin-main-wrapper {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+        }
+
+        /* Top Bar */
+        .admin-topbar {
+            background: #ffffff;
+            border-bottom: 1px solid var(--admin-border-color);
+            padding: 0.85rem 1.75rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 1020;
+            box-shadow: 0 1px 3px rgba(15, 23, 42, 0.02);
+        }
+
+        .topbar-status-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
+            padding: 0.35rem 0.85rem;
+            border-radius: 9999px;
+            background: #ecfdf5;
+            color: #065f46;
+            border: 1px solid #a7f3d0;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .topbar-status-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background-color: #10b981;
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
+        }
+
+        /* Page Body Container */
+        .admin-content-container {
+            padding: 2rem 1.75rem 3rem;
+            flex-grow: 1;
+        }
+
+        /* SaaS Components: Cards, Tables, Buttons */
+        .admin-card {
+            background: var(--admin-card-bg);
+            border: 1px solid var(--admin-border-color);
+            border-radius: 1rem;
+            box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+            overflow: hidden;
+            transition: box-shadow 0.2s ease;
+        }
+
+        .admin-card:hover {
+            box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
+        }
+
+        .admin-table th {
+            background: #f8fafc;
+            color: #64748b;
+            font-size: 0.78rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            padding: 0.9rem 1.15rem;
+            border-bottom: 2px solid var(--admin-border-color);
+        }
+
+        .admin-table td {
+            padding: 0.95rem 1.15rem;
+            vertical-align: middle;
+            font-size: 0.92rem;
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        .btn-edu-primary {
+            background: linear-gradient(135deg, #4f46e5, #4338ca);
+            color: #ffffff;
+            border: none;
+            font-weight: 600;
+            border-radius: 9999px;
+            padding: 0.5rem 1.25rem;
+            box-shadow: 0 4px 10px rgba(79, 70, 229, 0.25);
+            transition: all 0.2s ease;
+        }
+
+        .btn-edu-primary:hover {
+            background: linear-gradient(135deg, #4338ca, #3730a3);
+            color: #ffffff;
+            transform: translateY(-1px);
+            box-shadow: 0 6px 14px rgba(79, 70, 229, 0.35);
+        }
+
+        /* Mobile Sidebar Overlay */
+        @media (max-width: 991.98px) {
+            .admin-sidebar {
+                position: fixed;
+                left: -270px;
+            }
+
+            .admin-sidebar.show {
+                left: 0;
+            }
+
+            .sidebar-backdrop {
+                display: none;
+                position: fixed;
+                inset: 0;
+                background: rgba(15, 23, 42, 0.6);
+                z-index: 1025;
+            }
+
+            .sidebar-backdrop.show {
+                display: block;
+            }
+        }
+    </style>
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+<div class="admin-layout-container">
+
+    <!-- Mobile Backdrop -->
+    <div class="sidebar-backdrop" id="sidebarBackdrop" onclick="toggleSidebar()"></div>
+
+    <!-- Admin SaaS Sidebar -->
+    <aside class="admin-sidebar" id="adminSidebar">
+        <!-- Brand Header -->
+        <div class="sidebar-brand-wrapper">
+            <a href="{% url 'admin_dashboard' %}" class="sidebar-brand">
+                <span class="sidebar-brand-icon">🎓</span>
+                <div>
+                    <div class="sidebar-brand-title">EduLearn</div>
+                    <span class="sidebar-brand-tag">ADMIN PORTAL</span>
+                </div>
+            </a>
+            <button class="btn btn-sm btn-link text-white-50 d-lg-none p-0" onclick="toggleSidebar()">
+                <i class="bi bi-x-lg fs-5"></i>
+            </button>
+        </div>
+
+        <!-- Sidebar Navigation -->
+        <nav class="sidebar-menu">
+            <div class="sidebar-section-title">Core Management</div>
+
+            <a href="{% url 'admin_dashboard' %}" class="sidebar-nav-link {% if active_tab == 'dashboard' %}active{% endif %}">
+                <i class="bi bi-speedometer2"></i>
+                <span>Overview</span>
+            </a>
+
+            <a href="{% url 'admin_students' %}" class="sidebar-nav-link {% if active_tab == 'students' %}active{% endif %}">
+                <i class="bi bi-people-fill"></i>
+                <span>Students Directory</span>
+            </a>
+
+            <a href="{% url 'admin_instructors' %}" class="sidebar-nav-link {% if active_tab == 'instructors' %}active{% endif %}">
+                <i class="bi bi-person-workspace"></i>
+                <span>Faculty & Instructors</span>
+            </a>
+
+            <a href="{% url 'admin_courses' %}" class="sidebar-nav-link {% if active_tab == 'courses' %}active{% endif %}">
+                <i class="bi bi-journal-bookmark-fill"></i>
+                <span>Course Catalog</span>
+            </a>
+
+            <a href="{% url 'admin_enrollments' %}" class="sidebar-nav-link {% if active_tab == 'enrollments' %}active{% endif %}">
+                <i class="bi bi-clipboard-check-fill"></i>
+                <span>Enrollment Records</span>
+            </a>
+
+            <a href="{% url 'admin_payments' %}" class="sidebar-nav-link {% if active_tab == 'payments' %}active{% endif %}">
+                <i class="bi bi-credit-card-2-front-fill"></i>
+                <span>Payments & Revenue</span>
+            </a>
+
+            <div class="sidebar-section-title">Platform Shortcuts</div>
+
+            <a href="{% url 'course_create' %}" class="sidebar-nav-link">
+                <i class="bi bi-plus-circle"></i>
+                <span>Create New Course</span>
+            </a>
+
+            <a href="{% url 'home' %}" class="sidebar-nav-link">
+                <i class="bi bi-globe"></i>
+                <span>View Public Site</span>
+            </a>
+
+            <a href="{% url 'dashboard' %}" class="sidebar-nav-link">
+                <i class="bi bi-person-bounding-box"></i>
+                <span>User Dashboard</span>
+            </a>
+        </nav>
+
+        <!-- Sidebar Profile Footer -->
+        <div class="sidebar-profile-card">
+            <div class="d-flex align-items-center gap-2.5">
+                <div class="sidebar-avatar">
+                    {{ request.user.username|first|upper }}
+                </div>
+                <div>
+                    <div class="text-white small fw-bold lh-1">{{ request.user.username }}</div>
+                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill px-2 py-0.5 mt-1" style="font-size: 0.65rem;">
+                        Admin
+                    </span>
+                </div>
+            </div>
+            <a href="{% url 'logout' %}" class="btn btn-sm btn-link text-white-50 p-1" title="Log Out">
+                <i class="bi bi-box-arrow-right fs-5"></i>
+            </a>
+        </div>
+    </aside>
+
+    <!-- Main Content Wrapper -->
+    <div class="admin-main-wrapper">
+
+        <!-- Compact Top Navigation Bar -->
+        <header class="admin-topbar">
+            <div class="d-flex align-items-center gap-3">
+                <button class="btn btn-outline-secondary btn-sm d-lg-none rounded-pill px-2.5" onclick="toggleSidebar()" aria-label="Toggle Navigation">
+                    <i class="bi bi-list fs-5"></i>
+                </button>
+                <div class="d-none d-sm-block">
+                    <div class="topbar-status-pill">
+                        <span class="topbar-status-dot"></span>
+                        <span>EduLearn Platform Live</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="d-flex align-items-center gap-2.5">
+                <a href="{% url 'course_create' %}" class="btn btn-edu-primary btn-sm d-none d-md-inline-flex align-items-center gap-1">
+                    <i class="bi bi-plus-lg"></i>
+                    <span>Add Course</span>
+                </a>
+
+                <div class="dropdown">
+                    <button class="btn btn-outline-secondary btn-sm rounded-pill px-3 py-1.5 d-flex align-items-center gap-2 dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <span class="d-inline-block rounded-circle bg-primary text-white text-center fw-bold" style="width: 22px; height: 22px; font-size: 0.75rem; line-height: 22px;">
+                            {{ request.user.username|first|upper }}
+                        </span>
+                        <span class="fw-semibold">{{ request.user.username }}</span>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end shadow-sm border rounded-3 mt-1">
+                        <li>
+                            <h6 class="dropdown-header">Signed in as <strong>{{ request.user.username }}</strong></h6>
+                        </li>
+                        <li><a class="dropdown-item" href="{% url 'dashboard' %}"><i class="bi bi-person me-2"></i>User Profile</a></li>
+                        <li><a class="dropdown-item" href="{% url 'home' %}"><i class="bi bi-globe me-2"></i>Public Platform</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item text-danger" href="{% url 'logout' %}"><i class="bi bi-box-arrow-right me-2"></i>Log Out</a></li>
+                    </ul>
+                </div>
+            </div>
+        </header>
+
+        <!-- Flash Messages Banner -->
+        {% if messages %}
+            <div class="px-4 pt-3 pb-0">
+                {% for message in messages %}
+                    <div class="alert {% if 'error' in message.tags %}alert-danger{% elif 'success' in message.tags %}alert-success{% elif 'warning' in message.tags %}alert-warning{% else %}alert-info{% endif %} alert-dismissible fade show rounded-3 shadow-sm border-0 d-flex align-items-center gap-2" role="alert">
+                        <span>
+                            {% if 'error' in message.tags %}⚠️
+                            {% elif 'success' in message.tags %}✅
+                            {% elif 'warning' in message.tags %}🔔
+                            {% else %}ℹ️{% endif %}
+                        </span>
+                        <div class="flex-grow-1">{{ message }}</div>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <!-- Body Content -->
+        <main class="admin-content-container">
+            {% block admin_content %}{% endblock %}
+        </main>
+
+        <!-- Compact SaaS Footer -->
+        <footer class="py-3 px-4 bg-white border-top text-center text-muted small">
+            <div>&copy; 2026 EduLearn Platform Operations &middot; All records synchronized live with Django database.</div>
+        </footer>
+    </div>
+</div>
+
+<!-- Bootstrap 5.3.3 JS Bundle -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    function toggleSidebar() {
+        const sidebar = document.getElementById('adminSidebar');
+        const backdrop = document.getElementById('sidebarBackdrop');
+        if (sidebar && backdrop) {
+            sidebar.classList.toggle('show');
+            backdrop.classList.toggle('show');
+        }
+    }
+</script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

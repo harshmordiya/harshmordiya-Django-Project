@@ -20,13 +20,17 @@ class AdminAdmin(admin.ModelAdmin):
 
 @admin.register(Student)
 class StudentAdmin(admin.ModelAdmin):
-    list_display = ("student_id", "first_name", "last_name", "email", "phone", "enrollment_date")
-    search_fields = ("first_name", "last_name", "email")
+    list_display = ("student_id", "full_name", "email", "phone", "enrolled_courses_count", "enrollment_date")
+    list_filter = ("enrollment_date",)
+    search_fields = ("first_name", "last_name", "email", "phone")
+    readonly_fields = ("enrollment_date",)
 
 @admin.register(Instructor)
 class InstructorAdmin(admin.ModelAdmin):
-    list_display = ("instructor_id", "first_name", "last_name", "email", "specialization")
-    search_fields = ("first_name", "last_name", "email", "specialization")
+    list_display = ("instructor_id", "full_name", "email", "phone", "specialization", "courses_count", "hire_date")
+    list_filter = ("specialization", "hire_date")
+    search_fields = ("first_name", "last_name", "email", "phone", "specialization")
+    readonly_fields = ("hire_date",)
 
 @admin.register(UserProfile)
 class UserProfileAdmin(admin.ModelAdmin):
