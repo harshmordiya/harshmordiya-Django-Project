@@ -25,8 +25,10 @@
             <ul class="nav-links">
                 <li><a href="{% url 'home' %}" class="nav-link {% if request.resolver_match.url_name == 'home' %}active{% endif %}">Home</a></li>
                 <li><a href="{% url 'course_list' %}" class="nav-link {% if request.resolver_match.url_name == 'course_list' %}active{% endif %}">Explore Courses</a></li>
+                <li><a href="{% url 'instructor_list' %}" class="nav-link {% if request.resolver_match.url_name == 'instructor_list' %}active{% endif %}">Instructors</a></li>
+                <li><a href="{% url 'student_list' %}" class="nav-link {% if request.resolver_match.url_name == 'student_list' %}active{% endif %}">Students</a></li>
                 {% if user.is_authenticated and nav_user_role == 'instructor' %}
-                    <li><a href="{% url 'instructor_courses' %}" class="nav-link {% if 'instructor' in request.resolver_match.url_name %}active{% endif %}">Instructor Portal</a></li>
+                    <li><a href="{% url 'instructor_courses' %}" class="nav-link {% if 'instructor' in request.resolver_match.url_name and request.resolver_match.url_name != 'instructor_list' %}active{% endif %}">Instructor Portal</a></li>
                 {% endif %}
                 {% if user.is_authenticated and nav_user_role == 'admin' %}
                     <li><a href="{% url 'admin_dashboard' %}" class="nav-link {% if 'admin' in request.resolver_match.url_name %}active{% endif %}">Admin Dashboard</a></li>
@@ -114,8 +116,9 @@
                 <ul class="footer-links">
                     <li><a href="{% url 'home' %}">Home</a></li>
                     <li><a href="{% url 'course_list' %}">All Courses</a></li>
-                    <li><a href="{% url 'course_list' %}?category=programming">Programming</a></li>
-                    <li><a href="{% url 'course_list' %}?category=web_development">Web Development</a></li>
+                    <li><a href="{% url 'instructor_list' %}">Instructors</a></li>
+                    <li><a href="{% url 'student_list' %}">Students</a></li>
+                    <li><a href="{% url 'directory' %}">Directory</a></li>
                 </ul>
             </div>
 

@@ -460,3 +460,110 @@ class StudentAndInstructorModelTests(TestCase):
         self.assertEqual(student_obj.full_name, "Grace Hopper")
         self.assertTrue(Student.objects.filter(email="healed@edulearn.com").exists())
 
+
+class StudentAndInstructorListDirectoryViewsTests(TestCase):
+    """
+    Test suite verifying public / directory views listing all registered
+    students and instructors.
+    """
+
+    def setUp(self):
+        self.instructor1 = Instructor.objects.create(
+            first_name="Marie",
+            last_name="Curie",
+            email="marie.curie@edulearn.com",
+            phone="9876543210",
+            specialization="Physics",
+        )
+        self.instructor2 = Instructor.objects.create(
+            first_name="Albert",
+            last_name="Einstein",
+            email="albert.einstein@edulearn.com",
+            phone="9876543211",
+            specialization="Theoretical Physics",
+        )
+        self.student1 = Student.objects.create(
+            first_name="Isaac",
+            last_name="Newton",
+            email="isaac.newton@edulearn.com",
+            phone="9123456780",
+            address="Cambridge",
+        )
+        self.student2 = Student.objects.create(
+            first_name="Galileo",
+            last_name="Galilei",
+            email="galileo@edulearn.com",
+            phone="9123456781",
+            address="Pisa",
+        )
+        self.course = Course.objects.create(
+            title="General Relativity",
+            category="programming",
+            price=Decimal("899.00"),
+            description="Deep dive into modern physics.",
+            duration="10 weeks",
+            instructor=self.instructor2,
+        )
+        self.enrollment = Enrollment.objects.create(
+            student=self.student1,
+            course=self.course,
+            status="active",
+        )
+
+    def test_instructor_list_view_renders_all_instructors(self):
+        """instructor_list view returns 200, uses template, and displays all instructors."""
+        response = self.client.get(reverse("instructor_list"))
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "instructor_list.html")
+        self.assertContains(response, "Marie Curie")
+        self.assertContains(response, "Albert Einstein")
+        self.assertContains(response, "Theoretical Physics")
+
+    def test_instructor_list_view_search_and_filter(self):
+        """instructor_list search filters by name or specialization."""
+        # Search by query
+        response = self.client.get(reverse("instructor_list") + "?q=Curie")
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Marie Curie")
+        self.assertNotContains(response, "Albert Einstein")
+
+        # Filter by specialization
+        response_spec = self.client.get(reverse("instructor_list") + "?specialization=Physics")
+        self.assertEqual(response_spec.status_code, 200)
+        self.assertContains(response_spec, "Marie Curie")
+
+    def test_student_list_view_renders_all_students(self):
+        """student_list view returns 200, uses template, and displays all students."""
+        response = self.client.get(reverse("student_list"))
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "student_list.html")
+        self.assertContains(response, "Isaac Newton")
+        self.assertContains(response, "Galileo Galilei")
+        self.assertContains(response, "Cambridge")
+
+    def test_student_list_view_search(self):
+        """student_list search filters by student name."""
+        response = self.client.get(reverse("student_list") + "?q=Isaac")
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Isaac Newton")
+        self.assertNotContains(response, "Galileo Galilei")
+
+    def test_directory_view_renders_both_and_supports_tabs(self):
+        """directory view returns 200 and supports all/instructors/students tabs."""
+        # All members tab
+        resp_all = self.client.get(reverse("directory"))
+        self.assertEqual(resp_all.status_code, 200)
+        self.assertTemplateUsed(resp_all, "directory.html")
+        self.assertContains(resp_all, "Marie Curie")
+        self.assertContains(resp_all, "Isaac Newton")
+
+        # Instructors tab
+        resp_inst = self.client.get(reverse("directory") + "?tab=instructors")
+        self.assertEqual(resp_inst.status_code, 200)
+        self.assertContains(resp_inst, "Marie Curie")
+
+        # Students tab
+        resp_stud = self.client.get(reverse("directory") + "?tab=students")
+        self.assertEqual(resp_stud.status_code, 200)
+        self.assertContains(resp_stud, "Isaac Newton")
+

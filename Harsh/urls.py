@@ -42,6 +42,11 @@ urlpatterns = [
     path("courses/", views.course_list_view, name="course_list"),
     path("courses/<int:course_id>/", views.course_detail_view, name="course_detail"),
 
+    # Members & Community Directories (Students & Faculty)
+    path("instructors/", views.instructor_list_view, name="instructor_list"),
+    path("students/", views.student_list_view, name="student_list"),
+    path("directory/", views.directory_view, name="directory"),
+
     # Course Creation Routes (Instructor/Staff)
     path("courses/create/", views.course_create_view, name="course_create"),
     path("courses/add/", views.course_add_view, name="course_add"),

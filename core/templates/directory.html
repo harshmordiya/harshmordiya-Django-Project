@@ -1,0 +1,547 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}EduLearn Members Directory - Students & Instructors{% endblock %}
+
+{% block extra_css %}
+<style>
+/* Summary Strip */
+.summary-strip {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1.25rem;
+    margin-bottom: 2.25rem;
+}
+.summary-card {
+    background: var(--white);
+    border: 1px solid var(--slate-200);
+    border-radius: var(--radius-lg);
+    padding: 1.35rem 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: var(--shadow-sm);
+    transition: var(--transition);
+}
+.summary-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+    border-color: #cbd5e1;
+}
+.summary-card-val {
+    font-size: 1.85rem;
+    font-weight: 800;
+    line-height: 1.1;
+    font-family: var(--font-heading);
+}
+.summary-card-lbl {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--slate-500);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 0.25rem;
+}
+.summary-icon-bubble {
+    width: 52px;
+    height: 52px;
+    border-radius: var(--radius-full);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    flex-shrink: 0;
+}
+
+/* Tab Switcher */
+.tab-pills {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+.tab-pill {
+    padding: 0.5rem 1.25rem;
+    border-radius: var(--radius-full);
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--slate-600);
+    background: var(--white);
+    border: 1px solid var(--slate-200);
+    transition: var(--transition);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+.tab-pill:hover {
+    color: var(--primary);
+    border-color: var(--primary);
+    background: var(--primary-light);
+    text-decoration: none;
+}
+.tab-pill.active {
+    background: var(--primary);
+    color: var(--white);
+    border-color: var(--primary);
+}
+
+/* Directory Section Header */
+.directory-section-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-top: 2rem;
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 2px solid var(--slate-100);
+}
+.directory-section-title-wrap {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+.directory-section-title {
+    font-size: 1.35rem;
+    font-weight: 800;
+    color: var(--slate-900);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0;
+}
+.directory-section-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.15rem;
+}
+.directory-count-badge {
+    padding: 0.25rem 0.65rem;
+    border-radius: var(--radius-full);
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
+/* Grid & Cards */
+.member-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1.75rem;
+    margin-bottom: 2.5rem;
+}
+.member-card {
+    background: var(--white);
+    border: 1px solid var(--slate-200);
+    border-radius: var(--radius-xl);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    transition: var(--transition);
+    box-shadow: var(--shadow-sm);
+}
+.member-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-lg);
+    border-color: #cbd5e1;
+}
+.member-card-header {
+    height: 100px;
+    background: linear-gradient(135deg, var(--primary) 0%, #06b6d4 100%);
+    position: relative;
+    padding: 1rem;
+}
+.member-card-header::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: radial-gradient(rgba(255, 255, 255, 0.18) 1px, transparent 1px);
+    background-size: 10px 10px;
+    pointer-events: none;
+}
+.member-avatar {
+    width: 68px;
+    height: 68px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #1e1b4b, var(--primary));
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+    font-weight: 800;
+    border: 3px solid var(--white);
+    box-shadow: var(--shadow-md);
+    position: absolute;
+    bottom: -34px;
+    left: 1.5rem;
+}
+.member-card-header-student {
+    height: 100px;
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    position: relative;
+    padding: 1rem;
+}
+.member-card-header-student::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: radial-gradient(rgba(255, 255, 255, 0.18) 1px, transparent 1px);
+    background-size: 10px 10px;
+    pointer-events: none;
+}
+.member-avatar-student {
+    width: 68px;
+    height: 68px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #065f46, #10b981);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+    font-weight: 800;
+    border: 3px solid var(--white);
+    box-shadow: var(--shadow-md);
+    position: absolute;
+    bottom: -34px;
+    left: 1.5rem;
+}
+.member-card-body {
+    padding: 2.5rem 1.5rem 1.5rem;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+.member-name {
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: var(--slate-900);
+    margin-bottom: 0.35rem;
+    font-family: var(--font-heading);
+}
+.member-badge {
+    display: inline-block;
+    padding: 0.25rem 0.65rem;
+    border-radius: var(--radius-full);
+    font-size: 0.75rem;
+    font-weight: 700;
+    background: var(--primary-light);
+    color: var(--primary-dark);
+    margin-bottom: 0.85rem;
+    align-self: flex-start;
+}
+.member-badge-student {
+    display: inline-block;
+    padding: 0.25rem 0.65rem;
+    border-radius: var(--radius-full);
+    font-size: 0.75rem;
+    font-weight: 700;
+    background: #ecfdf5;
+    color: #065f46;
+    margin-bottom: 0.85rem;
+    align-self: flex-start;
+}
+.member-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    font-size: 0.88rem;
+    color: var(--slate-600);
+    margin-bottom: 1.25rem;
+    flex: 1;
+}
+.member-meta-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    word-break: break-all;
+}
+.member-stats-row {
+    display: flex;
+    gap: 0.75rem;
+    background: var(--slate-50);
+    border: 1px solid var(--slate-100);
+    border-radius: var(--radius-md);
+    padding: 0.65rem 0.85rem;
+    margin-bottom: 1.25rem;
+}
+.member-stat-box {
+    flex: 1;
+    text-align: center;
+}
+.member-stat-val {
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: var(--slate-900);
+    line-height: 1.2;
+}
+.member-stat-lbl {
+    font-size: 0.72rem;
+    color: var(--slate-500);
+    text-transform: uppercase;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+
+    <!-- Header Section -->
+    <div class="section-header" style="margin-bottom: 2rem;">
+        <span class="section-tag">Community Hub</span>
+        <h1 class="section-title">EduLearn Members Directory</h1>
+        <p class="section-desc">Explore registered academic faculty, expert mentors, and enrolled learners across our learning platform.</p>
+    </div>
+
+    <!-- Hub Switcher Links -->
+    <div style="display: flex; justify-content: center; gap: 0.75rem; margin-bottom: 1.75rem; flex-wrap: wrap;">
+        <a href="{% url 'instructor_list' %}" class="btn btn-outline btn-sm">
+            👨‍🏫 Instructors Only &rarr;
+        </a>
+        <a href="{% url 'student_list' %}" class="btn btn-outline btn-sm">
+            🎓 Students Only &rarr;
+        </a>
+    </div>
+
+    <!-- Quick KPI Summary Strip -->
+    <div class="summary-strip">
+        <div class="summary-card">
+            <div>
+                <div class="summary-card-lbl">Faculty & Instructors</div>
+                <div class="summary-card-val" style="color: var(--primary);">{{ total_instructors }}</div>
+            </div>
+            <div class="summary-icon-bubble" style="background: var(--primary-light); color: var(--primary);">
+                👨‍🏫
+            </div>
+        </div>
+
+        <div class="summary-card">
+            <div>
+                <div class="summary-card-lbl">Registered Students</div>
+                <div class="summary-card-val" style="color: var(--success);">{{ total_students }}</div>
+            </div>
+            <div class="summary-icon-bubble" style="background: var(--success-light); color: var(--success);">
+                🎓
+            </div>
+        </div>
+
+        <div class="summary-card">
+            <div>
+                <div class="summary-card-lbl">Active Courses</div>
+                <div class="summary-card-val" style="color: var(--slate-800);">{{ total_courses }}</div>
+            </div>
+            <div class="summary-icon-bubble" style="background: #e0f2fe; color: #0284c7;">
+                📚
+            </div>
+        </div>
+    </div>
+
+    <!-- Navigation Tab Switcher -->
+    <div class="tab-pills">
+        <a href="{% url 'directory' %}?tab=all{% if search_query %}&q={{ search_query|urlencode }}{% endif %}" class="tab-pill {% if active_tab == 'all' %}active{% endif %}">
+            👥 All Members ({{ instructors|length|add:students|length }})
+        </a>
+        <a href="{% url 'directory' %}?tab=instructors{% if search_query %}&q={{ search_query|urlencode }}{% endif %}" class="tab-pill {% if active_tab == 'instructors' %}active{% endif %}">
+            👨‍🏫 Instructors ({{ instructors|length }})
+        </a>
+        <a href="{% url 'directory' %}?tab=students{% if search_query %}&q={{ search_query|urlencode }}{% endif %}" class="tab-pill {% if active_tab == 'students' %}active{% endif %}">
+            🎓 Students ({{ students|length }})
+        </a>
+    </div>
+
+    <!-- Search & Filter Bar -->
+    <div class="filter-bar">
+        <form method="get" class="search-form">
+            <input type="hidden" name="tab" value="{{ active_tab }}">
+            <div class="search-input-wrap">
+                <span class="search-icon-inside">🔍</span>
+                <input
+                    type="text"
+                    name="q"
+                    placeholder="Search members by name, email, or domain..."
+                    value="{{ search_query }}"
+                >
+            </div>
+            <button type="submit" class="btn btn-primary">Search</button>
+            {% if search_query %}
+                <a href="{% url 'directory' %}?tab={{ active_tab }}" class="btn btn-secondary">Clear Search</a>
+            {% endif %}
+        </form>
+    </div>
+
+    <!-- Section 1: Instructors List (Shown if tab == 'all' or 'instructors') -->
+    {% if active_tab == 'all' or active_tab == 'instructors' %}
+        <div style="margin-bottom: 3rem;">
+            <div class="directory-section-heading">
+                <div class="directory-section-title-wrap">
+                    <h2 class="directory-section-title">
+                        <span class="directory-section-icon" style="background: var(--primary-light); color: var(--primary);">👨‍🏫</span>
+                        Registered Instructors
+                    </h2>
+                    <span class="directory-count-badge" style="background: var(--primary-light); color: var(--primary-dark);">
+                        {{ instructors|length }} Found
+                    </span>
+                </div>
+                <a href="{% url 'instructor_list' %}" class="btn btn-outline btn-sm">
+                    View Dedicated Page &rarr;
+                </a>
+            </div>
+
+            {% if instructors %}
+                <div class="member-grid">
+                    {% for inst in instructors %}
+                        <div class="member-card">
+                            <!-- Top Gradient Header -->
+                            <div class="member-card-header">
+                                <div class="member-avatar">
+                                    {{ inst.first_name|first|upper }}{{ inst.last_name|first|upper }}
+                                </div>
+                            </div>
+
+                            <!-- Card Body -->
+                            <div class="member-card-body">
+                                <h3 class="member-name">{{ inst.full_name }}</h3>
+                                <span class="member-badge">
+                                    ✨ {{ inst.specialization|default:"Instructor" }}
+                                </span>
+
+                                <div class="member-meta">
+                                    <div class="member-meta-item">
+                                        <span>📧</span>
+                                        <span title="{{ inst.email }}">{{ inst.email }}</span>
+                                    </div>
+                                    {% if inst.phone %}
+                                        <div class="member-meta-item">
+                                            <span>📞</span>
+                                            <span>{{ inst.phone }}</span>
+                                        </div>
+                                    {% endif %}
+                                </div>
+
+                                <!-- Statistics Row -->
+                                <div class="member-stats-row">
+                                    <div class="member-stat-box">
+                                        <div class="member-stat-val">{{ inst.courses_count }}</div>
+                                        <div class="member-stat-lbl">Courses</div>
+                                    </div>
+                                    <div class="member-stat-box">
+                                        <div class="member-stat-val" style="color: var(--success);">{{ inst.students_count }}</div>
+                                        <div class="member-stat-lbl">Learners</div>
+                                    </div>
+                                </div>
+
+                                <!-- Action Button -->
+                                <a href="{% url 'course_list' %}?q={{ inst.first_name }}" class="btn btn-outline btn-sm" style="width: 100%;">
+                                    📚 View Courses
+                                </a>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="empty-state">
+                    <div class="empty-state-icon">👨‍🏫</div>
+                    <h3 style="font-size: 1.25rem; color: var(--slate-900); margin-bottom: 0.5rem;">No Instructors Found</h3>
+                    <p style="color: var(--slate-500); max-width: 420px; margin: 0 auto; font-size: 0.92rem;">
+                        No instructors match your current search criteria.
+                    </p>
+                </div>
+            {% endif %}
+        </div>
+    {% endif %}
+
+    <!-- Section 2: Students List (Shown if tab == 'all' or 'students') -->
+    {% if active_tab == 'all' or active_tab == 'students' %}
+        <div style="margin-bottom: 3rem;">
+            <div class="directory-section-heading">
+                <div class="directory-section-title-wrap">
+                    <h2 class="directory-section-title">
+                        <span class="directory-section-icon" style="background: #ecfdf5; color: #065f46;">🎓</span>
+                        Registered Students
+                    </h2>
+                    <span class="directory-count-badge" style="background: #ecfdf5; color: #065f46;">
+                        {{ students|length }} Found
+                    </span>
+                </div>
+                <a href="{% url 'student_list' %}" class="btn btn-outline btn-sm">
+                    View Dedicated Page &rarr;
+                </a>
+            </div>
+
+            {% if students %}
+                <div class="member-grid">
+                    {% for st in students %}
+                        <div class="member-card">
+                            <!-- Top Green Gradient Header -->
+                            <div class="member-card-header-student">
+                                <div class="member-avatar-student">
+                                    {{ st.first_name|first|upper }}{{ st.last_name|first|upper }}
+                                </div>
+                            </div>
+
+                            <!-- Card Body -->
+                            <div class="member-card-body">
+                                <h3 class="member-name">{{ st.full_name }}</h3>
+                                <span class="member-badge-student">
+                                    🎓 Student #{{ st.student_id }}
+                                </span>
+
+                                <div class="member-meta">
+                                    <div class="member-meta-item">
+                                        <span>📧</span>
+                                        <span title="{{ st.email }}">{{ st.email }}</span>
+                                    </div>
+                                    {% if st.phone %}
+                                        <div class="member-meta-item">
+                                            <span>📞</span>
+                                            <span>{{ st.phone }}</span>
+                                        </div>
+                                    {% endif %}
+                                    {% if st.address %}
+                                        <div class="member-meta-item">
+                                            <span>📍</span>
+                                            <span>{{ st.address }}</span>
+                                        </div>
+                                    {% endif %}
+                                </div>
+
+                                <!-- Statistics Row -->
+                                <div class="member-stats-row">
+                                    <div class="member-stat-box">
+                                        <div class="member-stat-val" style="color: var(--primary);">{{ st.enrollments_count }}</div>
+                                        <div class="member-stat-lbl">Enrolled</div>
+                                    </div>
+                                    <div class="member-stat-box">
+                                        <div class="member-stat-val" style="font-size: 0.92rem; padding-top: 0.2rem;">
+                                            {{ st.enrollment_date|date:"M Y"|default:"Recently" }}
+                                        </div>
+                                        <div class="member-stat-lbl">Joined</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="empty-state">
+                    <div class="empty-state-icon">🎓</div>
+                    <h3 style="font-size: 1.25rem; color: var(--slate-900); margin-bottom: 0.5rem;">No Students Found</h3>
+                    <p style="color: var(--slate-500); max-width: 420px; margin: 0 auto; font-size: 0.92rem;">
+                        No students match your current search criteria.
+                    </p>
+                </div>
+            {% endif %}
+        </div>
+    {% endif %}
+
+</div>
+{% endblock %}

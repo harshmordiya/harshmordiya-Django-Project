@@ -510,7 +510,7 @@ def course_detail_view(request, course_id):
                 if instructor and (course.instructor == instructor or course.instructor is None):
                     is_course_manager = True
 
-        student = Student.objects.filter(email=request.user.email).first()
+        student = get_student_for_user(request.user)
         if student:
             is_enrolled = Enrollment.objects.filter(student=student, course=course, status__in=["active", "completed"]).exists()
 
@@ -530,6 +530,149 @@ def course_detail_view(request, course_id):
             "is_course_manager": is_course_manager,
         }
     )
+
+
+def instructor_list_view(request):
+    """
+    Public / platform view listing all registered instructors and faculty members.
+    Displays faculty profiles, specializations, authored courses, and student reach.
+    """
+    q = request.GET.get("q", "").strip()
+    specialization_filter = request.GET.get("specialization", "").strip()
+
+    instructors_qs = Instructor.objects.annotate(
+        courses_count=Count("course", distinct=True),
+        students_count=Count(
+            "course__enrollments",
+            filter=Q(course__enrollments__status__in=["active", "completed"]),
+            distinct=True
+        )
+    ).order_by("-hire_date")
+
+    if q:
+        instructors_qs = instructors_qs.filter(
+            Q(first_name__icontains=q) |
+            Q(last_name__icontains=q) |
+            Q(email__icontains=q) |
+            Q(specialization__icontains=q)
+        )
+
+    if specialization_filter:
+        instructors_qs = instructors_qs.filter(specialization__iexact=specialization_filter)
+
+    # Distinct specializations for filter pills
+    specializations = (
+        Instructor.objects.exclude(specialization="")
+        .values_list("specialization", flat=True)
+        .distinct()
+        .order_by("specialization")
+    )
+
+    paginator = Paginator(instructors_qs, 12)
+    page_number = request.GET.get("page")
+    page_obj = paginator.get_page(page_number)
+
+    context = {
+        "instructors": page_obj,
+        "page_obj": page_obj,
+        "total_instructors": instructors_qs.count(),
+        "search_query": q,
+        "specialization_filter": specialization_filter,
+        "specializations": specializations,
+        "active_tab": "instructors",
+    }
+    return render(request, "instructor_list.html", context)
+
+
+def student_list_view(request):
+    """
+    Platform view listing all registered students in the EduLearn community.
+    Displays student profiles, joined dates, and active learning enrollments.
+    """
+    q = request.GET.get("q", "").strip()
+
+    students_qs = Student.objects.annotate(
+        enrollments_count=Count(
+            "enrollments",
+            filter=Q(enrollments__status__in=["active", "completed"]),
+            distinct=True
+        )
+    ).order_by("-enrollment_date")
+
+    if q:
+        students_qs = students_qs.filter(
+            Q(first_name__icontains=q) |
+            Q(last_name__icontains=q) |
+            Q(email__icontains=q) |
+            Q(phone__icontains=q) |
+            Q(address__icontains=q)
+        )
+
+    paginator = Paginator(students_qs, 12)
+    page_number = request.GET.get("page")
+    page_obj = paginator.get_page(page_number)
+
+    context = {
+        "students": page_obj,
+        "page_obj": page_obj,
+        "total_students": students_qs.count(),
+        "search_query": q,
+        "active_tab": "students",
+    }
+    return render(request, "student_list.html", context)
+
+
+def directory_view(request):
+    """
+    Unified directory view listing all registered students and instructors.
+    Provides tabbed navigation, live platform counts, and search across members.
+    """
+    q = request.GET.get("q", "").strip()
+    active_tab = request.GET.get("tab", "all").strip().lower()
+    if active_tab not in ["all", "instructors", "students"]:
+        active_tab = "all"
+
+    instructors_qs = Instructor.objects.annotate(
+        courses_count=Count("course", distinct=True),
+        students_count=Count(
+            "course__enrollments",
+            filter=Q(course__enrollments__status__in=["active", "completed"]),
+            distinct=True
+        )
+    ).order_by("-hire_date")
+
+    students_qs = Student.objects.annotate(
+        enrollments_count=Count(
+            "enrollments",
+            filter=Q(enrollments__status__in=["active", "completed"]),
+            distinct=True
+        )
+    ).order_by("-enrollment_date")
+
+    if q:
+        instructors_qs = instructors_qs.filter(
+            Q(first_name__icontains=q) |
+            Q(last_name__icontains=q) |
+            Q(email__icontains=q) |
+            Q(specialization__icontains=q)
+        )
+        students_qs = students_qs.filter(
+            Q(first_name__icontains=q) |
+            Q(last_name__icontains=q) |
+            Q(email__icontains=q) |
+            Q(phone__icontains=q)
+        )
+
+    context = {
+        "instructors": instructors_qs,
+        "students": students_qs,
+        "total_instructors": Instructor.objects.count(),
+        "total_students": Student.objects.count(),
+        "total_courses": Course.objects.filter(is_active=True).count(),
+        "search_query": q,
+        "active_tab": active_tab,
+    }
+    return render(request, "directory.html", context)
 
 @login_required
 def add_to_cart(request, course_id):
