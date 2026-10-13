@@ -257,43 +257,43 @@ class CourseContentForm(forms.ModelForm):
         ]
         widgets = {
             "title": forms.TextInput(attrs={
-                "class": "form-input",
+                "class": "form-control form-input",
                 "placeholder": "e.g. Lesson 1: Introduction & Setup",
             }),
             "content_type": forms.Select(attrs={
                 "class": "form-select",
             }),
             "order": forms.NumberInput(attrs={
-                "class": "form-input",
+                "class": "form-control form-input",
                 "min": "1",
                 "placeholder": "1",
             }),
             "duration": forms.TextInput(attrs={
-                "class": "form-input",
+                "class": "form-control form-input",
                 "placeholder": "e.g. 15 mins",
             }),
             "is_free_preview": forms.CheckboxInput(attrs={
-                "class": "form-checkbox",
+                "class": "form-check-input form-checkbox",
             }),
             "video_url": forms.URLInput(attrs={
-                "class": "form-input",
+                "class": "form-control form-input",
                 "placeholder": "https://www.youtube.com/watch?v=... or Vimeo / lecture link",
             }),
             "notes_file": forms.ClearableFileInput(attrs={
-                "class": "form-input",
+                "class": "form-control form-input",
                 "accept": ".pdf,.docx,.txt,.pptx",
             }),
             "file_url": forms.URLInput(attrs={
-                "class": "form-input",
+                "class": "form-control form-input",
                 "placeholder": "https://... link to external study notes, slides, or PDF",
             }),
             "description": forms.Textarea(attrs={
-                "class": "form-textarea",
+                "class": "form-control form-textarea",
                 "rows": 3,
                 "placeholder": "Brief summary of what this lesson covers...",
             }),
             "text_content": forms.Textarea(attrs={
-                "class": "form-textarea",
+                "class": "form-control form-textarea",
                 "rows": 6,
                 "placeholder": "Full lecture notes, code snippets, or reading text...",
             }),

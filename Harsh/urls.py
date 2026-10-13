@@ -75,6 +75,7 @@ urlpatterns = [
     path("courses/<int:course_id>/upload-material/", views.course_content_add_view, name="course_upload_material"),
     path("courses/content/<int:content_id>/edit/", views.course_content_edit_view, name="course_content_edit"),
     path("courses/content/<int:content_id>/delete/", views.course_content_delete_view, name="course_content_delete"),
+    path("courses/content/<int:content_id>/reorder/<str:direction>/", views.course_content_reorder_view, name="course_content_reorder"),
 ]
 
 # Serve user-uploaded media files in development

@@ -1039,6 +1039,12 @@ def course_content_manage_view(request, course_id):
         return redirect("instructor_courses")
 
     contents = course.contents.all().order_by("order", "content_id")
+    total_lessons = contents.count()
+    video_count = contents.filter(content_type="video").count()
+    document_count = contents.filter(content_type="document").count()
+    preview_count = contents.filter(is_free_preview=True).count()
+    notes_count = contents.filter(notes_file__isnull=False).exclude(notes_file="").count()
+
     return render(
         request,
         "course_content_manage.html",
@@ -1046,6 +1052,11 @@ def course_content_manage_view(request, course_id):
             "course": course,
             "contents": contents,
             "instructor": course.instructor or instructor,
+            "total_lessons": total_lessons,
+            "video_count": video_count,
+            "document_count": document_count,
+            "preview_count": preview_count,
+            "notes_count": notes_count,
         }
     )
 
@@ -1152,6 +1163,45 @@ def course_content_delete_view(request, content_id):
             "content": content,
         }
     )
+
+
+@login_required
+def course_content_reorder_view(request, content_id, direction):
+    """
+    Reorder lesson sequence up or down within a course syllabus.
+    """
+    content = get_object_or_404(CourseContent, content_id=content_id)
+    course = content.course
+    allowed, instructor = can_manage_course(request.user, course)
+    if not allowed:
+        messages.error(request, "Unauthorized: You can only reorder lessons for your own courses.")
+        return redirect("instructor_courses")
+
+    items = list(course.contents.all().order_by("order", "content_id"))
+    for idx, item in enumerate(items, start=1):
+        if item.order != idx:
+            item.order = idx
+            item.save(update_fields=["order"])
+
+    try:
+        current_index = [item.content_id for item in items].index(content.content_id)
+    except ValueError:
+        return redirect("course_content_manage", course_id=course.course_id)
+
+    if direction == "up" and current_index > 0:
+        prev_item = items[current_index - 1]
+        prev_item.order, content.order = content.order, prev_item.order
+        prev_item.save(update_fields=["order"])
+        content.save(update_fields=["order"])
+        messages.success(request, f'Lesson "{content.title}" moved up.')
+    elif direction == "down" and current_index < len(items) - 1:
+        next_item = items[current_index + 1]
+        next_item.order, content.order = content.order, next_item.order
+        next_item.save(update_fields=["order"])
+        content.save(update_fields=["order"])
+        messages.success(request, f'Lesson "{content.title}" moved down.')
+
+    return redirect("course_content_manage", course_id=course.course_id)
 
 
 # Upload notes & video URL view aliases
