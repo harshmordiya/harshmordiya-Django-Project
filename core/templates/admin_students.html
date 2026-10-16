@@ -23,19 +23,34 @@
         </div>
     </div>
 
-    <!-- Search Toolbar Card -->
+    <!-- Search & Status Filter Toolbar Card -->
     <div class="admin-card p-3.5 mb-4">
         <div class="row align-items-center justify-content-between g-3">
-            <div class="col-md-5">
-                <div class="d-flex align-items-center gap-2 text-muted small">
-                    <i class="bi bi-info-circle text-primary"></i>
-                    <span>Search students by full name, email address, or contact phone number.</span>
+            <!-- Status Filter Pills -->
+            <div class="col-lg-6">
+                <div class="d-flex align-items-center gap-1.5 flex-wrap">
+                    <span class="text-muted small fw-semibold me-1">Filter:</span>
+                    <a href="{% url 'admin_students' %}{% if search_query %}?q={{ search_query }}{% endif %}" 
+                       class="btn btn-sm rounded-pill px-3 fw-semibold {% if status_filter == 'all' %}btn-primary{% else %}btn-outline-secondary border-0 bg-light text-secondary{% endif %}">
+                        All Students
+                    </a>
+                    <a href="{% url 'admin_students' %}?status=active{% if search_query %}&q={{ search_query }}{% endif %}" 
+                       class="btn btn-sm rounded-pill px-3 fw-semibold {% if status_filter == 'active' %}btn-success{% else %}btn-outline-secondary border-0 bg-light text-secondary{% endif %}">
+                        <i class="bi bi-check-circle-fill me-1"></i> Active
+                    </a>
+                    <a href="{% url 'admin_students' %}?status=inactive{% if search_query %}&q={{ search_query }}{% endif %}" 
+                       class="btn btn-sm rounded-pill px-3 fw-semibold {% if status_filter == 'inactive' %}btn-secondary{% else %}btn-outline-secondary border-0 bg-light text-secondary{% endif %}">
+                        <i class="bi bi-person-slash me-1"></i> Deactivated
+                    </a>
                 </div>
             </div>
 
             <!-- Search Form -->
-            <div class="col-md-7 col-lg-6">
+            <div class="col-lg-6 col-xl-5">
                 <form method="get" class="d-flex gap-2">
+                    {% if status_filter != 'all' %}
+                        <input type="hidden" name="status" value="{{ status_filter }}">
+                    {% endif %}
                     <div class="input-group">
                         <span class="input-group-text bg-white border-end-0 text-muted ps-3">
                             <i class="bi bi-search"></i>
@@ -43,8 +58,8 @@
                         <input type="text" name="q" value="{{ search_query }}" class="form-control border-start-0 ps-1" placeholder="Search by name, email, or phone..." aria-label="Search students">
                     </div>
                     <button type="submit" class="btn btn-primary rounded-pill px-3.5 fw-semibold">Search</button>
-                    {% if search_query %}
-                        <a href="{% url 'admin_students' %}" class="btn btn-outline-secondary rounded-pill px-3" title="Clear Search">
+                    {% if search_query or status_filter != 'all' %}
+                        <a href="{% url 'admin_students' %}" class="btn btn-outline-secondary rounded-pill px-3" title="Clear Filters & Search">
                             <i class="bi bi-arrow-counterclockwise"></i>
                         </a>
                     {% endif %}
@@ -62,7 +77,7 @@
                 <span class="badge bg-light text-muted border rounded-pill">{{ students|length }} records</span>
             </div>
             <div class="text-muted small">
-                Data synchronized live from student profiles
+                Data synchronized live from student profiles and user authentication
             </div>
         </div>
 
@@ -70,13 +85,14 @@
             <table class="table admin-table mb-0 align-middle">
                 <thead>
                     <tr>
-                        <th style="width: 80px;">ID</th>
-                        <th style="min-width: 220px;">Student Details</th>
-                        <th style="min-width: 220px;">Email & Contact</th>
-                        <th style="width: 150px;">Enrolled Courses</th>
-                        <th style="width: 140px;">Total Paid</th>
-                        <th style="width: 140px;">Joined Date</th>
-                        <th class="text-end" style="width: 140px;">Actions</th>
+                        <th style="width: 75px;">ID</th>
+                        <th style="min-width: 200px;">Student Details</th>
+                        <th style="min-width: 200px;">Email & Contact</th>
+                        <th style="width: 140px;">Enrolled Courses</th>
+                        <th style="width: 130px;">Total Paid</th>
+                        <th style="width: 130px;">Joined Date</th>
+                        <th style="width: 120px;">Status</th>
+                        <th class="text-end" style="width: 160px;">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -140,27 +156,57 @@
                                 </span>
                             </td>
 
+                            <!-- Account Status Badge -->
+                            <td>
+                                {% if student.is_active %}
+                                    <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2.5 py-1 fw-semibold">
+                                        ● Active
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill px-2.5 py-1 fw-semibold">
+                                        ○ Deactivated
+                                    </span>
+                                {% endif %}
+                            </td>
+
                             <!-- Actions -->
-                            <td class="text-end">
-                                <div class="btn-group btn-group-sm" role="group">
-                                    <a href="{% url 'admin_enrollments' %}?q={{ student.email }}" class="btn btn-outline-primary" title="View Course Enrollments">
-                                        <i class="bi bi-clipboard-check"></i>
+                            <td class="text-end text-nowrap">
+                                <div class="d-inline-flex align-items-center gap-1.5">
+                                    <a href="{% url 'admin_enrollments' %}?q={{ student.email }}" class="btn btn-outline-primary btn-sm rounded-pill px-2.5" title="View Course Enrollments">
+                                        <i class="bi bi-clipboard-check me-1"></i> Enrollments
                                     </a>
-                                    <a href="{% url 'admin_payments' %}?q={{ student.email }}" class="btn btn-outline-secondary" title="View Payment Receipts">
+                                    <a href="{% url 'admin_payments' %}?q={{ student.email }}" class="btn btn-outline-secondary btn-sm rounded-pill px-2" title="View Payment Receipts">
                                         <i class="bi bi-receipt"></i>
                                     </a>
+                                    {% if student.linked_user %}
+                                        {% if student.is_active %}
+                                            <a href="{% url 'admin_user_toggle_status' student.linked_user.id %}" 
+                                               class="btn btn-outline-danger btn-sm rounded-pill px-2.5 fw-semibold" 
+                                               title="Deactivate Student Account" 
+                                               onclick="return confirm('Are you sure you want to deactivate the account for {{ student.first_name }} {{ student.last_name }}? They will not be able to log in until reactivated.');">
+                                                <i class="bi bi-person-slash me-1"></i> Deactivate
+                                            </a>
+                                        {% else %}
+                                            <a href="{% url 'admin_user_toggle_status' student.linked_user.id %}" 
+                                               class="btn btn-outline-success btn-sm rounded-pill px-2.5 fw-semibold" 
+                                               title="Reactivate Student Account"
+                                               onclick="return confirm('Reactivate account for {{ student.first_name }} {{ student.last_name }}?');">
+                                                <i class="bi bi-person-check me-1"></i> Activate
+                                            </a>
+                                        {% endif %}
+                                    {% endif %}
                                 </div>
                             </td>
                         </tr>
                     {% empty %}
                         <tr>
-                            <td colspan="7" class="text-center py-5 text-muted">
+                            <td colspan="8" class="text-center py-5 text-muted">
                                 <div class="fs-1 mb-2">🎓</div>
                                 <h5 class="fw-bold text-dark">No students found</h5>
                                 <p class="small mb-3">No student records match your current search query.</p>
-                                {% if search_query %}
+                                {% if search_query or status_filter != 'all' %}
                                     <a href="{% url 'admin_students' %}" class="btn btn-outline-secondary btn-sm rounded-pill px-3">
-                                        <i class="bi bi-arrow-counterclockwise me-1"></i> Reset Search
+                                        <i class="bi bi-arrow-counterclockwise me-1"></i> Reset Filters
                                     </a>
                                 {% endif %}
                             </td>

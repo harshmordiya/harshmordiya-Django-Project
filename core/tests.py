@@ -669,3 +669,75 @@ class ManageAllCoursesTests(TestCase):
         self.assertNotContains(resp_draft, "Automata and Turing Machines")
 
 
+class UserDeactivationReactivationTests(TestCase):
+    def setUp(self):
+        self.client = Client()
+
+        # Admin user
+        self.admin_user = User.objects.create_superuser(
+            username="admin_boss",
+            email="admin.boss@example.com",
+            password="adminpassword123"
+        )
+        UserProfile.objects.create(user=self.admin_user, role="admin")
+
+        # Standard student user & Student record
+        self.student_user = User.objects.create_user(
+            username="active_student",
+            email="student.test@example.com",
+            password="studentpassword123"
+        )
+        UserProfile.objects.create(user=self.student_user, role="student")
+        self.student = Student.objects.create(
+            first_name="Active",
+            last_name="Learner",
+            email="student.test@example.com",
+        )
+
+    def test_admin_can_deactivate_and_reactivate_user(self):
+        """Admin can toggle user active state between False and True."""
+        self.client.login(username="admin_boss", password="adminpassword123")
+
+        # 1. Deactivate
+        resp_deact = self.client.get(reverse("admin_user_toggle_status", args=[self.student_user.id]))
+        self.assertEqual(resp_deact.status_code, 302)
+        self.student_user.refresh_from_db()
+        self.assertFalse(self.student_user.is_active)
+
+        # 2. Reactivate
+        resp_react = self.client.get(reverse("admin_user_toggle_status", args=[self.student_user.id]))
+        self.assertEqual(resp_react.status_code, 302)
+        self.student_user.refresh_from_db()
+        self.assertTrue(self.student_user.is_active)
+
+    def test_admin_cannot_deactivate_self(self):
+        """Admin cannot deactivate their own administrative account."""
+        self.client.login(username="admin_boss", password="adminpassword123")
+        resp = self.client.get(reverse("admin_user_toggle_status", args=[self.admin_user.id]))
+        self.assertEqual(resp.status_code, 302)
+        self.admin_user.refresh_from_db()
+        self.assertTrue(self.admin_user.is_active)
+
+    def test_non_admin_cannot_toggle_user_status(self):
+        """Non-admin user is rejected when trying to toggle account status."""
+        self.client.login(username="active_student", password="studentpassword123")
+        resp = self.client.get(reverse("admin_user_toggle_status", args=[self.student_user.id]))
+        self.assertEqual(resp.status_code, 302)
+        self.assertIn("/dashboard/", resp.url)
+        self.student_user.refresh_from_db()
+        self.assertTrue(self.student_user.is_active)
+
+    def test_deactivated_user_login_fails_with_message(self):
+        """Deactivated user receives clear notification that account is deactivated."""
+        self.student_user.is_active = False
+        self.student_user.save()
+
+        response = self.client.post(reverse("login"), {
+            "username": "active_student",
+            "password": "studentpassword123"
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Your account has been deactivated")
+
+
+

@@ -180,6 +180,16 @@ def login_view(request):
                 return redirect("instructor_courses")
             return redirect("dashboard")
 
+        # Check if the user exists with valid password but has been deactivated
+        candidate = User.objects.filter(username__iexact=username_input).first()
+        if not candidate and "@" in username_input:
+            candidate = User.objects.filter(email__iexact=username_input).first()
+
+        if candidate and candidate.check_password(password) and not candidate.is_active:
+            error_msg = "Your account has been deactivated. Please contact an administrator for assistance."
+            messages.error(request, error_msg)
+            return render(request, "login.html", {"error": error_msg})
+
         messages.error(request, "Invalid username or password. Please try again.")
         return render(
             request,
@@ -1603,9 +1613,11 @@ def admin_dashboard_view(request):
 def admin_students_view(request):
     """
     Administrator student management page.
-    Lists all registered students with live course enrollments and payment statistics.
+    Lists all registered students with live course enrollments, payment statistics, and account status.
     """
     q = request.GET.get("q", "").strip()
+    status_filter = request.GET.get("status", "all").strip().lower()
+
     students_qs = Student.objects.annotate(
         enrollments_count=Count("enrollments", distinct=True),
         paid_total=Sum("payments__amount", filter=Q(payments__status__iexact="paid"))
@@ -1619,10 +1631,26 @@ def admin_students_view(request):
             Q(phone__icontains=q)
         )
 
+    # Attach linked User and status
+    students_list = list(students_qs)
+    emails = [s.email.lower() for s in students_list if s.email]
+    user_map = {u.email.lower(): u for u in User.objects.filter(email__in=emails)}
+
+    for s in students_list:
+        linked_u = user_map.get(s.email.lower()) if s.email else None
+        s.linked_user = linked_u
+        s.is_active = linked_u.is_active if linked_u else True
+
+    if status_filter == "active":
+        students_list = [s for s in students_list if s.is_active]
+    elif status_filter == "inactive":
+        students_list = [s for s in students_list if not s.is_active]
+
     context = {
-        "students": students_qs,
-        "total_count": students_qs.count(),
+        "students": students_list,
+        "total_count": len(students_list),
         "search_query": q,
+        "status_filter": status_filter,
         "active_tab": "students",
     }
     return render(request, "admin_students.html", context)
@@ -1632,9 +1660,11 @@ def admin_students_view(request):
 def admin_instructors_view(request):
     """
     Administrator instructor management page.
-    Lists all registered instructors with courses taught and student reach.
+    Lists all registered instructors with courses taught, student reach, and account status.
     """
     q = request.GET.get("q", "").strip()
+    status_filter = request.GET.get("status", "all").strip().lower()
+
     instructors_qs = Instructor.objects.annotate(
         courses_count=Count("course", distinct=True),
         students_count=Count("course__enrollments", filter=Q(course__enrollments__status__in=["active", "completed"]), distinct=True)
@@ -1648,13 +1678,57 @@ def admin_instructors_view(request):
             Q(specialization__icontains=q)
         )
 
+    # Attach linked User and status
+    instructors_list = list(instructors_qs)
+    emails = [i.email.lower() for i in instructors_list if i.email]
+    user_map = {u.email.lower(): u for u in User.objects.filter(email__in=emails)}
+
+    for i in instructors_list:
+        linked_u = user_map.get(i.email.lower()) if i.email else None
+        i.linked_user = linked_u
+        i.is_active = linked_u.is_active if linked_u else True
+
+    if status_filter == "active":
+        instructors_list = [i for i in instructors_list if i.is_active]
+    elif status_filter == "inactive":
+        instructors_list = [i for i in instructors_list if not i.is_active]
+
     context = {
-        "instructors": instructors_qs,
-        "total_count": instructors_qs.count(),
+        "instructors": instructors_list,
+        "total_count": len(instructors_list),
         "search_query": q,
+        "status_filter": status_filter,
         "active_tab": "instructors",
     }
     return render(request, "admin_instructors.html", context)
+
+
+@admin_required
+def admin_user_toggle_status_view(request, user_id):
+    """
+    Toggles the is_active status of a user (deactivate or reactivate).
+    Includes safety checks preventing an administrator from deactivating themselves.
+    """
+    target_user = get_object_or_404(User, id=user_id)
+
+    # Security safeguard: Prevent admin from deactivating their own account
+    if target_user.id == request.user.id:
+        messages.error(request, "Security safeguard: You cannot deactivate your own administrative account.")
+        referer = request.META.get("HTTP_REFERER")
+        return redirect(referer if referer else "admin_dashboard")
+
+    target_user.is_active = not target_user.is_active
+    target_user.save(update_fields=["is_active"])
+
+    status_str = "reactivated (active)" if target_user.is_active else "deactivated (suspended)"
+    messages.success(
+        request,
+        f'User account "{target_user.username}" ({target_user.email}) has been successfully {status_str}.'
+    )
+
+    referer = request.META.get("HTTP_REFERER")
+    return redirect(referer if referer else "admin_dashboard")
+
 
 
 @admin_required

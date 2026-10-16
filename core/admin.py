@@ -1,5 +1,5 @@
 from django.contrib import admin
-
+from django.contrib.auth.models import User
 from .models import (
     Admin,
     Student,
@@ -18,19 +18,43 @@ class AdminAdmin(admin.ModelAdmin):
     list_display = ("admin_id", "first_name", "last_name", "email", "phone", "created_at")
     search_fields = ("first_name", "last_name", "email")
 
+@admin.action(description="Activate selected user accounts")
+def activate_selected_users(modeladmin, request, queryset):
+    emails = [obj.email.lower() for obj in queryset if obj.email]
+    updated = User.objects.filter(email__in=emails).update(is_active=True)
+    modeladmin.message_user(request, f"{updated} user account(s) activated successfully.")
+
+@admin.action(description="Deactivate selected user accounts")
+def deactivate_selected_users(modeladmin, request, queryset):
+    emails = [obj.email.lower() for obj in queryset if obj.email]
+    updated = User.objects.filter(email__in=emails).exclude(id=request.user.id).update(is_active=False)
+    modeladmin.message_user(request, f"{updated} user account(s) deactivated successfully.")
+
 @admin.register(Student)
 class StudentAdmin(admin.ModelAdmin):
-    list_display = ("student_id", "full_name", "email", "phone", "enrolled_courses_count", "enrollment_date")
+    list_display = ("student_id", "full_name", "email", "phone", "is_account_active", "enrolled_courses_count", "enrollment_date")
     list_filter = ("enrollment_date",)
     search_fields = ("first_name", "last_name", "email", "phone")
     readonly_fields = ("enrollment_date",)
+    actions = [activate_selected_users, deactivate_selected_users]
+
+    @admin.display(boolean=True, description="Account Active")
+    def is_account_active(self, obj):
+        u = User.objects.filter(email__iexact=obj.email).first()
+        return u.is_active if u else None
 
 @admin.register(Instructor)
 class InstructorAdmin(admin.ModelAdmin):
-    list_display = ("instructor_id", "full_name", "email", "phone", "specialization", "courses_count", "hire_date")
+    list_display = ("instructor_id", "full_name", "email", "phone", "specialization", "is_account_active", "courses_count", "hire_date")
     list_filter = ("specialization", "hire_date")
     search_fields = ("first_name", "last_name", "email", "phone", "specialization")
     readonly_fields = ("hire_date",)
+    actions = [activate_selected_users, deactivate_selected_users]
+
+    @admin.display(boolean=True, description="Account Active")
+    def is_account_active(self, obj):
+        u = User.objects.filter(email__iexact=obj.email).first()
+        return u.is_active if u else None
 
 @admin.register(UserProfile)
 class UserProfileAdmin(admin.ModelAdmin):

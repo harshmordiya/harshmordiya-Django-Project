@@ -23,19 +23,34 @@
         </div>
     </div>
 
-    <!-- Search Toolbar Card -->
+    <!-- Search & Status Filter Toolbar Card -->
     <div class="admin-card p-3.5 mb-4">
         <div class="row align-items-center justify-content-between g-3">
-            <div class="col-md-5">
-                <div class="d-flex align-items-center gap-2 text-muted small">
-                    <i class="bi bi-info-circle text-primary"></i>
-                    <span>Search instructors by name, email, or domain specialization.</span>
+            <!-- Status Filter Pills -->
+            <div class="col-lg-6">
+                <div class="d-flex align-items-center gap-1.5 flex-wrap">
+                    <span class="text-muted small fw-semibold me-1">Filter:</span>
+                    <a href="{% url 'admin_instructors' %}{% if search_query %}?q={{ search_query }}{% endif %}" 
+                       class="btn btn-sm rounded-pill px-3 fw-semibold {% if status_filter == 'all' %}btn-primary{% else %}btn-outline-secondary border-0 bg-light text-secondary{% endif %}">
+                        All Faculty
+                    </a>
+                    <a href="{% url 'admin_instructors' %}?status=active{% if search_query %}&q={{ search_query }}{% endif %}" 
+                       class="btn btn-sm rounded-pill px-3 fw-semibold {% if status_filter == 'active' %}btn-success{% else %}btn-outline-secondary border-0 bg-light text-secondary{% endif %}">
+                        <i class="bi bi-check-circle-fill me-1"></i> Active
+                    </a>
+                    <a href="{% url 'admin_instructors' %}?status=inactive{% if search_query %}&q={{ search_query }}{% endif %}" 
+                       class="btn btn-sm rounded-pill px-3 fw-semibold {% if status_filter == 'inactive' %}btn-secondary{% else %}btn-outline-secondary border-0 bg-light text-secondary{% endif %}">
+                        <i class="bi bi-person-slash me-1"></i> Deactivated
+                    </a>
                 </div>
             </div>
 
             <!-- Search Form -->
-            <div class="col-md-7 col-lg-6">
+            <div class="col-lg-6 col-xl-5">
                 <form method="get" class="d-flex gap-2">
+                    {% if status_filter != 'all' %}
+                        <input type="hidden" name="status" value="{{ status_filter }}">
+                    {% endif %}
                     <div class="input-group">
                         <span class="input-group-text bg-white border-end-0 text-muted ps-3">
                             <i class="bi bi-search"></i>
@@ -43,8 +58,8 @@
                         <input type="text" name="q" value="{{ search_query }}" class="form-control border-start-0 ps-1" placeholder="Search by name, email, or specialization..." aria-label="Search instructors">
                     </div>
                     <button type="submit" class="btn btn-primary rounded-pill px-3.5 fw-semibold">Search</button>
-                    {% if search_query %}
-                        <a href="{% url 'admin_instructors' %}" class="btn btn-outline-secondary rounded-pill px-3" title="Clear Search">
+                    {% if search_query or status_filter != 'all' %}
+                        <a href="{% url 'admin_instructors' %}" class="btn btn-outline-secondary rounded-pill px-3" title="Clear Filters & Search">
                             <i class="bi bi-arrow-counterclockwise"></i>
                         </a>
                     {% endif %}
@@ -62,7 +77,7 @@
                 <span class="badge bg-light text-muted border rounded-pill">{{ instructors|length }} records</span>
             </div>
             <div class="text-muted small">
-                Data synchronized live from instructor records
+                Data synchronized live from instructor records and user accounts
             </div>
         </div>
 
@@ -70,14 +85,14 @@
             <table class="table admin-table mb-0 align-middle">
                 <thead>
                     <tr>
-                        <th style="width: 80px;">ID</th>
-                        <th style="min-width: 220px;">Faculty Member</th>
-                        <th style="min-width: 220px;">Email & Phone</th>
-                        <th style="width: 170px;">Specialization</th>
-                        <th style="width: 160px;">Courses Published</th>
-                        <th style="width: 150px;">Students Reached</th>
-                        <th style="width: 140px;">Hire Date</th>
-                        <th class="text-end" style="width: 100px;">Action</th>
+                        <th style="width: 75px;">ID</th>
+                        <th style="min-width: 200px;">Faculty Member</th>
+                        <th style="min-width: 200px;">Email & Phone</th>
+                        <th style="min-width: 150px;">Specialization</th>
+                        <th style="width: 130px;">Courses</th>
+                        <th style="width: 130px;">Students</th>
+                        <th style="width: 120px;">Status</th>
+                        <th class="text-end" style="width: 190px;">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -139,18 +154,43 @@
                                 </span>
                             </td>
 
-                            <!-- Hire Date -->
+                            <!-- Status Badge -->
                             <td>
-                                <span class="text-muted small">
-                                    {{ instructor.hire_date|date:"d M, Y"|default:"—" }}
-                                </span>
+                                {% if instructor.is_active %}
+                                    <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2.5 py-1 fw-semibold">
+                                        ● Active
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill px-2.5 py-1 fw-semibold">
+                                        ○ Deactivated
+                                    </span>
+                                {% endif %}
                             </td>
 
                             <!-- Actions -->
-                            <td class="text-end">
-                                <a href="{% url 'admin_courses' %}?q={{ instructor.first_name }}" class="btn btn-outline-primary btn-sm rounded-pill px-3" title="View Assigned Courses">
-                                    <i class="bi bi-journal-text me-1"></i> Courses
-                                </a>
+                            <td class="text-end text-nowrap">
+                                <div class="d-inline-flex align-items-center gap-1.5">
+                                    <a href="{% url 'admin_courses' %}?q={{ instructor.first_name }}" class="btn btn-outline-primary btn-sm rounded-pill px-2.5" title="View Assigned Courses">
+                                        <i class="bi bi-journal-text me-1"></i> Courses
+                                    </a>
+                                    {% if instructor.linked_user %}
+                                        {% if instructor.is_active %}
+                                            <a href="{% url 'admin_user_toggle_status' instructor.linked_user.id %}" 
+                                               class="btn btn-outline-danger btn-sm rounded-pill px-2.5 fw-semibold" 
+                                               title="Deactivate Faculty Account"
+                                               onclick="return confirm('Are you sure you want to deactivate the account for instructor {{ instructor.first_name }} {{ instructor.last_name }}? They will not be able to log in or manage courses until reactivated.');">
+                                                <i class="bi bi-person-slash me-1"></i> Deactivate
+                                            </a>
+                                        {% else %}
+                                            <a href="{% url 'admin_user_toggle_status' instructor.linked_user.id %}" 
+                                               class="btn btn-outline-success btn-sm rounded-pill px-2.5 fw-semibold" 
+                                               title="Reactivate Faculty Account"
+                                               onclick="return confirm('Reactivate account for instructor {{ instructor.first_name }} {{ instructor.last_name }}?');">
+                                                <i class="bi bi-person-check me-1"></i> Activate
+                                            </a>
+                                        {% endif %}
+                                    {% endif %}
+                                </div>
                             </td>
                         </tr>
                     {% empty %}
