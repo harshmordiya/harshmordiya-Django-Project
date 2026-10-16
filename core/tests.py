@@ -740,4 +740,166 @@ class UserDeactivationReactivationTests(TestCase):
         self.assertContains(response, "Your account has been deactivated")
 
 
+class AdminFilterAndSearchTests(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.admin_user = User.objects.create_superuser(
+            username="admin_search",
+            email="admin.search@example.com",
+            password="adminpassword123"
+        )
+        UserProfile.objects.create(user=self.admin_user, role="admin")
+
+        self.student1 = Student.objects.create(
+            first_name="Alice",
+            last_name="Wonderland",
+            email="alice@example.com"
+        )
+        self.student2 = Student.objects.create(
+            first_name="Bob",
+            last_name="Builder",
+            email="bob@example.com"
+        )
+        self.user_alice = User.objects.create_user(
+            username="alice",
+            email="alice@example.com",
+            password="password123",
+            is_active=True
+        )
+        self.user_bob = User.objects.create_user(
+            username="bob",
+            email="bob@example.com",
+            password="password123",
+            is_active=False
+        )
+
+        self.instructor = Instructor.objects.create(
+            first_name="Grace",
+            last_name="Hopper",
+            email="grace@example.com",
+            specialization="Computer Science"
+        )
+        self.course_free = Course.objects.create(
+            title="Intro to Programming",
+            category="programming",
+            price=0,
+            duration="2 hours",
+            instructor=self.instructor,
+            is_active=True
+        )
+        self.course_paid = Course.objects.create(
+            title="Advanced Algorithms",
+            category="data_science",
+            price=999,
+            duration="10 hours",
+            instructor=self.instructor,
+            is_active=True
+        )
+
+    def test_django_admin_changelist_pages_load(self):
+        """Django admin changelist pages with filters and search load with 200 OK."""
+        self.client.login(username="admin_search", password="adminpassword123")
+        for model in ["student", "instructor", "course", "enrollment", "payment"]:
+            url = reverse(f"admin:core_{model}_changelist")
+            resp = self.client.get(url)
+            self.assertEqual(resp.status_code, 200)
+
+    def test_django_admin_student_custom_filter(self):
+        """Custom StudentAccountStatusFilter filters active and deactivated students in Django admin."""
+        self.client.login(username="admin_search", password="adminpassword123")
+        url = reverse("admin:core_student_changelist")
+
+        resp_active = self.client.get(url + "?account_status=active")
+        self.assertEqual(resp_active.status_code, 200)
+        self.assertContains(resp_active, "alice@example.com")
+        self.assertNotContains(resp_active, "bob@example.com")
+
+        resp_deact = self.client.get(url + "?account_status=deactivated")
+        self.assertEqual(resp_deact.status_code, 200)
+        self.assertContains(resp_deact, "bob@example.com")
+        self.assertNotContains(resp_deact, "alice@example.com")
+
+    def test_django_admin_course_price_tier_filter(self):
+        """CoursePriceTierFilter separates free and paid courses in Django admin."""
+        self.client.login(username="admin_search", password="adminpassword123")
+        url = reverse("admin:core_course_changelist")
+
+        resp_free = self.client.get(url + "?price_tier=free")
+        self.assertEqual(resp_free.status_code, 200)
+        self.assertContains(resp_free, "Intro to Programming")
+        self.assertNotContains(resp_free, "Advanced Algorithms")
+
+        resp_paid = self.client.get(url + "?price_tier=500_to_1500")
+        self.assertEqual(resp_paid.status_code, 200)
+        self.assertContains(resp_paid, "Advanced Algorithms")
+        self.assertNotContains(resp_paid, "Intro to Programming")
+
+
+class CustomDashboardSearchAndSortTests(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.admin = User.objects.create_superuser(
+            username="admin_dash_sort",
+            email="admin.dash@example.com",
+            password="adminpassword123"
+        )
+        UserProfile.objects.create(user=self.admin, role="admin")
+
+        self.st1 = Student.objects.create(first_name="Zara", last_name="Alpha", email="zara@example.com")
+        self.st2 = Student.objects.create(first_name="Aaron", last_name="Beta", email="aaron@example.com")
+
+        self.inst1 = Instructor.objects.create(first_name="Zoe", last_name="X", email="zoe@example.com")
+        self.inst2 = Instructor.objects.create(first_name="Alan", last_name="Y", email="alan@example.com")
+
+        self.c1 = Course.objects.create(
+            title="Zenith AI",
+            category="data_science",
+            price=2000,
+            duration="5 hours",
+            instructor=self.inst1
+        )
+        self.c2 = Course.objects.create(
+            title="Alpha Web Dev",
+            category="web_development",
+            price=500,
+            duration="3 hours",
+            instructor=self.inst2
+        )
+
+    def test_admin_students_sort_and_search(self):
+        """Students can be sorted by name A-Z and filtered by search query."""
+        self.client.login(username="admin_dash_sort", password="adminpassword123")
+
+        # Sort name ascending
+        resp = self.client.get(reverse("admin_students") + "?sort=name_asc")
+        self.assertEqual(resp.status_code, 200)
+        students = resp.context["students"]
+        self.assertEqual(students[0].first_name, "Aaron")
+        self.assertEqual(students[1].first_name, "Zara")
+
+        # Search query
+        resp_q = self.client.get(reverse("admin_students") + "?q=Zara")
+        self.assertEqual(resp_q.status_code, 200)
+        self.assertEqual(len(resp_q.context["students"]), 1)
+        self.assertEqual(resp_q.context["students"][0].first_name, "Zara")
+
+    def test_admin_courses_sort_and_category_filter(self):
+        """Courses can be sorted by price ascending/descending and filtered by category."""
+        self.client.login(username="admin_dash_sort", password="adminpassword123")
+
+        # Sort price asc
+        resp_price = self.client.get(reverse("admin_courses") + "?sort=price_asc")
+        self.assertEqual(resp_price.status_code, 200)
+        courses = list(resp_price.context["courses"])
+        self.assertEqual(courses[0].title, "Alpha Web Dev")
+        self.assertEqual(courses[1].title, "Zenith AI")
+
+        # Category filter
+        resp_cat = self.client.get(reverse("admin_courses") + "?category=data_science")
+        self.assertEqual(resp_cat.status_code, 200)
+        cat_courses = list(resp_cat.context["courses"])
+        self.assertEqual(len(cat_courses), 1)
+        self.assertEqual(cat_courses[0].title, "Zenith AI")
+
+
 

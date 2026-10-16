@@ -1613,15 +1613,17 @@ def admin_dashboard_view(request):
 def admin_students_view(request):
     """
     Administrator student management page.
-    Lists all registered students with live course enrollments, payment statistics, and account status.
+    Lists all registered students with live course enrollments, payment statistics, account status,
+    search query filtering, status filtering, and multi-field sorting.
     """
     q = request.GET.get("q", "").strip()
     status_filter = request.GET.get("status", "all").strip().lower()
+    sort_by = request.GET.get("sort", "recent").strip().lower()
 
     students_qs = Student.objects.annotate(
         enrollments_count=Count("enrollments", distinct=True),
         paid_total=Sum("payments__amount", filter=Q(payments__status__iexact="paid"))
-    ).order_by("-student_id")
+    )
 
     if q:
         students_qs = students_qs.filter(
@@ -1646,11 +1648,26 @@ def admin_students_view(request):
     elif status_filter == "inactive":
         students_list = [s for s in students_list if not s.is_active]
 
+    # Sorting
+    if sort_by == "name_asc":
+        students_list.sort(key=lambda s: (s.first_name.lower(), s.last_name.lower()))
+    elif sort_by == "name_desc":
+        students_list.sort(key=lambda s: (s.first_name.lower(), s.last_name.lower()), reverse=True)
+    elif sort_by == "oldest":
+        students_list.sort(key=lambda s: s.student_id)
+    elif sort_by == "enrollments_desc":
+        students_list.sort(key=lambda s: s.enrollments_count or 0, reverse=True)
+    elif sort_by == "paid_desc":
+        students_list.sort(key=lambda s: s.paid_total or Decimal("0.00"), reverse=True)
+    else:  # "recent" default
+        students_list.sort(key=lambda s: s.student_id, reverse=True)
+
     context = {
         "students": students_list,
         "total_count": len(students_list),
         "search_query": q,
         "status_filter": status_filter,
+        "sort_by": sort_by,
         "active_tab": "students",
     }
     return render(request, "admin_students.html", context)
@@ -1660,21 +1677,24 @@ def admin_students_view(request):
 def admin_instructors_view(request):
     """
     Administrator instructor management page.
-    Lists all registered instructors with courses taught, student reach, and account status.
+    Lists all registered instructors with courses taught, student reach, account status,
+    live search query filtering, status filtering, and sorting.
     """
     q = request.GET.get("q", "").strip()
     status_filter = request.GET.get("status", "all").strip().lower()
+    sort_by = request.GET.get("sort", "recent").strip().lower()
 
     instructors_qs = Instructor.objects.annotate(
         courses_count=Count("course", distinct=True),
         students_count=Count("course__enrollments", filter=Q(course__enrollments__status__in=["active", "completed"]), distinct=True)
-    ).order_by("-instructor_id")
+    )
 
     if q:
         instructors_qs = instructors_qs.filter(
             Q(first_name__icontains=q) |
             Q(last_name__icontains=q) |
             Q(email__icontains=q) |
+            Q(phone__icontains=q) |
             Q(specialization__icontains=q)
         )
 
@@ -1693,11 +1713,26 @@ def admin_instructors_view(request):
     elif status_filter == "inactive":
         instructors_list = [i for i in instructors_list if not i.is_active]
 
+    # Sorting
+    if sort_by == "name_asc":
+        instructors_list.sort(key=lambda i: (i.first_name.lower(), i.last_name.lower()))
+    elif sort_by == "name_desc":
+        instructors_list.sort(key=lambda i: (i.first_name.lower(), i.last_name.lower()), reverse=True)
+    elif sort_by == "oldest":
+        instructors_list.sort(key=lambda i: i.instructor_id)
+    elif sort_by == "courses_desc":
+        instructors_list.sort(key=lambda i: i.courses_count or 0, reverse=True)
+    elif sort_by == "students_desc":
+        instructors_list.sort(key=lambda i: i.students_count or 0, reverse=True)
+    else:  # "recent" default
+        instructors_list.sort(key=lambda i: i.instructor_id, reverse=True)
+
     context = {
         "instructors": instructors_list,
         "total_count": len(instructors_list),
         "search_query": q,
         "status_filter": status_filter,
+        "sort_by": sort_by,
         "active_tab": "instructors",
     }
     return render(request, "admin_instructors.html", context)
@@ -1735,28 +1770,49 @@ def admin_user_toggle_status_view(request, user_id):
 def admin_courses_view(request):
     """
     Administrator course catalog management page.
-    Displays all courses, pricing, instructor details, enrollment counts, and status controls.
+    Displays all courses, pricing, instructor details, enrollment counts, status controls,
+    category filters, search query, and flexible sorting.
     """
     q = request.GET.get("q", "").strip()
-    status_filter = request.GET.get("status", "all")
+    status_filter = request.GET.get("status", "all").strip().lower()
+    category_filter = request.GET.get("category", "all").strip()
+    sort_by = request.GET.get("sort", "recent").strip().lower()
 
     courses_qs = Course.objects.select_related("instructor").annotate(
         active_enrollments=Count("enrollments", filter=Q(enrollments__status__in=["active", "completed"]), distinct=True),
         lessons_count=Count("contents", distinct=True)
-    ).order_by("-created_at")
+    )
 
     if status_filter == "active":
         courses_qs = courses_qs.filter(is_active=True)
     elif status_filter == "inactive":
         courses_qs = courses_qs.filter(is_active=False)
 
+    if category_filter and category_filter != "all":
+        courses_qs = courses_qs.filter(category=category_filter)
+
     if q:
         courses_qs = courses_qs.filter(
             Q(title__icontains=q) |
             Q(category__icontains=q) |
+            Q(description__icontains=q) |
             Q(instructor__first_name__icontains=q) |
             Q(instructor__last_name__icontains=q)
         )
+
+    # Sorting
+    if sort_by == "title_asc":
+        courses_qs = courses_qs.order_by("title")
+    elif sort_by == "price_asc":
+        courses_qs = courses_qs.order_by("price")
+    elif sort_by == "price_desc":
+        courses_qs = courses_qs.order_by("-price")
+    elif sort_by == "oldest":
+        courses_qs = courses_qs.order_by("created_at")
+    elif sort_by == "enrollments_desc":
+        courses_qs = courses_qs.order_by("-active_enrollments", "-created_at")
+    else:  # "recent" default
+        courses_qs = courses_qs.order_by("-created_at")
 
     context = {
         "courses": courses_qs,
@@ -1764,6 +1820,9 @@ def admin_courses_view(request):
         "active_courses_count": Course.objects.filter(is_active=True).count(),
         "inactive_courses_count": Course.objects.filter(is_active=False).count(),
         "status_filter": status_filter,
+        "category_filter": category_filter,
+        "categories": Course.CATEGORY_CHOICES,
+        "sort_by": sort_by,
         "search_query": q,
         "active_tab": "courses",
     }

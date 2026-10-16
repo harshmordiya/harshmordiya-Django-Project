@@ -45,9 +45,9 @@
                 </div>
             </div>
 
-            <!-- Search Form -->
-            <div class="col-lg-6 col-xl-5">
-                <form method="get" class="d-flex gap-2">
+            <!-- Search & Sort Controls -->
+            <div class="col-lg-6 col-xl-6">
+                <form method="get" class="d-flex gap-2 align-items-center flex-wrap flex-md-nowrap">
                     {% if status_filter != 'all' %}
                         <input type="hidden" name="status" value="{{ status_filter }}">
                     {% endif %}
@@ -57,8 +57,16 @@
                         </span>
                         <input type="text" name="q" value="{{ search_query }}" class="form-control border-start-0 ps-1" placeholder="Search by name, email, or specialization..." aria-label="Search instructors">
                     </div>
-                    <button type="submit" class="btn btn-primary rounded-pill px-3.5 fw-semibold">Search</button>
-                    {% if search_query or status_filter != 'all' %}
+                    <select name="sort" class="form-select form-select-sm rounded-pill border" style="min-width: 145px;" onchange="this.form.submit()" title="Sort order">
+                        <option value="recent" {% if sort_by == 'recent' %}selected{% endif %}>Newest First</option>
+                        <option value="oldest" {% if sort_by == 'oldest' %}selected{% endif %}>Oldest First</option>
+                        <option value="name_asc" {% if sort_by == 'name_asc' %}selected{% endif %}>Name (A-Z)</option>
+                        <option value="name_desc" {% if sort_by == 'name_desc' %}selected{% endif %}>Name (Z-A)</option>
+                        <option value="courses_desc" {% if sort_by == 'courses_desc' %}selected{% endif %}>Most Courses</option>
+                        <option value="students_desc" {% if sort_by == 'students_desc' %}selected{% endif %}>Most Students</option>
+                    </select>
+                    <button type="submit" class="btn btn-primary rounded-pill px-3 fw-semibold">Search</button>
+                    {% if search_query or status_filter != 'all' or sort_by != 'recent' %}
                         <a href="{% url 'admin_instructors' %}" class="btn btn-outline-secondary rounded-pill px-3" title="Clear Filters & Search">
                             <i class="bi bi-arrow-counterclockwise"></i>
                         </a>
@@ -85,12 +93,28 @@
             <table class="table admin-table mb-0 align-middle">
                 <thead>
                     <tr>
-                        <th style="width: 75px;">ID</th>
-                        <th style="min-width: 200px;">Faculty Member</th>
+                        <th style="width: 75px;">
+                            <a href="{% url 'admin_instructors' %}?sort={% if sort_by == 'oldest' %}recent{% else %}oldest{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}{% if status_filter != 'all' %}&status={{ status_filter }}{% endif %}" class="text-dark text-decoration-none d-inline-flex align-items-center gap-1" title="Sort by ID">
+                                ID <i class="bi bi-arrow-down-up small text-muted"></i>
+                            </a>
+                        </th>
+                        <th style="min-width: 200px;">
+                            <a href="{% url 'admin_instructors' %}?sort={% if sort_by == 'name_asc' %}name_desc{% else %}name_asc{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}{% if status_filter != 'all' %}&status={{ status_filter }}{% endif %}" class="text-dark text-decoration-none d-inline-flex align-items-center gap-1" title="Sort by Faculty Name">
+                                Faculty Member <i class="bi bi-arrow-down-up small text-muted"></i>
+                            </a>
+                        </th>
                         <th style="min-width: 200px;">Email & Phone</th>
                         <th style="min-width: 150px;">Specialization</th>
-                        <th style="width: 130px;">Courses</th>
-                        <th style="width: 130px;">Students</th>
+                        <th style="width: 130px;">
+                            <a href="{% url 'admin_instructors' %}?sort=courses_desc{% if search_query %}&q={{ search_query }}{% endif %}{% if status_filter != 'all' %}&status={{ status_filter }}{% endif %}" class="text-dark text-decoration-none d-inline-flex align-items-center gap-1" title="Sort by Courses Taught">
+                                Courses <i class="bi bi-arrow-down-up small text-muted"></i>
+                            </a>
+                        </th>
+                        <th style="width: 130px;">
+                            <a href="{% url 'admin_instructors' %}?sort=students_desc{% if search_query %}&q={{ search_query }}{% endif %}{% if status_filter != 'all' %}&status={{ status_filter }}{% endif %}" class="text-dark text-decoration-none d-inline-flex align-items-center gap-1" title="Sort by Students Reached">
+                                Students <i class="bi bi-arrow-down-up small text-muted"></i>
+                            </a>
+                        </th>
                         <th style="width: 120px;">Status</th>
                         <th class="text-end" style="width: 190px;">Actions</th>
                     </tr>

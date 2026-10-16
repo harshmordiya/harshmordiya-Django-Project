@@ -46,9 +46,9 @@
                 </div>
             </div>
 
-            <!-- Search Form Toolbar -->
-            <div class="col-lg-6 col-xl-5">
-                <form method="get" class="d-flex gap-2">
+            <!-- Search & Sort Controls Toolbar -->
+            <div class="col-lg-6 col-xl-7">
+                <form method="get" class="d-flex gap-2 align-items-center flex-wrap flex-md-nowrap">
                     {% if status_filter != 'all' %}
                         <input type="hidden" name="status" value="{{ status_filter }}">
                     {% endif %}
@@ -56,10 +56,24 @@
                         <span class="input-group-text bg-white border-end-0 text-muted ps-3">
                             <i class="bi bi-search"></i>
                         </span>
-                        <input type="text" name="q" value="{{ search_query }}" class="form-control border-start-0 ps-1" placeholder="Search by course title, category, or instructor..." aria-label="Search courses">
+                        <input type="text" name="q" value="{{ search_query }}" class="form-control border-start-0 ps-1" placeholder="Search title, category, instructor..." aria-label="Search courses">
                     </div>
-                    <button type="submit" class="btn btn-primary rounded-pill px-3.5 fw-semibold">Search</button>
-                    {% if search_query or status_filter != 'all' %}
+                    <select name="category" class="form-select form-select-sm rounded-pill border" style="min-width: 135px;" onchange="this.form.submit()" title="Filter by Category">
+                        <option value="all" {% if category_filter == 'all' %}selected{% endif %}>All Categories</option>
+                        {% for cat_val, cat_label in categories %}
+                            <option value="{{ cat_val }}" {% if category_filter == cat_val %}selected{% endif %}>{{ cat_label }}</option>
+                        {% endfor %}
+                    </select>
+                    <select name="sort" class="form-select form-select-sm rounded-pill border" style="min-width: 135px;" onchange="this.form.submit()" title="Sort order">
+                        <option value="recent" {% if sort_by == 'recent' %}selected{% endif %}>Newest First</option>
+                        <option value="oldest" {% if sort_by == 'oldest' %}selected{% endif %}>Oldest First</option>
+                        <option value="title_asc" {% if sort_by == 'title_asc' %}selected{% endif %}>Title (A-Z)</option>
+                        <option value="price_asc" {% if sort_by == 'price_asc' %}selected{% endif %}>Price: Low → High</option>
+                        <option value="price_desc" {% if sort_by == 'price_desc' %}selected{% endif %}>Price: High → Low</option>
+                        <option value="enrollments_desc" {% if sort_by == 'enrollments_desc' %}selected{% endif %}>Most Enrolled</option>
+                    </select>
+                    <button type="submit" class="btn btn-primary rounded-pill px-3 fw-semibold">Search</button>
+                    {% if search_query or status_filter != 'all' or category_filter != 'all' or sort_by != 'recent' %}
                         <a href="{% url 'admin_courses' %}" class="btn btn-outline-secondary rounded-pill px-3" title="Clear Filters & Search">
                             <i class="bi bi-arrow-counterclockwise"></i>
                         </a>
@@ -86,12 +100,28 @@
             <table class="table admin-table mb-0 align-middle">
                 <thead>
                     <tr>
-                        <th style="width: 80px;">ID</th>
-                        <th style="min-width: 240px;">Course Details</th>
+                        <th style="width: 80px;">
+                            <a href="{% url 'admin_courses' %}?sort={% if sort_by == 'oldest' %}recent{% else %}oldest{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}{% if status_filter != 'all' %}&status={{ status_filter }}{% endif %}{% if category_filter != 'all' %}&category={{ category_filter }}{% endif %}" class="text-dark text-decoration-none d-inline-flex align-items-center gap-1" title="Sort by Course ID">
+                                ID <i class="bi bi-arrow-down-up small text-muted"></i>
+                            </a>
+                        </th>
+                        <th style="min-width: 240px;">
+                            <a href="{% url 'admin_courses' %}?sort={% if sort_by == 'title_asc' %}recent{% else %}title_asc{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}{% if status_filter != 'all' %}&status={{ status_filter }}{% endif %}{% if category_filter != 'all' %}&category={{ category_filter }}{% endif %}" class="text-dark text-decoration-none d-inline-flex align-items-center gap-1" title="Sort by Course Title">
+                                Course Details <i class="bi bi-arrow-down-up small text-muted"></i>
+                            </a>
+                        </th>
                         <th style="min-width: 170px;">Instructor</th>
-                        <th style="width: 120px;">Price</th>
+                        <th style="width: 120px;">
+                            <a href="{% url 'admin_courses' %}?sort={% if sort_by == 'price_asc' %}price_desc{% else %}price_asc{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}{% if status_filter != 'all' %}&status={{ status_filter }}{% endif %}{% if category_filter != 'all' %}&category={{ category_filter }}{% endif %}" class="text-dark text-decoration-none d-inline-flex align-items-center gap-1" title="Sort by Price">
+                                Price <i class="bi bi-arrow-down-up small text-muted"></i>
+                            </a>
+                        </th>
                         <th style="width: 130px;">Curriculum</th>
-                        <th style="width: 130px;">Enrollment</th>
+                        <th style="width: 130px;">
+                            <a href="{% url 'admin_courses' %}?sort=enrollments_desc{% if search_query %}&q={{ search_query }}{% endif %}{% if status_filter != 'all' %}&status={{ status_filter }}{% endif %}{% if category_filter != 'all' %}&category={{ category_filter }}{% endif %}" class="text-dark text-decoration-none d-inline-flex align-items-center gap-1" title="Sort by Enrolled Students">
+                                Enrollment <i class="bi bi-arrow-down-up small text-muted"></i>
+                            </a>
+                        </th>
                         <th style="width: 110px;">Status</th>
                         <th class="text-end" style="min-width: 220px;">Actions</th>
                     </tr>
