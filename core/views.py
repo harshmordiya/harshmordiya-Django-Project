@@ -1262,6 +1262,89 @@ course_edit_view = instructor_course_edit_view
 course_delete_view = instructor_course_delete_view
 
 
+@login_required
+def course_manage_all_view(request):
+    """
+    Standalone comprehensive course management view displaying all courses with direct
+    Edit, Delete, Lessons, and View actions.
+    Accessible to instructors, staff members, and administrators.
+    """
+    role = get_user_role(request.user)
+    is_admin = is_admin_user(request.user)
+    instructor = get_instructor_for_user(request.user)
+
+    if not is_admin and not instructor and role != "instructor":
+        messages.error(request, "Access restricted: Course management is available for faculty instructors and administrators.")
+        return redirect("course_list")
+
+    courses_qs = Course.objects.select_related("instructor").annotate(
+        lessons_count=Count("contents", distinct=True),
+        active_enrollments=Count(
+            "enrollments",
+            filter=Q(enrollments__status__in=["active", "completed"]),
+            distinct=True
+        )
+    ).order_by("-created_at")
+
+    search_query = request.GET.get("q", "").strip()
+    category_filter = request.GET.get("category", "").strip()
+    status_filter = request.GET.get("status", "all").strip().lower()
+    scope_filter = request.GET.get("scope", "all").strip().lower()
+
+    if search_query:
+        courses_qs = courses_qs.filter(
+            Q(title__icontains=search_query) |
+            Q(category__icontains=search_query) |
+            Q(instructor__first_name__icontains=search_query) |
+            Q(instructor__last_name__icontains=search_query) |
+            Q(instructor__email__icontains=search_query)
+        )
+
+    if category_filter:
+        courses_qs = courses_qs.filter(category=category_filter)
+
+    if status_filter == "active":
+        courses_qs = courses_qs.filter(is_active=True)
+    elif status_filter == "inactive":
+        courses_qs = courses_qs.filter(is_active=False)
+
+    if scope_filter == "mine" and instructor:
+        courses_qs = courses_qs.filter(instructor=instructor)
+
+    # Attach permission flag for each course item
+    courses_list = list(courses_qs)
+    for c in courses_list:
+        if is_admin:
+            c.user_can_manage = True
+        elif instructor and c.instructor_id == instructor.instructor_id:
+            c.user_can_manage = True
+        else:
+            c.user_can_manage = False
+
+    paginator = Paginator(courses_list, 10)
+    page_number = request.GET.get("page")
+    page_obj = paginator.get_page(page_number)
+
+    context = {
+        "courses": page_obj,
+        "page_obj": page_obj,
+        "search_query": search_query,
+        "category_filter": category_filter,
+        "status_filter": status_filter,
+        "scope_filter": scope_filter,
+        "categories": Course.CATEGORY_CHOICES,
+        "total_courses_count": Course.objects.count(),
+        "active_courses_count": Course.objects.filter(is_active=True).count(),
+        "draft_courses_count": Course.objects.filter(is_active=False).count(),
+        "total_instructors_count": Instructor.objects.count(),
+        "total_enrollments_count": Enrollment.objects.filter(status__in=["active", "completed"]).count(),
+        "is_admin": is_admin,
+        "has_instructor_profile": bool(instructor),
+    }
+    return render(request, "course_manage_all.html", context)
+
+
+
 # ---------------------------------------------------------
 # Course Content Management Views
 # ---------------------------------------------------------

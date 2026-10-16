@@ -1,0 +1,462 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Manage All Courses - EduLearn{% endblock %}
+
+{% block extra_css %}
+<style>
+/* Summary Metric Strip */
+.summary-strip {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1.25rem;
+    margin-bottom: 2.25rem;
+}
+.summary-card {
+    background: var(--white);
+    border: 1px solid var(--slate-200);
+    border-radius: var(--radius-lg);
+    padding: 1.35rem 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: var(--shadow-sm);
+    transition: var(--transition);
+}
+.summary-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+    border-color: #cbd5e1;
+}
+.summary-card-val {
+    font-size: 1.85rem;
+    font-weight: 800;
+    line-height: 1.1;
+    font-family: var(--font-heading);
+}
+.summary-card-lbl {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--slate-500);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 0.25rem;
+}
+.summary-icon-bubble {
+    width: 50px;
+    height: 50px;
+    border-radius: var(--radius-full);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    flex-shrink: 0;
+}
+
+/* Tab Filter Pills */
+.tab-pills {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1.75rem;
+    flex-wrap: wrap;
+}
+.tab-pill {
+    padding: 0.45rem 1.15rem;
+    border-radius: var(--radius-full);
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: var(--slate-600);
+    background: var(--white);
+    border: 1px solid var(--slate-200);
+    transition: var(--transition);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+.tab-pill:hover {
+    color: var(--primary);
+    border-color: var(--primary);
+    background: var(--primary-light);
+    text-decoration: none;
+}
+.tab-pill.active {
+    background: var(--primary);
+    color: var(--white);
+    border-color: var(--primary);
+}
+
+/* Table Container */
+.table-card {
+    background: var(--white);
+    border: 1px solid var(--slate-200);
+    border-radius: var(--radius-xl);
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+    margin-bottom: 2rem;
+}
+.table-card-header {
+    padding: 1.15rem 1.5rem;
+    background: var(--white);
+    border-bottom: 1px solid var(--slate-200);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+.table-responsive {
+    overflow-x: auto;
+    width: 100%;
+}
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+    font-size: 0.94rem;
+}
+.data-table th {
+    background: var(--slate-50);
+    padding: 1rem 1.25rem;
+    color: var(--slate-600);
+    font-weight: 700;
+    font-size: 0.82rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-bottom: 2px solid var(--slate-200);
+    white-space: nowrap;
+}
+.data-table td {
+    padding: 1.15rem 1.25rem;
+    border-bottom: 1px solid var(--slate-100);
+    vertical-align: middle;
+}
+.data-table tr:hover td {
+    background-color: var(--slate-50);
+}
+
+/* Action Button Group */
+.action-group {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+
+    <!-- Hero Header -->
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1.25rem; margin-bottom: 2rem;">
+        <div>
+            <span class="section-tag">Platform Course Directory</span>
+            <h1 class="section-title" style="margin-bottom: 0.4rem;">Manage All Courses</h1>
+            <p class="section-desc" style="margin-bottom: 0;">
+                Comprehensive course directory with direct Edit, Delete, Curriculum management, and Public View actions.
+            </p>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
+            <a href="{% url 'course_create' %}" class="btn btn-primary">
+                <span>➕</span>
+                <span>Add New Course</span>
+            </a>
+            <a href="{% url 'course_list' %}" class="btn btn-outline">
+                👁️ Browse Catalog
+            </a>
+        </div>
+    </div>
+
+    <!-- Quick Metric Summary Strip -->
+    <div class="summary-strip">
+        <div class="summary-card">
+            <div>
+                <div class="summary-card-lbl">Total Courses</div>
+                <div class="summary-card-val" style="color: var(--primary);">{{ total_courses_count }}</div>
+            </div>
+            <div class="summary-icon-bubble" style="background: var(--primary-light); color: var(--primary);">
+                📚
+            </div>
+        </div>
+
+        <div class="summary-card">
+            <div>
+                <div class="summary-card-lbl">Live & Active</div>
+                <div class="summary-card-val" style="color: var(--success);">{{ active_courses_count }}</div>
+            </div>
+            <div class="summary-icon-bubble" style="background: var(--success-light); color: var(--success);">
+                🟢
+            </div>
+        </div>
+
+        <div class="summary-card">
+            <div>
+                <div class="summary-card-lbl">Draft / Inactive</div>
+                <div class="summary-card-val" style="color: var(--slate-600);">{{ draft_courses_count }}</div>
+            </div>
+            <div class="summary-icon-bubble" style="background: var(--slate-100); color: var(--slate-600);">
+                ⚪
+            </div>
+        </div>
+
+        <div class="summary-card">
+            <div>
+                <div class="summary-card-lbl">Active Enrollments</div>
+                <div class="summary-card-val" style="color: #0284c7;">{{ total_enrollments_count }}</div>
+            </div>
+            <div class="summary-icon-bubble" style="background: #e0f2fe; color: #0284c7;">
+                👨‍🎓
+            </div>
+        </div>
+    </div>
+
+    <!-- Tab Filter Switcher -->
+    <div class="tab-pills">
+        <a href="{% url 'course_manage_all' %}?status=all{% if search_query %}&q={{ search_query|urlencode }}{% endif %}{% if category_filter %}&category={{ category_filter|urlencode }}{% endif %}" 
+           class="tab-pill {% if status_filter == 'all' and scope_filter != 'mine' %}active{% endif %}">
+            All Courses ({{ total_courses_count }})
+        </a>
+
+        <a href="{% url 'course_manage_all' %}?status=active{% if search_query %}&q={{ search_query|urlencode }}{% endif %}{% if category_filter %}&category={{ category_filter|urlencode }}{% endif %}" 
+           class="tab-pill {% if status_filter == 'active' and scope_filter != 'mine' %}active{% endif %}">
+            🟢 Active Only ({{ active_courses_count }})
+        </a>
+
+        <a href="{% url 'course_manage_all' %}?status=inactive{% if search_query %}&q={{ search_query|urlencode }}{% endif %}{% if category_filter %}&category={{ category_filter|urlencode }}{% endif %}" 
+           class="tab-pill {% if status_filter == 'inactive' and scope_filter != 'mine' %}active{% endif %}">
+            ⚪ Drafts ({{ draft_courses_count }})
+        </a>
+
+        {% if has_instructor_profile %}
+            <a href="{% url 'course_manage_all' %}?scope=mine{% if search_query %}&q={{ search_query|urlencode }}{% endif %}{% if category_filter %}&category={{ category_filter|urlencode }}{% endif %}" 
+               class="tab-pill {% if scope_filter == 'mine' %}active{% endif %}">
+                👨‍🏫 My Courses Only
+            </a>
+        {% endif %}
+    </div>
+
+    <!-- Search & Filter Controls -->
+    <div class="filter-bar" style="margin-bottom: 2rem;">
+        <form method="get" class="search-form">
+            {% if status_filter != 'all' %}
+                <input type="hidden" name="status" value="{{ status_filter }}">
+            {% endif %}
+            {% if scope_filter != 'all' %}
+                <input type="hidden" name="scope" value="{{ scope_filter }}">
+            {% endif %}
+
+            <div class="search-input-wrap">
+                <span class="search-icon-inside">🔍</span>
+                <input
+                    type="text"
+                    name="q"
+                    placeholder="Search by title, category, or instructor name..."
+                    value="{{ search_query }}"
+                >
+            </div>
+
+            <div>
+                <select name="category" class="filter-select">
+                    <option value="">All Categories</option>
+                    {% for value, label in categories %}
+                        <option value="{{ value }}" {% if category_filter == value %}selected{% endif %}>
+                            {{ label }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <button type="submit" class="btn btn-primary">Search</button>
+
+            {% if search_query or category_filter or status_filter != 'all' or scope_filter != 'all' %}
+                <a href="{% url 'course_manage_all' %}" class="btn btn-secondary">Clear Filters</a>
+            {% endif %}
+        </form>
+    </div>
+
+    <!-- Courses Management Table -->
+    {% if courses %}
+        <div class="table-card">
+            <div class="table-card-header">
+                <div style="font-weight: 700; color: var(--slate-900); display: flex; align-items: center; gap: 0.5rem;">
+                    <span>📚</span>
+                    <span>Course Catalog Table</span>
+                    <span style="font-size: 0.8rem; padding: 0.2rem 0.6rem; border-radius: var(--radius-full); background: var(--primary-light); color: var(--primary-dark); font-weight: 700;">
+                        {{ courses|length }} displaying
+                    </span>
+                </div>
+                <div style="font-size: 0.85rem; color: var(--slate-500);">
+                    Actions: <strong>View</strong>, <strong>Lessons</strong>, <strong>Edit</strong>, and <strong>Delete</strong>
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 70px;">ID</th>
+                            <th style="min-width: 260px;">Course Details</th>
+                            <th style="min-width: 180px;">Instructor</th>
+                            <th style="width: 120px;">Price</th>
+                            <th style="width: 130px;">Curriculum</th>
+                            <th style="width: 120px; text-align: center;">Students</th>
+                            <th style="width: 110px;">Status</th>
+                            <th style="min-width: 260px; text-align: right;">Management Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for course in courses %}
+                            <tr>
+                                <!-- Course ID -->
+                                <td>
+                                    <span style="font-weight: 700; font-size: 0.82rem; color: var(--slate-500); background: var(--slate-100); padding: 0.2rem 0.5rem; border-radius: var(--radius-sm);">
+                                        #{{ course.course_id }}
+                                    </span>
+                                </td>
+
+                                <!-- Title, Category & Date -->
+                                <td>
+                                    <div style="font-weight: 700; color: var(--slate-900); font-size: 1.02rem; margin-bottom: 0.25rem;">
+                                        <a href="{% url 'course_detail' course.course_id %}" style="color: inherit;">
+                                            {{ course.title }}
+                                        </a>
+                                    </div>
+                                    <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+                                        <span class="badge-category" style="font-size: 0.72rem;">
+                                            {{ course.get_category_display }}
+                                        </span>
+                                        <span style="font-size: 0.78rem; color: var(--slate-400);">
+                                            ⏱️ {{ course.duration }} • Added {{ course.created_at|date:"d M Y" }}
+                                        </span>
+                                    </div>
+                                </td>
+
+                                <!-- Faculty Instructor -->
+                                <td>
+                                    {% if course.instructor %}
+                                        <div style="font-weight: 600; color: var(--slate-800); font-size: 0.92rem;">
+                                            {{ course.instructor.first_name }} {{ course.instructor.last_name }}
+                                        </div>
+                                        <div style="font-size: 0.8rem; color: var(--slate-400);">
+                                            {{ course.instructor.email }}
+                                        </div>
+                                    {% else %}
+                                        <span style="font-size: 0.8rem; color: var(--slate-500); font-style: italic;">
+                                            EduLearn Faculty
+                                        </span>
+                                    {% endif %}
+                                </td>
+
+                                <!-- Price -->
+                                <td>
+                                    <span style="font-weight: 800; font-family: var(--font-heading); color: var(--slate-900); font-size: 1.05rem;">
+                                        ₹{{ course.price }}
+                                    </span>
+                                </td>
+
+                                <!-- Curriculum -->
+                                <td>
+                                    <a href="{% url 'course_content_manage' course.course_id %}" class="btn btn-secondary btn-sm" style="padding: 0.3rem 0.65rem;" title="Manage syllabus and notes">
+                                        📚 {{ course.lessons_count }} Lessons
+                                    </a>
+                                </td>
+
+                                <!-- Enrolled Students Count -->
+                                <td style="text-align: center;">
+                                    <span style="display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.25rem 0.65rem; border-radius: var(--radius-full); font-size: 0.82rem; font-weight: 700; background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0;">
+                                        👨‍🎓 {{ course.active_enrollments }}
+                                    </span>
+                                </td>
+
+                                <!-- Status Badge -->
+                                <td>
+                                    {% if course.is_active %}
+                                        <span style="display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.25rem 0.65rem; border-radius: var(--radius-full); font-size: 0.78rem; font-weight: 700; background: var(--success-light); color: var(--success);">
+                                            ● Active
+                                        </span>
+                                    {% else %}
+                                        <span style="display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.25rem 0.65rem; border-radius: var(--radius-full); font-size: 0.78rem; font-weight: 700; background: var(--slate-100); color: var(--slate-500);">
+                                            ○ Draft
+                                        </span>
+                                    {% endif %}
+                                </td>
+
+                                <!-- Management Action Buttons: View, Lessons, Edit, Delete -->
+                                <td style="text-align: right;">
+                                    <div class="action-group">
+                                        <!-- View Public Page -->
+                                        <a href="{% url 'course_detail' course.course_id %}" class="btn btn-secondary btn-sm" title="View Public Course Page">
+                                            👁️ View
+                                        </a>
+
+                                        <!-- Manage Lessons -->
+                                        <a href="{% url 'course_content_manage' course.course_id %}" class="btn btn-secondary btn-sm" title="Manage Lessons & Notes Uploads">
+                                            📚 Lessons
+                                        </a>
+
+                                        <!-- Edit Course Details -->
+                                        {% if course.user_can_manage %}
+                                            <a href="{% url 'course_edit' course.course_id %}" class="btn btn-primary btn-sm" title="Edit Course Details">
+                                                ✏️ Edit
+                                            </a>
+                                            <!-- Delete Course -->
+                                            <a href="{% url 'course_delete' course.course_id %}" class="btn btn-danger btn-sm" title="Delete Course Permanently">
+                                                🗑️ Delete
+                                            </a>
+                                        {% else %}
+                                            <span style="font-size: 0.75rem; color: var(--slate-400); font-weight: 600; padding: 0.35rem 0.5rem; background: var(--slate-50); border: 1px dashed var(--slate-200); border-radius: var(--radius-sm);" title="Assigned to another instructor. Administrator privileges required to edit/delete.">
+                                                🔒 Read Only
+                                            </span>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Pagination -->
+        {% if page_obj.has_other_pages %}
+            <div class="pagination">
+                {% if page_obj.has_previous %}
+                    <a href="?page={{ page_obj.previous_page_number }}{% if search_query %}&q={{ search_query|urlencode }}{% endif %}{% if category_filter %}&category={{ category_filter|urlencode }}{% endif %}{% if status_filter != 'all' %}&status={{ status_filter|urlencode }}{% endif %}{% if scope_filter != 'all' %}&scope={{ scope_filter|urlencode }}{% endif %}">
+                        ← Previous
+                    </a>
+                {% endif %}
+
+                <span class="current">
+                    Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+                </span>
+
+                {% if page_obj.has_next %}
+                    <a href="?page={{ page_obj.next_page_number }}{% if search_query %}&q={{ search_query|urlencode }}{% endif %}{% if category_filter %}&category={{ category_filter|urlencode }}{% endif %}{% if status_filter != 'all' %}&status={{ status_filter|urlencode }}{% endif %}{% if scope_filter != 'all' %}&scope={{ scope_filter|urlencode }}{% endif %}">
+                        Next →
+                    </a>
+                {% endif %}
+            </div>
+        {% endif %}
+
+    {% else %}
+        <div class="empty-state">
+            <div class="empty-state-icon">📚</div>
+            <h3 style="font-size: 1.35rem; color: var(--slate-900); margin-bottom: 0.5rem;">No Courses Found</h3>
+            <p style="color: var(--slate-500); max-width: 460px; margin: 0 auto 1.5rem; font-size: 0.95rem; line-height: 1.6;">
+                No course entries match your current search query or active filter criteria. Try adjusting your search keywords.
+            </p>
+            {% if search_query or category_filter or status_filter != 'all' or scope_filter != 'all' %}
+                <a href="{% url 'course_manage_all' %}" class="btn btn-secondary">
+                    Reset All Filters
+                </a>
+            {% else %}
+                <a href="{% url 'course_create' %}" class="btn btn-primary btn-lg">
+                    ➕ Create Your First Course
+                </a>
+            {% endif %}
+        </div>
+    {% endif %}
+
+</div>
+{% endblock %}

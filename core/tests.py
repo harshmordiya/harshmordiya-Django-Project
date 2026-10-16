@@ -567,3 +567,105 @@ class StudentAndInstructorListDirectoryViewsTests(TestCase):
         self.assertEqual(resp_stud.status_code, 200)
         self.assertContains(resp_stud, "Isaac Newton")
 
+
+class ManageAllCoursesTests(TestCase):
+    def setUp(self):
+        self.client = Client()
+
+        # Admin user
+        self.admin_user = User.objects.create_superuser(
+            username="adminuser",
+            email="admin@example.com",
+            password="adminpassword123"
+        )
+        UserProfile.objects.create(user=self.admin_user, role="admin")
+
+        # Instructor user & profile
+        self.inst_user = User.objects.create_user(
+            username="prof_turing",
+            email="alan.turing@example.com",
+            password="turingpassword123"
+        )
+        UserProfile.objects.create(user=self.inst_user, role="instructor")
+        self.instructor = Instructor.objects.create(
+            first_name="Alan",
+            last_name="Turing",
+            email="alan.turing@example.com",
+            specialization="Computation"
+        )
+
+        # Student user
+        self.student_user = User.objects.create_user(
+            username="student_user",
+            email="student@example.com",
+            password="studentpassword123"
+        )
+        UserProfile.objects.create(user=self.student_user, role="student")
+
+        # Create active and draft courses
+        self.active_course = Course.objects.create(
+            title="Automata and Turing Machines",
+            category="programming",
+            price=Decimal("499.00"),
+            description="Foundations of computer science.",
+            duration="8 weeks",
+            instructor=self.instructor,
+            is_active=True
+        )
+        self.draft_course = Course.objects.create(
+            title="Quantum Decryption Draft",
+            category="data_science",
+            price=Decimal("999.00"),
+            description="Advanced cryptographic analysis.",
+            duration="12 weeks",
+            instructor=self.instructor,
+            is_active=False
+        )
+
+    def test_anonymous_redirected(self):
+        """Anonymous users must be redirected to login."""
+        response = self.client.get(reverse("course_manage_all"))
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("/login/", response.url)
+
+    def test_student_forbidden_redirect(self):
+        """Regular students cannot access course management table."""
+        self.client.login(username="student_user", password="studentpassword123")
+        response = self.client.get(reverse("course_manage_all"))
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("/courses/", response.url)
+
+    def test_instructor_access_and_renders_actions(self):
+        """Instructor can access and sees Edit & Delete options for their courses."""
+        self.client.login(username="prof_turing", password="turingpassword123")
+        response = self.client.get(reverse("course_manage_all"))
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "course_manage_all.html")
+        self.assertContains(response, "Automata and Turing Machines")
+        self.assertContains(response, "Quantum Decryption Draft")
+        # Check that Edit and Delete action URLs are present
+        self.assertContains(response, reverse("course_edit", args=[self.active_course.course_id]))
+        self.assertContains(response, reverse("course_delete", args=[self.active_course.course_id]))
+
+    def test_search_filter(self):
+        """Search query filters by course title."""
+        self.client.login(username="prof_turing", password="turingpassword123")
+        response = self.client.get(reverse("course_manage_all") + "?q=Automata")
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Automata and Turing Machines")
+        self.assertNotContains(response, "Quantum Decryption Draft")
+
+    def test_status_filter(self):
+        """Status filter separates active and draft courses."""
+        self.client.login(username="prof_turing", password="turingpassword123")
+        resp_active = self.client.get(reverse("course_manage_all") + "?status=active")
+        self.assertEqual(resp_active.status_code, 200)
+        self.assertContains(resp_active, "Automata and Turing Machines")
+        self.assertNotContains(resp_active, "Quantum Decryption Draft")
+
+        resp_draft = self.client.get(reverse("course_manage_all") + "?status=inactive")
+        self.assertEqual(resp_draft.status_code, 200)
+        self.assertContains(resp_draft, "Quantum Decryption Draft")
+        self.assertNotContains(resp_draft, "Automata and Turing Machines")
+
+

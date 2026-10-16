@@ -43,9 +43,14 @@
             {% endif %}
 
             {% if user.is_authenticated and nav_user_role == 'instructor' or user.is_staff %}
-                <a href="{% url 'course_create' %}" class="btn btn-primary" style="margin-left: auto;">
-                    ➕ Add Course
-                </a>
+                <div style="display: flex; gap: 0.5rem; margin-left: auto; flex-wrap: wrap;">
+                    <a href="{% url 'course_manage_all' %}" class="btn btn-outline" title="Manage all courses in a table">
+                        ⚙️ Manage Courses
+                    </a>
+                    <a href="{% url 'course_create' %}" class="btn btn-primary" title="Create a new course">
+                        ➕ Add Course
+                    </a>
+                </div>
             {% endif %}
         </form>
     </div>
