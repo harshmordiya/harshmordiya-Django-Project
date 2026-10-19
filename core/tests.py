@@ -1080,6 +1080,113 @@ class StudentModelAndProfileTests(TestCase):
         self.assertIn("/login/", response.request["PATH_INFO"])
         self.assertContains(response, "Your account has been deactivated by an administrator")
 
+    def test_student_profile_edit_page_contains_preview_ui_and_enctype(self):
+        """Edit profile template renders multipart form, preview UI, and file input."""
+        self.client.login(username="john_doe", password="securepassword123")
+        response = self.client.get(reverse("student_profile_edit"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'enctype="multipart/form-data"')
+        self.assertContains(response, 'id="id_profile_picture"')
+        self.assertContains(response, 'id="previewImg"')
+        self.assertContains(response, 'id="previewFallback"')
+        self.assertContains(response, 'id="pictureDropzone"')
+        self.assertContains(response, "📷 Profile Picture")
+
+    def test_student_can_upload_valid_profile_picture(self):
+        """Student can upload a valid image file, which is saved to Student.profile_picture."""
+        import io
+        from PIL import Image
+
+        self.client.login(username="john_doe", password="securepassword123")
+
+        img_byte_arr = io.BytesIO()
+        img = Image.new("RGB", (100, 100), color="green")
+        img.save(img_byte_arr, format="PNG")
+        uploaded_image = SimpleUploadedFile(
+            name="avatar.png",
+            content=img_byte_arr.getvalue(),
+            content_type="image/png"
+        )
+
+        update_data = {
+            "first_name": "John",
+            "last_name": "Doe",
+            "email": "john.doe@example.com",
+            "phone": "+919876543210",
+            "bio": "Studying with a new avatar!",
+            "profile_picture": uploaded_image,
+        }
+
+        response = self.client.post(reverse("student_profile_edit"), update_data, follow=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Your student profile has been updated successfully!")
+
+        self.student.refresh_from_db()
+        self.assertTrue(bool(self.student.profile_picture))
+        self.assertIn("profile_pics/", self.student.profile_picture.name)
+
+        # Profile page should now render the image tag
+        profile_response = self.client.get(reverse("student_profile"))
+        self.assertContains(profile_response, self.student.profile_picture.url)
+
+        # Clean up uploaded file
+        if self.student.profile_picture:
+            self.student.profile_picture.delete(save=False)
+
+    def test_student_profile_picture_invalid_file_rejected(self):
+        """Uploading a non-image file fails form validation."""
+        self.client.login(username="john_doe", password="securepassword123")
+
+        invalid_file = SimpleUploadedFile(
+            name="document.txt",
+            content=b"This is a text file, not an image.",
+            content_type="text/plain"
+        )
+
+        update_data = {
+            "first_name": "John",
+            "last_name": "Doe",
+            "email": "john.doe@example.com",
+            "profile_picture": invalid_file,
+        }
+
+        response = self.client.post(reverse("student_profile_edit"), update_data)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "The uploaded file is not a valid image")
+
+    def test_student_can_clear_profile_picture(self):
+        """Student can remove their uploaded profile picture."""
+        import io
+        from PIL import Image
+
+        self.client.login(username="john_doe", password="securepassword123")
+
+        # Set an initial picture
+        img_byte_arr = io.BytesIO()
+        img = Image.new("RGB", (50, 50), color="blue")
+        img.save(img_byte_arr, format="PNG")
+        uploaded_image = SimpleUploadedFile(
+            name="initial_avatar.png",
+            content=img_byte_arr.getvalue(),
+            content_type="image/png"
+        )
+        self.student.profile_picture = uploaded_image
+        self.student.save()
+        self.assertTrue(bool(self.student.profile_picture))
+
+        # Clear it via form
+        clear_data = {
+            "first_name": "John",
+            "last_name": "Doe",
+            "email": "john.doe@example.com",
+            "clear_profile_picture": "on",
+        }
+        response = self.client.post(reverse("student_profile_edit"), clear_data, follow=True)
+        self.assertEqual(response.status_code, 200)
+
+        self.student.refresh_from_db()
+        self.assertFalse(bool(self.student.profile_picture))
+
 
 
 

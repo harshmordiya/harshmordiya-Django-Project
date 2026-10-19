@@ -325,7 +325,15 @@ class StudentProfileForm(forms.ModelForm):
     """
     Form for students to view and update their personal profile details.
     Synchronizes first name, last name, and email with the underlying User account.
+    Supports profile picture upload with real-time preview and removal.
     """
+    clear_profile_picture = forms.BooleanField(
+        required=False,
+        initial=False,
+        widget=forms.HiddenInput(attrs={"id": "id_clear_profile_picture"}),
+        help_text="Remove existing profile picture",
+    )
+
     class Meta:
         model = Student
         fields = [
@@ -336,6 +344,7 @@ class StudentProfileForm(forms.ModelForm):
             "date_of_birth",
             "address",
             "bio",
+            "profile_picture",
         ]
         widgets = {
             "first_name": forms.TextInput(attrs={
@@ -370,6 +379,16 @@ class StudentProfileForm(forms.ModelForm):
                 "rows": 4,
                 "placeholder": "Tell us about your learning goals, skills, and background...",
             }),
+            "profile_picture": forms.FileInput(attrs={
+                "class": "form-file-input",
+                "accept": "image/jpeg,image/png,image/webp,image/gif",
+                "id": "id_profile_picture",
+            }),
+        }
+        error_messages = {
+            "profile_picture": {
+                "invalid_image": "The uploaded file is not a valid image. Please select a valid image file.",
+            }
         }
 
     def __init__(self, *args, user=None, **kwargs):
@@ -402,8 +421,50 @@ class StudentProfileForm(forms.ModelForm):
 
         return email
 
+    def clean_profile_picture(self):
+        picture = self.cleaned_data.get("profile_picture")
+        if not picture:
+            return picture
+
+        if hasattr(picture, "size"):
+            max_size_mb = 5
+            if picture.size > max_size_mb * 1024 * 1024:
+                raise forms.ValidationError(f"Profile picture file size must be under {max_size_mb} MB.")
+
+            from PIL import Image
+            try:
+                img = Image.open(picture)
+                img.verify()
+                allowed_formats = {"JPEG", "JPG", "PNG", "WEBP", "GIF"}
+                if img.format and img.format.upper() not in allowed_formats:
+                    raise forms.ValidationError(
+                        f"Unsupported format ({img.format}). Please upload a JPEG, PNG, WEBP, or GIF image."
+                    )
+                if hasattr(picture, "seek"):
+                    picture.seek(0)
+            except forms.ValidationError:
+                raise
+            except Exception:
+                raise forms.ValidationError("The uploaded file is not a valid image. Please select a JPEG, PNG, WEBP, or GIF file.")
+
+        return picture
+
     def save(self, commit=True):
-        student = super().save(commit=commit)
+        student = super().save(commit=False)
+
+        # Handle removing profile picture if requested
+        if self.cleaned_data.get("clear_profile_picture"):
+            if student.profile_picture:
+                try:
+                    student.profile_picture.delete(save=False)
+                except Exception:
+                    pass
+                student.profile_picture = None
+
+        if commit:
+            student.save()
+            self.save_m2m()
+
         # Synchronize first_name, last_name, and email to auth.User
         if self.user:
             self.user.first_name = self.cleaned_data.get("first_name", "").strip()

@@ -34,7 +34,168 @@
     font-weight: 800;
     box-shadow: var(--shadow-sm);
     flex-shrink: 0;
+    overflow: hidden;
 }
+.form-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* Profile Picture Upload & Preview Component */
+.picture-upload-section {
+    background: linear-gradient(to right, #f8fafc, #f1f5f9);
+    border: 2px dashed #cbd5e1;
+    border-radius: var(--radius-lg);
+    padding: 1.75rem;
+    margin-bottom: 2rem;
+    transition: all 0.25s ease;
+}
+.picture-upload-section.dragover {
+    border-color: #059669;
+    background: #ecfdf5;
+}
+.picture-preview-row {
+    display: flex;
+    align-items: center;
+    gap: 1.75rem;
+    flex-wrap: wrap;
+}
+.preview-container {
+    position: relative;
+    width: 110px;
+    height: 110px;
+    border-radius: 50%;
+    border: 4px solid white;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+    overflow: hidden;
+    background: linear-gradient(135deg, #059669, #10b981);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+.preview-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+.preview-initials {
+    color: white;
+    font-size: 2.2rem;
+    font-weight: 800;
+    user-select: none;
+}
+.preview-badge-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(0, 0, 0, 0.6);
+    color: white;
+    font-size: 0.65rem;
+    text-align: center;
+    padding: 2px 0;
+    text-transform: uppercase;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+}
+.upload-controls {
+    flex: 1;
+    min-width: 240px;
+}
+.upload-btn-group {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.5rem;
+}
+.btn-upload-trigger {
+    background: #059669;
+    color: white;
+    border: none;
+    padding: 0.55rem 1.15rem;
+    border-radius: var(--radius-md);
+    font-size: 0.88rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    transition: background 0.2s ease, transform 0.15s ease;
+}
+.btn-upload-trigger:hover {
+    background: #047857;
+    color: white;
+    transform: translateY(-1px);
+}
+.btn-remove-photo {
+    background: white;
+    color: #dc2626;
+    border: 1px solid #fca5a5;
+    padding: 0.55rem 1rem;
+    border-radius: var(--radius-md);
+    font-size: 0.88rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    transition: all 0.2s ease;
+}
+.btn-remove-photo:hover {
+    background: #fee2e2;
+    border-color: #f87171;
+}
+.btn-undo-remove {
+    background: white;
+    color: #059669;
+    border: 1px solid #a7f3d0;
+    padding: 0.4rem 0.85rem;
+    border-radius: var(--radius-md);
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+.btn-undo-remove:hover {
+    background: #ecfdf5;
+}
+.upload-hint {
+    color: var(--slate-500);
+    font-size: 0.82rem;
+    margin-top: 0.35rem;
+    line-height: 1.4;
+}
+.file-info-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    background: #dcfce7;
+    color: #15803d;
+    font-size: 0.82rem;
+    font-weight: 600;
+    padding: 0.3rem 0.75rem;
+    border-radius: 9999px;
+    margin-top: 0.5rem;
+}
+.remove-notice-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: #fee2e2;
+    color: #991b1b;
+    font-size: 0.82rem;
+    font-weight: 600;
+    padding: 0.35rem 0.85rem;
+    border-radius: var(--radius-md);
+    margin-top: 0.5rem;
+}
+
 .form-grid-2 {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -43,6 +204,11 @@
 @media (max-width: 640px) {
     .form-grid-2 {
         grid-template-columns: 1fr;
+    }
+    .picture-preview-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
     }
 }
 .form-group {
@@ -82,8 +248,12 @@
     <div class="form-card">
         <!-- Header -->
         <div class="form-header">
-            <div class="form-avatar">
-                {{ student.first_name|first|upper }}{{ student.last_name|first|upper }}
+            <div class="form-avatar" id="headerAvatar">
+                {% if student.profile_picture %}
+                    <img src="{{ student.profile_picture.url }}" alt="{{ student.full_name }}" id="headerAvatarImg">
+                {% else %}
+                    <span id="headerAvatarText">{{ student.first_name|first|upper }}{{ student.last_name|first|upper }}</span>
+                {% endif %}
             </div>
             <div>
                 <span class="badge" style="background: #dcfce7; color: #15803d; font-weight: 700; border-radius: 9999px; padding: 0.25rem 0.65rem; font-size: 0.78rem;">
@@ -93,12 +263,12 @@
                     Edit Profile Details
                 </h1>
                 <p style="color: var(--slate-500); font-size: 0.9rem; margin: 0;">
-                    Update your personal contact details, bio, and student credentials.
+                    Update your photo, contact details, bio, and personal information.
                 </p>
             </div>
         </div>
 
-        <form method="post" novalidate>
+        <form method="post" enctype="multipart/form-data" novalidate id="studentProfileForm">
             {% csrf_token %}
 
             {% if form.non_field_errors %}
@@ -108,6 +278,83 @@
                     {% endfor %}
                 </div>
             {% endif %}
+
+            <!-- Hidden Inputs for Clear Picture -->
+            {{ form.clear_profile_picture }}
+
+            <!-- Profile Picture Upload with Instant Live Preview -->
+            <div class="picture-upload-section" id="pictureDropzone">
+                <label class="form-label" style="font-size: 0.95rem; font-weight: 700; color: var(--slate-800); margin-bottom: 0.75rem;">
+                    📷 Profile Picture
+                </label>
+
+                <div class="picture-preview-row">
+                    <!-- Live Preview Circular Container -->
+                    <div class="preview-container" id="previewContainer">
+                        <img id="previewImg" 
+                             class="preview-img" 
+                             src="{% if student.profile_picture %}{{ student.profile_picture.url }}{% endif %}" 
+                             alt="{{ student.full_name }}" 
+                             style="{% if not student.profile_picture %}display: none;{% endif %}">
+                        <div id="previewFallback" 
+                             class="preview-initials" 
+                             style="{% if student.profile_picture %}display: none;{% endif %}">
+                            {{ student.first_name|first|upper }}{{ student.last_name|first|upper }}
+                        </div>
+                        <div id="previewBadge" class="preview-badge-overlay" style="display: none;">
+                            Preview
+                        </div>
+                    </div>
+
+                    <!-- Upload Controls & Feedback -->
+                    <div class="upload-controls">
+                        <!-- Hidden native file input rendered by Django form -->
+                        <div style="display: none;">
+                            {{ form.profile_picture }}
+                        </div>
+
+                        <div class="upload-btn-group">
+                            <button type="button" class="btn-upload-trigger" id="browsePhotoBtn" onclick="document.getElementById('id_profile_picture').click();">
+                                <i class="bi bi-cloud-arrow-up-fill"></i> Choose New Photo
+                            </button>
+
+                            <button type="button" 
+                                    class="btn-remove-photo" 
+                                    id="removePhotoBtn" 
+                                    onclick="markPhotoForRemoval();" 
+                                    style="{% if not student.profile_picture %}display: none;{% endif %}">
+                                <i class="bi bi-trash-fill"></i> Remove Photo
+                            </button>
+                        </div>
+
+                        <!-- Live File Info Feedback -->
+                        <div id="fileInfoBadge" class="file-info-badge" style="display: none;">
+                            <i class="bi bi-check-circle-fill"></i>
+                            <span>Selected: <strong id="fileNameSpan"></strong> (<span id="fileSizeSpan"></span>) - Unsaved Preview</span>
+                        </div>
+
+                        <!-- Removal Notification Feedback -->
+                        <div id="photoRemovedBadge" class="remove-notice-badge" style="display: none;">
+                            <i class="bi bi-exclamation-triangle-fill"></i>
+                            <span>Photo marked for removal on save.</span>
+                            <button type="button" class="btn-undo-remove" onclick="undoPhotoRemoval();">
+                                <i class="bi bi-arrow-counterclockwise"></i> Undo
+                            </button>
+                        </div>
+
+                        <div class="upload-hint">
+                            Upload a JPEG, PNG, or WEBP image. Recommended size: 400x400px (Max 5 MB).
+                            You can also drag and drop an image file here.
+                        </div>
+
+                        {% if form.profile_picture.errors %}
+                            <div class="field-error">
+                                ⚠️ {{ form.profile_picture.errors.0 }}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
 
             <!-- Name Fields (2 Columns) -->
             <div class="form-grid-2">
@@ -218,4 +465,144 @@
     </div>
 
 </div>
+
+<!-- Real-time Live Preview JavaScript -->
+<script>
+(function() {
+    const fileInput = document.getElementById('id_profile_picture');
+    const clearInput = document.getElementById('id_clear_profile_picture');
+    const previewImg = document.getElementById('previewImg');
+    const previewFallback = document.getElementById('previewFallback');
+    const previewBadge = document.getElementById('previewBadge');
+    const fileInfoBadge = document.getElementById('fileInfoBadge');
+    const fileNameSpan = document.getElementById('fileNameSpan');
+    const fileSizeSpan = document.getElementById('fileSizeSpan');
+    const photoRemovedBadge = document.getElementById('photoRemovedBadge');
+    const removePhotoBtn = document.getElementById('removePhotoBtn');
+    const dropzone = document.getElementById('pictureDropzone');
+    
+    // Store original server state
+    const originalHasPicture = {% if student.profile_picture %}true{% else %}false{% endif %};
+    const originalPictureUrl = "{% if student.profile_picture %}{{ student.profile_picture.url }}{% endif %}";
+
+    function formatFileSize(bytes) {
+        if (bytes < 1024) return bytes + ' B';
+        if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+        return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+    }
+
+    function handleFileSelected(file) {
+        if (!file) return;
+
+        // Validate image type
+        if (!file.type.startsWith('image/')) {
+            alert('Please select a valid image file (JPEG, PNG, WEBP, or GIF).');
+            fileInput.value = '';
+            return;
+        }
+
+        // Validate size (5MB max)
+        const maxSizeBytes = 5 * 1024 * 1024;
+        if (file.size > maxSizeBytes) {
+            alert('File size exceeds the 5 MB limit. Please select a smaller image.');
+            fileInput.value = '';
+            return;
+        }
+
+        // Generate instant preview via URL.createObjectURL or FileReader
+        const objectUrl = URL.createObjectURL(file);
+        previewImg.src = objectUrl;
+        previewImg.style.display = 'block';
+        previewFallback.style.display = 'none';
+        previewBadge.style.display = 'block';
+
+        // Update header preview if exists
+        const headerAvatar = document.getElementById('headerAvatar');
+        if (headerAvatar) {
+            headerAvatar.innerHTML = '<img src="' + objectUrl + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">';
+        }
+
+        // Update file info badge
+        fileNameSpan.textContent = file.name;
+        fileSizeSpan.textContent = formatFileSize(file.size);
+        fileInfoBadge.style.display = 'inline-flex';
+
+        // Reset removal state if a new file is chosen
+        if (clearInput) clearInput.checked = false;
+        photoRemovedBadge.style.display = 'none';
+        removePhotoBtn.style.display = 'inline-flex';
+    }
+
+    if (fileInput) {
+        fileInput.addEventListener('change', function(e) {
+            const file = e.target.files && e.target.files[0];
+            handleFileSelected(file);
+        });
+    }
+
+    // Drag & Drop Support
+    if (dropzone) {
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropzone.addEventListener(eventName, function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                dropzone.classList.add('dragover');
+            }, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropzone.addEventListener(eventName, function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                dropzone.classList.remove('dragover');
+            }, false);
+        });
+
+        dropzone.addEventListener('drop', function(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            if (files && files.length > 0) {
+                fileInput.files = files;
+                handleFileSelected(files[0]);
+            }
+        }, false);
+    }
+
+    // Mark photo for removal
+    window.markPhotoForRemoval = function() {
+        if (clearInput) clearInput.checked = true;
+
+        // Reset any newly selected file
+        if (fileInput) fileInput.value = '';
+
+        // Hide preview image, show initials
+        previewImg.style.display = 'none';
+        previewImg.src = '';
+        previewFallback.style.display = 'block';
+        previewBadge.style.display = 'none';
+        fileInfoBadge.style.display = 'none';
+
+        // Show removed notification
+        photoRemovedBadge.style.display = 'inline-flex';
+        removePhotoBtn.style.display = 'none';
+    };
+
+    // Undo photo removal
+    window.undoPhotoRemoval = function() {
+        if (clearInput) clearInput.checked = false;
+        photoRemovedBadge.style.display = 'none';
+
+        if (originalHasPicture && originalPictureUrl) {
+            previewImg.src = originalPictureUrl;
+            previewImg.style.display = 'block';
+            previewFallback.style.display = 'none';
+            removePhotoBtn.style.display = 'inline-flex';
+        } else {
+            previewImg.style.display = 'none';
+            previewFallback.style.display = 'block';
+            removePhotoBtn.style.display = 'none';
+        }
+    };
+})();
+</script>
 {% endblock %}

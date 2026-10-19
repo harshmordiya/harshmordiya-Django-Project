@@ -25,6 +25,12 @@ class Student(models.Model):
     phone = models.CharField(max_length=15, blank=True, default="")
     address = models.TextField(blank=True, default="")
     bio = models.TextField(blank=True, default="", help_text="Short biography or learning goals")
+    profile_picture = models.ImageField(
+        upload_to="profile_pics/",
+        blank=True,
+        null=True,
+        help_text="Upload student profile picture"
+    )
     enrollment_date = models.DateTimeField(default=timezone.now, null=True, blank=True)
 
     class Meta:
@@ -40,6 +46,15 @@ class Student(models.Model):
     def full_name(self):
         full = f"{self.first_name} {self.last_name}".strip()
         return full if full else self.email
+
+    @property
+    def profile_picture_url(self):
+        if self.profile_picture:
+            try:
+                return self.profile_picture.url
+            except Exception:
+                return None
+        return None
 
     @property
     def user(self):

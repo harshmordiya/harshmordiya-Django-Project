@@ -1,6 +1,7 @@
 from decimal import Decimal
 from django.contrib import admin
 from django.contrib.auth.models import User
+from django.utils.html import format_html
 from .models import (
     Admin,
     Student,
@@ -162,6 +163,7 @@ class AdminAdmin(admin.ModelAdmin):
 class StudentAdmin(admin.ModelAdmin):
     list_display = (
         "student_id",
+        "photo_preview",
         "full_name",
         "email",
         "phone",
@@ -181,6 +183,15 @@ class StudentAdmin(admin.ModelAdmin):
     list_per_page = 25
     readonly_fields = ("enrollment_date",)
     actions = [activate_selected_users, deactivate_selected_users]
+
+    @admin.display(description="Photo")
+    def photo_preview(self, obj):
+        if obj.profile_picture:
+            return format_html(
+                '<img src="{}" style="width:34px; height:34px; border-radius:50%; object-fit:cover;" />',
+                obj.profile_picture.url
+            )
+        return "-"
 
     @admin.display(boolean=True, ordering="email", description="Account Active")
     def is_account_active(self, obj):

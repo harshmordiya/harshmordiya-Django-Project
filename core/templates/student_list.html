@@ -204,8 +204,12 @@
                 <div class="member-card">
                     <!-- Top Green Gradient Header -->
                     <div class="member-card-header-student">
-                        <div class="member-avatar-student">
-                            {{ st.first_name|first|upper }}{{ st.last_name|first|upper }}
+                        <div class="member-avatar-student" style="overflow: hidden;">
+                            {% if st.profile_picture %}
+                                <img src="{{ st.profile_picture.url }}" alt="{{ st.full_name }}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
+                            {% else %}
+                                {{ st.first_name|first|upper }}{{ st.last_name|first|upper }}
+                            {% endif %}
                         </div>
                     </div>
 

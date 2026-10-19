@@ -307,7 +307,7 @@ def student_profile_edit_view(request):
         return redirect("dashboard")
 
     if request.method == "POST":
-        form = StudentProfileForm(request.POST, instance=student, user=request.user)
+        form = StudentProfileForm(request.POST, request.FILES, instance=student, user=request.user)
         if form.is_valid():
             form.save()
             messages.success(request, "Your student profile has been updated successfully!")
