@@ -1,10 +1,11 @@
 from django.test import TestCase, Client
 from django.contrib.auth.models import User
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.core import mail
 from django.urls import reverse
 from decimal import Decimal
 
-from core.models import Course, CourseContent, Instructor, UserProfile, Student, Enrollment, Payment
+from core.models import Course, CourseContent, Instructor, UserProfile, Student, Enrollment, Payment, InstructorMessage
 from core.forms import CourseContentForm
 
 
@@ -1186,6 +1187,233 @@ class StudentModelAndProfileTests(TestCase):
 
         self.student.refresh_from_db()
         self.assertFalse(bool(self.student.profile_picture))
+
+
+class ContactInstructorTests(TestCase):
+    def setUp(self):
+        self.client = Client()
+
+        # Instructor user & record
+        self.instructor_user = User.objects.create_user(
+            username="prof_smith",
+            email="prof.smith@example.com",
+            password="securepassword123",
+            first_name="Alan",
+            last_name="Smith"
+        )
+        self.instructor_profile = UserProfile.objects.create(
+            user=self.instructor_user,
+            role="instructor"
+        )
+        self.instructor = Instructor.objects.create(
+            first_name="Alan",
+            last_name="Smith",
+            email="prof.smith@example.com",
+            specialization="Machine Learning & Data Science",
+            phone="+919876543210"
+        )
+
+        # Course by this instructor
+        self.course = Course.objects.create(
+            title="Introduction to Machine Learning",
+            description="Learn machine learning basics.",
+            category="Data Science",
+            price=Decimal("999.00"),
+            duration="8 Weeks",
+            is_active=True,
+            instructor=self.instructor
+        )
+
+        # Student user & record
+        self.student_user = User.objects.create_user(
+            username="student_alice",
+            email="alice@example.com",
+            password="studentpassword123",
+            first_name="Alice",
+            last_name="Wonder"
+        )
+        self.student_profile = UserProfile.objects.create(
+            user=self.student_user,
+            role="student"
+        )
+        self.student = Student.objects.create(
+            first_name="Alice",
+            last_name="Wonder",
+            email="alice@example.com",
+            phone="+919876543211"
+        )
+
+    def test_contact_instructor_page_get_unauthenticated(self):
+        """Unauthenticated visitor can view the contact instructor form."""
+        url = reverse("contact_instructor", args=[self.instructor.instructor_id])
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Alan Smith")
+        self.assertContains(response, "Machine Learning")
+        self.assertContains(response, "Send a Message to Alan")
+        self.assertContains(response, 'name="sender_name"')
+        self.assertContains(response, 'name="sender_email"')
+        self.assertContains(response, 'name="subject"')
+        self.assertContains(response, 'name="message"')
+
+    def test_contact_instructor_page_get_authenticated_prefills_data(self):
+        """Authenticated user sees their name and email pre-filled."""
+        self.client.login(username="student_alice", password="studentpassword123")
+        url = reverse("contact_instructor", args=[self.instructor.instructor_id])
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'value="Alice Wonder"')
+        self.assertContains(response, 'value="alice@example.com"')
+
+    def test_contact_instructor_page_with_course_id_preselects_course(self):
+        """Passing course_id query parameter preselects that course in the form."""
+        url = f"{reverse('contact_instructor', args=[self.instructor.instructor_id])}?course_id={self.course.course_id}"
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, f'value="{self.course.course_id}" selected')
+
+    def test_contact_instructor_post_success(self):
+        """Submitting a valid message creates an InstructorMessage and sends an email."""
+        mail.outbox = []
+        url = reverse("contact_instructor", args=[self.instructor.instructor_id])
+        post_data = {
+            "sender_name": "Bob Learner",
+            "sender_email": "bob.learner@example.com",
+            "course": self.course.course_id,
+            "subject": "Question about course prerequisites",
+            "message": "Hello professor, do I need to know Python before starting this course?",
+        }
+        response = self.client.post(url, post_data, follow=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Your message has been delivered to Instructor Alan Smith!")
+
+        # Verify database record
+        msg = InstructorMessage.objects.filter(instructor=self.instructor).first()
+        self.assertIsNotNone(msg)
+        self.assertEqual(msg.sender_name, "Bob Learner")
+        self.assertEqual(msg.sender_email, "bob.learner@example.com")
+        self.assertEqual(msg.subject, "Question about course prerequisites")
+        self.assertIn("do I need to know Python", msg.message)
+        self.assertEqual(msg.course, self.course)
+        self.assertFalse(msg.is_read)
+
+        # Verify email was dispatched
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].to, [self.instructor.email])
+        self.assertIn("Question about course prerequisites", mail.outbox[0].subject)
+
+    def test_contact_instructor_post_validation_error_short_message(self):
+        """Submitting a message shorter than 10 characters raises validation error."""
+        url = reverse("contact_instructor", args=[self.instructor.instructor_id])
+        post_data = {
+            "sender_name": "Bob Learner",
+            "sender_email": "bob@example.com",
+            "subject": "Hi",
+            "message": "Short",  # Under 10 characters
+        }
+        response = self.client.post(url, post_data)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Message must be at least 10 characters long")
+        self.assertEqual(InstructorMessage.objects.filter(instructor=self.instructor).count(), 0)
+
+    def test_instructor_can_view_inbox_and_mark_read(self):
+        """Instructor can view their inbox and mark messages as read."""
+        msg = InstructorMessage.objects.create(
+            instructor=self.instructor,
+            sender_name="Alice Wonder",
+            sender_email="alice@example.com",
+            subject="Assignment 1 Help",
+            message="Professor, I have a doubt regarding question 4.",
+            is_read=False
+        )
+
+        self.client.login(username="prof_smith", password="securepassword123")
+        inbox_url = reverse("instructor_messages")
+        response = self.client.get(inbox_url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Assignment 1 Help")
+        self.assertContains(response, "Alice Wonder")
+
+        # Mark as read
+        post_response = self.client.post(inbox_url, {"mark_read": msg.message_id}, follow=True)
+        self.assertEqual(post_response.status_code, 200)
+        msg.refresh_from_db()
+        self.assertTrue(msg.is_read)
+
+    def test_instructor_quick_reply_in_page_option_1(self):
+        """Instructor can send an in-page quick reply (Option 1) which emails the student and records reply."""
+        mail.outbox = []
+        msg = InstructorMessage.objects.create(
+            instructor=self.instructor,
+            course=self.course,
+            sender_name="Alice Wonder",
+            sender_email="alice@example.com",
+            subject="Question about lectures",
+            message="How many lecture videos are in this course?",
+            is_read=False
+        )
+
+        self.client.login(username="prof_smith", password="securepassword123")
+        inbox_url = reverse("instructor_messages")
+        post_data = {
+            "action": "send_reply",
+            "message_id": msg.message_id,
+            "reply_text": "Hello Alice, there are 25 video lessons across 6 modules.",
+        }
+        response = self.client.post(inbox_url, post_data, follow=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Your reply was sent to Alice Wonder")
+
+        msg.refresh_from_db()
+        self.assertTrue(msg.is_replied)
+        self.assertTrue(msg.is_read)
+        self.assertIsNotNone(msg.replied_at)
+        self.assertEqual(msg.reply_text, "Hello Alice, there are 25 video lessons across 6 modules.")
+
+        # Verify email was dispatched to student
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].to, ["alice@example.com"])
+        self.assertIn("Instructor Alan Smith replied to", mail.outbox[0].subject)
+        self.assertIn("there are 25 video lessons", mail.outbox[0].body)
+
+    def test_instructor_dedicated_reply_page_option_2(self):
+        """Instructor can view dedicated reply page (Option 2) and submit their response."""
+        mail.outbox = []
+        msg = InstructorMessage.objects.create(
+            instructor=self.instructor,
+            course=self.course,
+            sender_name="Alice Wonder",
+            sender_email="alice@example.com",
+            subject="Project guidelines",
+            message="When is the final project proposal due?",
+            is_read=False
+        )
+
+        self.client.login(username="prof_smith", password="securepassword123")
+        reply_url = reverse("instructor_message_reply", args=[msg.message_id])
+
+        # GET dedicated page
+        get_response = self.client.get(reply_url)
+        self.assertEqual(get_response.status_code, 200)
+        self.assertContains(get_response, "Compose Reply to Alice Wonder")
+        self.assertContains(get_response, "When is the final project proposal due?")
+
+        # POST response
+        post_response = self.client.post(
+            reply_url,
+            {"reply_text": "The proposal is due at the end of Week 4."},
+            follow=True
+        )
+        self.assertEqual(post_response.status_code, 200)
+        self.assertContains(post_response, "Your reply was sent to Alice Wonder")
+
+        msg.refresh_from_db()
+        self.assertTrue(msg.is_replied)
+        self.assertEqual(msg.reply_text, "The proposal is due at the end of Week 4.")
+
+        # Email sent
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].to, ["alice@example.com"])
 
 
 

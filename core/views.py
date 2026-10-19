@@ -17,8 +17,8 @@ from django.conf import settings
 from django.views.decorators.csrf import csrf_exempt
 from django.urls import reverse
 
-from .forms import RegistrationForm, CourseForm, CourseContentForm, StudentProfileForm
-from .models import Cart, Course, CourseContent, PasswordResetOTP, Student, UserProfile, Payment, Enrollment, Instructor
+from .forms import RegistrationForm, CourseForm, CourseContentForm, StudentProfileForm, ContactInstructorForm, InstructorReplyForm
+from .models import Cart, Course, CourseContent, PasswordResetOTP, Student, UserProfile, Payment, Enrollment, Instructor, InstructorMessage
 
 
 def get_user_role(user):
@@ -705,6 +705,86 @@ def instructor_list_view(request):
     return render(request, "instructor_list.html", context)
 
 
+def contact_instructor_view(request, instructor_id):
+    """
+    Form view allowing students, registered users, and site visitors to contact
+    an instructor with questions or direct inquiries about their courses.
+    """
+    instructor = get_object_or_404(Instructor, instructor_id=instructor_id)
+
+    # Optional initial course from query param or POST
+    course_id = request.GET.get("course_id") or request.POST.get("course_id")
+    initial_course = None
+    if course_id:
+        try:
+            initial_course = Course.objects.filter(course_id=course_id, instructor=instructor).first()
+        except (ValueError, TypeError):
+            initial_course = None
+
+    if request.method == "POST":
+        form = ContactInstructorForm(
+            request.POST,
+            instructor=instructor,
+            user=request.user,
+            initial_course=initial_course
+        )
+        if form.is_valid():
+            msg = form.save(commit=False)
+            msg.instructor = instructor
+            if request.user.is_authenticated:
+                msg.sender_user = request.user
+            msg.save()
+
+            # Optional email dispatch to instructor
+            try:
+                subject_line = f"[EduLearn] New Inquiry from {msg.sender_name}: {msg.subject}"
+                course_label = msg.course.title if msg.course else "General Inquiry"
+                body = (
+                    f"Hello {instructor.full_name},\n\n"
+                    f"You have received a new message on the EduLearn platform:\n\n"
+                    f"From: {msg.sender_name} ({msg.sender_email})\n"
+                    f"Course: {course_label}\n"
+                    f"Subject: {msg.subject}\n\n"
+                    f"Message:\n{msg.message}\n\n"
+                    f"---\n"
+                    f"To reply, send your response directly to {msg.sender_email}.\n"
+                )
+                send_mail(
+                    subject=subject_line,
+                    message=body,
+                    from_email=getattr(settings, "DEFAULT_FROM_EMAIL", "noreply@edulearn.local"),
+                    recipient_list=[instructor.email],
+                    fail_silently=True,
+                )
+            except Exception:
+                pass
+
+            messages.success(
+                request,
+                f"Your message has been delivered to Instructor {instructor.full_name}! They will get back to you at {msg.sender_email}."
+            )
+
+            # Redirect back to the course if contacted from a course, otherwise instructor list
+            if msg.course:
+                return redirect("course_detail", course_id=msg.course.course_id)
+            return redirect("instructor_list")
+        else:
+            messages.error(request, "Please review the highlighted errors below and try again.")
+    else:
+        form = ContactInstructorForm(
+            instructor=instructor,
+            user=request.user,
+            initial_course=initial_course
+        )
+
+    context = {
+        "instructor": instructor,
+        "form": form,
+        "initial_course": initial_course,
+    }
+    return render(request, "contact_instructor.html", context)
+
+
 def student_list_view(request):
     """
     Platform view listing all registered students in the EduLearn community.
@@ -1227,6 +1307,11 @@ def instructor_courses_view(request):
         status__in=["active", "completed"]
     ).values("student").distinct().count()
 
+    unread_messages_count = InstructorMessage.objects.filter(
+        instructor=instructor,
+        is_read=False
+    ).count()
+
     context = {
         "instructor": instructor,
         "courses": courses,
@@ -1235,9 +1320,152 @@ def instructor_courses_view(request):
         "inactive_courses": inactive_courses,
         "total_enrollments": total_enrollments,
         "unique_students": unique_students,
+        "unread_messages_count": unread_messages_count,
     }
 
     return render(request, "instructor_courses.html", context)
+
+
+@instructor_required
+def instructor_messages_view(request):
+    """
+    Instructor Inbox: View student and visitor inquiries sent to this instructor.
+    Supports in-page quick replies, marking inquiries as read, and status filtering.
+    """
+    instructor = get_instructor_for_user(request.user)
+    if not instructor:
+        messages.error(request, "Instructor profile not found.")
+        return redirect("dashboard")
+
+    # In-page action: mark as read
+    mark_read_id = request.POST.get("mark_read")
+    if request.method == "POST" and mark_read_id:
+        InstructorMessage.objects.filter(message_id=mark_read_id, instructor=instructor).update(is_read=True)
+        messages.success(request, "Message marked as read.")
+        return redirect("instructor_messages")
+
+    # Option 1: In-page quick reply submission
+    if request.method == "POST" and request.POST.get("action") == "send_reply":
+        message_id = request.POST.get("message_id")
+        reply_text = request.POST.get("reply_text", "").strip()
+
+        msg = get_object_or_404(InstructorMessage, message_id=message_id, instructor=instructor)
+
+        if not reply_text or len(reply_text) < 5:
+            messages.error(request, "Please enter a valid reply (at least 5 characters).")
+        else:
+            msg.reply_text = reply_text
+            msg.replied_at = timezone.now()
+            msg.is_read = True
+            msg.save()
+
+            # Email the reply to the student
+            try:
+                subject_line = f"[EduLearn] Instructor {instructor.full_name} replied to: {msg.subject}"
+                body = (
+                    f"Hello {msg.sender_name},\n\n"
+                    f"Instructor {instructor.full_name} has replied to your inquiry regarding "
+                    f"'{msg.course.title if msg.course else 'your inquiry'}':\n\n"
+                    f"--- Your Question ---\n{msg.message}\n\n"
+                    f"--- Instructor's Reply ---\n{reply_text}\n\n"
+                    f"---\n"
+                    f"Best regards,\nEduLearn Platform\n"
+                )
+                send_mail(
+                    subject=subject_line,
+                    message=body,
+                    from_email=getattr(settings, "DEFAULT_FROM_EMAIL", "noreply@edulearn.local"),
+                    recipient_list=[msg.sender_email],
+                    fail_silently=True,
+                )
+            except Exception:
+                pass
+
+            messages.success(request, f"Your reply was sent to {msg.sender_name} ({msg.sender_email}) successfully!")
+            return redirect("instructor_messages")
+
+    messages_qs = InstructorMessage.objects.filter(instructor=instructor).select_related("course", "sender_user").order_by("-created_at")
+    unread_count = messages_qs.filter(is_read=False).count()
+
+    filter_status = request.GET.get("status", "all")
+    if filter_status == "unread":
+        messages_qs = messages_qs.filter(is_read=False)
+    elif filter_status == "read":
+        messages_qs = messages_qs.filter(is_read=True)
+    elif filter_status == "replied":
+        messages_qs = messages_qs.exclude(reply_text="")
+
+    paginator = Paginator(messages_qs, 15)
+    page_number = request.GET.get("page")
+    page_obj = paginator.get_page(page_number)
+
+    context = {
+        "instructor": instructor,
+        "instructor_messages": page_obj,
+        "page_obj": page_obj,
+        "total_messages": messages_qs.count(),
+        "unread_count": unread_count,
+        "filter_status": filter_status,
+    }
+    return render(request, "instructor_messages.html", context)
+
+
+@instructor_required
+def instructor_message_reply_view(request, message_id):
+    """
+    Option 2: Dedicated reply screen where the instructor can view the student inquiry
+    and compose a detailed response.
+    """
+    instructor = get_instructor_for_user(request.user)
+    if not instructor:
+        messages.error(request, "Instructor profile not found.")
+        return redirect("dashboard")
+
+    msg = get_object_or_404(InstructorMessage, message_id=message_id, instructor=instructor)
+
+    if request.method == "POST":
+        form = InstructorReplyForm(request.POST)
+        if form.is_valid():
+            reply_text = form.cleaned_data["reply_text"]
+            msg.reply_text = reply_text
+            msg.replied_at = timezone.now()
+            msg.is_read = True
+            msg.save()
+
+            # Email notification to student
+            try:
+                subject_line = f"[EduLearn] Instructor {instructor.full_name} replied to: {msg.subject}"
+                body = (
+                    f"Hello {msg.sender_name},\n\n"
+                    f"Instructor {instructor.full_name} has replied to your inquiry:\n\n"
+                    f"--- Your Question ---\n{msg.message}\n\n"
+                    f"--- Instructor's Reply ---\n{reply_text}\n\n"
+                    f"---\n"
+                    f"Best regards,\nEduLearn Platform\n"
+                )
+                send_mail(
+                    subject=subject_line,
+                    message=body,
+                    from_email=getattr(settings, "DEFAULT_FROM_EMAIL", "noreply@edulearn.local"),
+                    recipient_list=[msg.sender_email],
+                    fail_silently=True,
+                )
+            except Exception:
+                pass
+
+            messages.success(request, f"Your reply was sent to {msg.sender_name} ({msg.sender_email}) successfully!")
+            return redirect("instructor_messages")
+        else:
+            messages.error(request, "Please enter a valid reply.")
+    else:
+        form = InstructorReplyForm(initial={"reply_text": msg.reply_text} if msg.reply_text else None)
+
+    context = {
+        "instructor": instructor,
+        "msg": msg,
+        "form": form,
+    }
+    return render(request, "instructor_message_reply.html", context)
 
 
 @instructor_required

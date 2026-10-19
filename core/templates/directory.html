@@ -439,10 +439,15 @@
                                     </div>
                                 </div>
 
-                                <!-- Action Button -->
-                                <a href="{% url 'course_list' %}?q={{ inst.first_name }}" class="btn btn-outline btn-sm" style="width: 100%;">
-                                    📚 View Courses
-                                </a>
+                                <!-- Action Buttons -->
+                                <div style="display: flex; gap: 0.5rem; margin-top: 0.75rem;">
+                                    <a href="{% url 'course_list' %}?q={{ inst.first_name }}" class="btn btn-outline btn-sm" style="flex: 1; text-align: center;">
+                                        📚 Courses
+                                    </a>
+                                    <a href="{% url 'contact_instructor' inst.instructor_id %}" class="btn btn-primary btn-sm" style="flex: 1; text-align: center;">
+                                        ✉️ Contact
+                                    </a>
+                                </div>
                             </div>
                         </div>
                     {% endfor %}

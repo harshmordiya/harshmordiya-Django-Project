@@ -464,3 +464,48 @@ class CourseContent(models.Model):
 
     def __str__(self):
         return f"{self.course.title} - {self.title}"
+
+
+class InstructorMessage(models.Model):
+    message_id = models.AutoField(primary_key=True)
+    instructor = models.ForeignKey(
+        Instructor,
+        on_delete=models.CASCADE,
+        related_name="messages"
+    )
+    course = models.ForeignKey(
+        "Course",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="instructor_inquiries",
+        help_text="Optional course this inquiry is regarding"
+    )
+    sender_user = models.ForeignKey(
+        "auth.User",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="sent_instructor_messages",
+        help_text="Registered user who sent the message, if authenticated"
+    )
+    sender_name = models.CharField(max_length=150, help_text="Name of the person contacting the instructor")
+    sender_email = models.EmailField(help_text="Email address to reply to")
+    subject = models.CharField(max_length=200)
+    message = models.TextField()
+    reply_text = models.TextField(blank=True, default="", help_text="Instructor response to this inquiry")
+    replied_at = models.DateTimeField(null=True, blank=True)
+    is_read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name = "Instructor Message"
+        verbose_name_plural = "Instructor Messages"
+
+    def __str__(self):
+        return f"Message from {self.sender_name} to {self.instructor.full_name}: {self.subject}"
+
+    @property
+    def is_replied(self):
+        return bool(self.reply_text and self.reply_text.strip())

@@ -13,6 +13,7 @@ from .models import (
     Payment,
     Enrollment,
     CourseContent,
+    InstructorMessage,
 )
 
 # -----------------------------------------------------------------------------
@@ -422,3 +423,42 @@ class EnrollmentAdmin(admin.ModelAdmin):
     list_per_page = 25
     list_select_related = ("student", "course")
     autocomplete_fields = ("student", "course")
+
+
+@admin.register(InstructorMessage)
+class InstructorMessageAdmin(admin.ModelAdmin):
+    list_display = (
+        "message_id",
+        "sender_name",
+        "sender_email",
+        "instructor",
+        "course",
+        "subject",
+        "is_read",
+        "is_replied_display",
+        "created_at",
+    )
+    list_filter = (
+        "is_read",
+        ("instructor", admin.RelatedOnlyFieldListFilter),
+        ("course", admin.RelatedOnlyFieldListFilter),
+        ("created_at", admin.DateFieldListFilter),
+    )
+    search_fields = (
+        "sender_name",
+        "sender_email",
+        "subject",
+        "message",
+        "instructor__first_name",
+        "instructor__last_name",
+        "course__title",
+    )
+    ordering = ("-created_at",)
+    date_hierarchy = "created_at"
+    list_per_page = 25
+    list_select_related = ("instructor", "course", "sender_user")
+    readonly_fields = ("created_at", "replied_at")
+
+    @admin.display(boolean=True, description="Replied")
+    def is_replied_display(self, obj):
+        return obj.is_replied

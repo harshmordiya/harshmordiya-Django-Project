@@ -36,10 +36,19 @@
             </div>
         </div>
 
-        <div style="display: flex; gap: 0.75rem; margin-top: 1rem; align-items: center;">
+        <div style="display: flex; gap: 0.75rem; margin-top: 1rem; align-items: center; flex-wrap: wrap;">
             <a href="{% url 'instructor_course_create' %}" class="btn btn-primary btn-lg">
                 <span>➕</span>
                 <span>Create New Course</span>
+            </a>
+            <a href="{% url 'instructor_messages' %}" class="btn btn-secondary btn-lg">
+                <span>📬</span>
+                <span>Student Messages</span>
+                {% if unread_messages_count > 0 %}
+                    <span class="badge" style="background: #ef4444; color: white; border-radius: 9999px; font-size: 0.75rem; margin-left: 0.35rem;">
+                        {{ unread_messages_count }}
+                    </span>
+                {% endif %}
             </a>
             <a href="{% url 'course_list' %}" class="btn btn-secondary">
                 Explore Catalog

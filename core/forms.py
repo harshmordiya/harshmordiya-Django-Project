@@ -3,7 +3,7 @@ from django import forms
 from django.contrib.auth.models import User
 from django.utils import timezone
 
-from .models import UserProfile, Student, Instructor, Course, CourseContent
+from .models import UserProfile, Student, Instructor, Course, CourseContent, InstructorMessage
 from .validators import validate_course_notes_file
 
 
@@ -473,6 +473,119 @@ class StudentProfileForm(forms.ModelForm):
             if commit:
                 self.user.save(update_fields=["first_name", "last_name", "email"])
         return student
+
+
+class ContactInstructorForm(forms.ModelForm):
+    """
+    Form allowing students and site visitors to contact a course instructor
+    with a direct message or inquiry.
+    """
+    class Meta:
+        model = InstructorMessage
+        fields = [
+            "sender_name",
+            "sender_email",
+            "course",
+            "subject",
+            "message",
+        ]
+        widgets = {
+            "sender_name": forms.TextInput(attrs={
+                "class": "form-input",
+                "placeholder": "Your full name",
+                "required": True,
+            }),
+            "sender_email": forms.EmailInput(attrs={
+                "class": "form-input",
+                "placeholder": "your.email@example.com",
+                "required": True,
+            }),
+            "course": forms.Select(attrs={
+                "class": "form-select",
+            }),
+            "subject": forms.TextInput(attrs={
+                "class": "form-input",
+                "placeholder": "e.g., Question about course prerequisites or assignments",
+                "required": True,
+            }),
+            "message": forms.Textarea(attrs={
+                "class": "form-textarea",
+                "rows": 6,
+                "placeholder": "Type your message or inquiry for the instructor here...",
+                "required": True,
+            }),
+        }
+
+    def __init__(self, *args, instructor=None, user=None, initial_course=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.instructor = instructor
+        self.user = user
+
+        # Filter the course dropdown to courses taught by this instructor
+        if instructor:
+            self.fields["course"].queryset = Course.objects.filter(instructor=instructor).order_by("title")
+            self.fields["course"].empty_label = "-- General Inquiry (No specific course) --"
+            self.fields["course"].required = False
+        else:
+            self.fields["course"].queryset = Course.objects.none()
+
+        if initial_course:
+            self.fields["course"].initial = initial_course
+
+        # Auto-fill from authenticated user session
+        if user and user.is_authenticated:
+            full_name = f"{user.first_name} {user.last_name}".strip() or user.username
+            if not self.initial.get("sender_name"):
+                self.initial["sender_name"] = full_name
+            if not self.initial.get("sender_email") and user.email:
+                self.initial["sender_email"] = user.email
+
+    def clean_sender_name(self):
+        name = self.cleaned_data.get("sender_name", "").strip()
+        if not name:
+            raise forms.ValidationError("Please provide your name.")
+        if len(name) < 2:
+            raise forms.ValidationError("Name must be at least 2 characters long.")
+        return name
+
+    def clean_subject(self):
+        subject = self.cleaned_data.get("subject", "").strip()
+        if not subject:
+            raise forms.ValidationError("Subject is required.")
+        if len(subject) < 3:
+            raise forms.ValidationError("Subject must be at least 3 characters long.")
+        return subject
+
+    def clean_message(self):
+        message = self.cleaned_data.get("message", "").strip()
+        if not message:
+            raise forms.ValidationError("Please enter your message.")
+        if len(message) < 10:
+            raise forms.ValidationError("Message must be at least 10 characters long.")
+        return message
+
+
+class InstructorReplyForm(forms.Form):
+    """
+    Form for instructors to submit a direct reply to a student message.
+    """
+    reply_text = forms.CharField(
+        widget=forms.Textarea(attrs={
+            "class": "form-textarea",
+            "rows": 5,
+            "placeholder": "Type your response to the student here...",
+            "required": True,
+        }),
+        help_text="Your reply will be recorded in the system and emailed to the student."
+    )
+
+    def clean_reply_text(self):
+        text = self.cleaned_data.get("reply_text", "").strip()
+        if not text:
+            raise forms.ValidationError("Reply cannot be empty.")
+        if len(text) < 5:
+            raise forms.ValidationError("Please provide a more descriptive reply (at least 5 characters).")
+        return text
 
 
 

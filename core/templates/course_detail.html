@@ -159,6 +159,11 @@
                             <p style="font-size: 0.84rem; color: var(--slate-400); margin: 0;">{{ course.instructor.email }}</p>
                         </div>
                     </div>
+                    <div style="margin-top: 1.25rem;">
+                        <a href="{% url 'contact_instructor' course.instructor.instructor_id %}?course_id={{ course.course_id }}" class="btn btn-outline btn-sm" style="width: 100%; justify-content: center;">
+                            ✉️ Contact Instructor About This Course
+                        </a>
+                    </div>
                 {% else %}
                     <p style="color: var(--slate-500); margin: 0;">This course is delivered by the EduLearn Academic Faculty.</p>
                 {% endif %}

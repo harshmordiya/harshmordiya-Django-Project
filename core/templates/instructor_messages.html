@@ -1,0 +1,315 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Instructor Inbox - Student Messages - EduLearn{% endblock %}
+
+{% block extra_css %}
+<style>
+.inbox-card {
+    background: var(--white);
+    border: 1px solid var(--slate-200);
+    border-radius: var(--radius-xl);
+    padding: 2rem;
+    box-shadow: var(--shadow-sm);
+    margin-bottom: 2rem;
+}
+.inbox-pill-filters {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-bottom: 1.5rem;
+}
+.inbox-pill {
+    padding: 0.4rem 1rem;
+    border-radius: 9999px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-decoration: none;
+    border: 1px solid var(--slate-200);
+    color: var(--slate-600);
+    background: var(--white);
+    transition: all 0.2s ease;
+}
+.inbox-pill.active {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+}
+.message-item {
+    border: 1px solid var(--slate-200);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+    margin-bottom: 1.25rem;
+    background: var(--white);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    transition: box-shadow 0.2s ease;
+}
+.message-item.unread {
+    border-left: 4px solid #3b82f6;
+    background: #f8fafc;
+}
+.message-item.replied {
+    border-left: 4px solid #10b981;
+}
+.message-top-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-bottom: 0.5rem;
+}
+.msg-sender {
+    font-weight: 700;
+    color: var(--slate-900);
+    font-size: 1rem;
+}
+.msg-subject {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--slate-900);
+    margin-bottom: 0.35rem;
+}
+.msg-content {
+    color: var(--slate-700);
+    font-size: 0.94rem;
+    line-height: 1.6;
+    white-space: pre-line;
+    background: var(--slate-50);
+    padding: 1rem 1.25rem;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--slate-200);
+    margin: 0.85rem 0;
+}
+.reply-display-box {
+    background: #ecfdf5;
+    border: 1px solid #a7f3d0;
+    border-radius: var(--radius-md);
+    padding: 1rem 1.25rem;
+    margin: 0.85rem 0;
+}
+.quick-reply-drawer {
+    display: none;
+    background: #f8fafc;
+    border: 1px solid #cbd5e1;
+    border-radius: var(--radius-md);
+    padding: 1.25rem;
+    margin-top: 1rem;
+    animation: fadeIn 0.2s ease-in-out;
+}
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-4px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.msg-actions {
+    display: flex;
+    gap: 0.65rem;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-top: 1rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--slate-100);
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 1040px; margin-top: 2rem; margin-bottom: 4rem;">
+
+    <!-- Navigation / Header -->
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+        <div>
+            <h1 style="font-size: 1.85rem; font-weight: 800; color: var(--slate-900); margin: 0 0 0.25rem 0;">
+                📬 Student Inquiries & Messages
+            </h1>
+            <p style="color: var(--slate-500); font-size: 0.92rem; margin: 0;">
+                Direct inquiries sent to Instructor {{ instructor.full_name }} by learners and visitors.
+            </p>
+        </div>
+        <div style="display: flex; gap: 0.75rem;">
+            <a href="{% url 'instructor_courses' %}" class="btn btn-secondary">
+                ← Back to Courses
+            </a>
+        </div>
+    </div>
+
+    <!-- Filter Pills -->
+    <div class="inbox-pill-filters">
+        <a href="{% url 'instructor_messages' %}" class="inbox-pill {% if filter_status == 'all' or not filter_status %}active{% endif %}">
+            All Messages ({{ total_messages }})
+        </a>
+        <a href="{% url 'instructor_messages' %}?status=unread" class="inbox-pill {% if filter_status == 'unread' %}active{% endif %}">
+            🔵 Unread ({{ unread_count }})
+        </a>
+        <a href="{% url 'instructor_messages' %}?status=replied" class="inbox-pill {% if filter_status == 'replied' %}active{% endif %}">
+            ✅ Replied
+        </a>
+        <a href="{% url 'instructor_messages' %}?status=read" class="inbox-pill {% if filter_status == 'read' %}active{% endif %}">
+            ⚪ Read
+        </a>
+    </div>
+
+    <!-- Message List -->
+    {% if instructor_messages %}
+        {% for msg in instructor_messages %}
+            <div class="message-item {% if msg.is_replied %}replied{% elif not msg.is_read %}unread{% endif %}">
+                
+                <!-- Card Header Row -->
+                <div class="message-top-row">
+                    <div style="display: flex; align-items: center; gap: 0.65rem; flex-wrap: wrap;">
+                        <span class="msg-sender">{{ msg.sender_name }}</span>
+                        <span style="color: var(--slate-400); font-size: 0.85rem;">&bull;</span>
+                        <span style="color: var(--slate-500); font-size: 0.85rem;">{{ msg.sender_email }}</span>
+                        
+                        {% if msg.course %}
+                            <span class="badge" style="background: #e0e7ff; color: #3730a3; font-weight: 600; font-size: 0.78rem;">
+                                📚 {{ msg.course.title }}
+                            </span>
+                        {% else %}
+                            <span class="badge" style="background: var(--slate-100); color: var(--slate-600); font-size: 0.78rem;">
+                                General Inquiry
+                            </span>
+                        {% endif %}
+
+                        {% if msg.is_replied %}
+                            <span class="badge" style="background: #dcfce7; color: #15803d; font-weight: 700; font-size: 0.75rem;">
+                                ✅ Replied
+                            </span>
+                        {% elif not msg.is_read %}
+                            <span class="badge" style="background: #fee2e2; color: #b91c1c; font-weight: 700; font-size: 0.75rem;">
+                                🔵 New
+                            </span>
+                        {% endif %}
+                    </div>
+                    <div style="color: var(--slate-400); font-size: 0.82rem;">
+                        {{ msg.created_at|date:"M d, Y - h:i A" }}
+                    </div>
+                </div>
+
+                <!-- Subject & Student Question -->
+                <div class="msg-subject">{{ msg.subject }}</div>
+                <div class="msg-content">{{ msg.message }}</div>
+
+                <!-- Existing Instructor Reply Box (if replied) -->
+                {% if msg.reply_text %}
+                    <div class="reply-display-box">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem; flex-wrap: wrap;">
+                            <strong style="color: #065f46; font-size: 0.88rem;">
+                                💬 Your Reply (Sent {{ msg.replied_at|date:"M d, Y - h:i A" }}):
+                            </strong>
+                        </div>
+                        <div style="color: #047857; font-size: 0.92rem; line-height: 1.5; white-space: pre-line;">
+                            {{ msg.reply_text }}
+                        </div>
+                    </div>
+                {% endif %}
+
+                <!-- Action Buttons: Option 1 (In-Page Quick Reply) + Option 2 (Full Reply Page) -->
+                <div class="msg-actions">
+                    <!-- Option 1: Quick Reply Toggle -->
+                    <button type="button" 
+                            class="btn btn-primary btn-sm" 
+                            onclick="toggleReplyDrawer('drawer-{{ msg.message_id }}');">
+                        💬 {% if msg.reply_text %}Update Reply{% else %}Quick Reply{% endif %}
+                    </button>
+
+                    <!-- Option 2: Dedicated Full Reply Screen -->
+                    <a href="{% url 'instructor_message_reply' msg.message_id %}" class="btn btn-secondary btn-sm">
+                        📄 Full Reply Page
+                    </a>
+
+                    <!-- Mark as Read / Status -->
+                    {% if not msg.is_read %}
+                        <form method="post" style="display: inline;">
+                            {% csrf_token %}
+                            <input type="hidden" name="mark_read" value="{{ msg.message_id }}">
+                            <button type="submit" class="btn btn-secondary btn-sm" style="border-style: dashed;">
+                                ✓ Mark as Read
+                            </button>
+                        </form>
+                    {% endif %}
+                </div>
+
+                <!-- Option 1: In-Page Quick Reply Drawer Form -->
+                <div class="quick-reply-drawer" id="drawer-{{ msg.message_id }}">
+                    <form method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="send_reply">
+                        <input type="hidden" name="message_id" value="{{ msg.message_id }}">
+
+                        <label style="display: block; font-size: 0.88rem; font-weight: 700; color: var(--slate-800); margin-bottom: 0.4rem;">
+                            Your Reply to {{ msg.sender_name }}:
+                        </label>
+
+                        <textarea name="reply_text" 
+                                  rows="4" 
+                                  class="form-textarea" 
+                                  placeholder="Type your response here... It will be saved and emailed directly to {{ msg.sender_email }}" 
+                                  required 
+                                  style="width: 100%; margin-bottom: 0.75rem;">{{ msg.reply_text }}</textarea>
+
+                        <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
+                            <button type="submit" class="btn btn-primary btn-sm" style="padding: 0.5rem 1.25rem; font-weight: 700;">
+                                🚀 Send Reply to {{ msg.sender_name }}
+                            </button>
+                            <button type="button" 
+                                    class="btn btn-secondary btn-sm" 
+                                    onclick="toggleReplyDrawer('drawer-{{ msg.message_id }}');">
+                                Cancel
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+            </div>
+        {% endfor %}
+
+        <!-- Pagination -->
+        {% if page_obj.has_other_pages %}
+            <div class="pagination" style="margin-top: 2rem;">
+                {% if page_obj.has_previous %}
+                    <a href="?page={{ page_obj.previous_page_number }}{% if filter_status %}&status={{ filter_status }}{% endif %}">Previous</a>
+                {% endif %}
+                <span>Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+                {% if page_obj.has_next %}
+                    <a href="?page={{ page_obj.next_page_number }}{% if filter_status %}&status={{ filter_status }}{% endif %}">Next</a>
+                {% endif %}
+            </div>
+        {% endif %}
+
+    {% else %}
+        <div class="inbox-card" style="text-align: center; padding: 3.5rem 1.5rem;">
+            <div style="font-size: 3rem; margin-bottom: 0.75rem;">📭</div>
+            <h3 style="font-size: 1.35rem; font-weight: 700; color: var(--slate-800); margin-bottom: 0.35rem;">
+                No messages found
+            </h3>
+            <p style="color: var(--slate-500); font-size: 0.92rem; max-width: 440px; margin: 0 auto 1.5rem auto;">
+                When students or visitors reach out to you with questions about your courses, their inquiries will appear here.
+            </p>
+            <a href="{% url 'instructor_courses' %}" class="btn btn-primary">
+                Return to Courses
+            </a>
+        </div>
+    {% endif %}
+
+</div>
+
+<!-- In-Page Drawer Toggle JavaScript -->
+<script>
+function toggleReplyDrawer(drawerId) {
+    const drawer = document.getElementById(drawerId);
+    if (!drawer) return;
+    if (drawer.style.display === 'block') {
+        drawer.style.display = 'none';
+    } else {
+        // Hide any other open drawers
+        document.querySelectorAll('.quick-reply-drawer').forEach(d => {
+            if (d.id !== drawerId) d.style.display = 'none';
+        });
+        drawer.style.display = 'block';
+        const textarea = drawer.querySelector('textarea');
+        if (textarea) textarea.focus();
+    }
+}
+</script>
+{% endblock %}

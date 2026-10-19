@@ -53,6 +53,7 @@ urlpatterns = [
 
     # Members & Community Directories (Students & Faculty)
     path("instructors/", views.instructor_list_view, name="instructor_list"),
+    path("instructors/<int:instructor_id>/contact/", views.contact_instructor_view, name="contact_instructor"),
     path("students/", views.student_list_view, name="student_list"),
     path("directory/", views.directory_view, name="directory"),
 
@@ -81,6 +82,8 @@ urlpatterns = [
     # Instructor Portal
     path("instructor/courses/", views.instructor_courses_view, name="instructor_courses"),
     path("instructor/dashboard/", views.instructor_courses_view, name="instructor_dashboard"),
+    path("instructor/messages/", views.instructor_messages_view, name="instructor_messages"),
+    path("instructor/messages/<int:message_id>/reply/", views.instructor_message_reply_view, name="instructor_message_reply"),
 
     # Course Content / Curriculum & Notes/Video Upload Management
     path("courses/<int:course_id>/content/", views.course_content_manage_view, name="course_content_manage"),
