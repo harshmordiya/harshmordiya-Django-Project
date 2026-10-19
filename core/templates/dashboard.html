@@ -65,6 +65,11 @@
                         <p style="font-size: 0.85rem; margin: 0;">Manage your published courses and materials.</p>
                     </a>
                 {% else %}
+                    <a href="{% url 'student_profile' %}" class="feature-box" style="padding: 1.5rem; text-decoration: none;">
+                        <div class="feature-box-icon" style="margin-bottom: 0.75rem;">👤</div>
+                        <h3 style="font-size: 1.05rem; margin-bottom: 0.35rem;">My Student Profile</h3>
+                        <p style="font-size: 0.85rem; margin: 0;">View & update your bio, personal details, and learning stats.</p>
+                    </a>
                     <a href="{% url 'cart' %}" class="feature-box" style="padding: 1.5rem; text-decoration: none;">
                         <div class="feature-box-icon" style="margin-bottom: 0.75rem;">🛒</div>
                         <h3 style="font-size: 1.05rem; margin-bottom: 0.35rem;">My Shopping Cart</h3>

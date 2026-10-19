@@ -321,3 +321,97 @@ CourseNotesAndVideoForm = CourseContentForm
 CourseMaterialUploadForm = CourseContentForm
 
 
+class StudentProfileForm(forms.ModelForm):
+    """
+    Form for students to view and update their personal profile details.
+    Synchronizes first name, last name, and email with the underlying User account.
+    """
+    class Meta:
+        model = Student
+        fields = [
+            "first_name",
+            "last_name",
+            "email",
+            "phone",
+            "date_of_birth",
+            "address",
+            "bio",
+        ]
+        widgets = {
+            "first_name": forms.TextInput(attrs={
+                "class": "form-input",
+                "placeholder": "Your first name",
+                "required": True,
+            }),
+            "last_name": forms.TextInput(attrs={
+                "class": "form-input",
+                "placeholder": "Your last name (optional)",
+            }),
+            "email": forms.EmailInput(attrs={
+                "class": "form-input",
+                "placeholder": "name@example.com",
+                "required": True,
+            }),
+            "phone": forms.TextInput(attrs={
+                "class": "form-input",
+                "placeholder": "+91 9876543210",
+            }),
+            "date_of_birth": forms.DateInput(attrs={
+                "class": "form-input",
+                "type": "date",
+            }),
+            "address": forms.Textarea(attrs={
+                "class": "form-textarea",
+                "rows": 3,
+                "placeholder": "City, State, Country (optional)",
+            }),
+            "bio": forms.Textarea(attrs={
+                "class": "form-textarea",
+                "rows": 4,
+                "placeholder": "Tell us about your learning goals, skills, and background...",
+            }),
+        }
+
+    def __init__(self, *args, user=None, **kwargs):
+        self.user = user
+        super().__init__(*args, **kwargs)
+
+    def clean_first_name(self):
+        first_name = self.cleaned_data.get("first_name", "").strip()
+        if not first_name:
+            raise forms.ValidationError("First name is required.")
+        return first_name
+
+    def clean_email(self):
+        email = self.cleaned_data.get("email", "").strip().lower()
+        if not email:
+            raise forms.ValidationError("Email address is required.")
+
+        # Ensure no collision with other users
+        user_qs = User.objects.filter(email__iexact=email)
+        if self.user:
+            user_qs = user_qs.exclude(id=self.user.id)
+        if user_qs.exists():
+            raise forms.ValidationError("This email is already associated with another account.")
+
+        student_qs = Student.objects.filter(email__iexact=email)
+        if self.instance and self.instance.pk:
+            student_qs = student_qs.exclude(pk=self.instance.pk)
+        if student_qs.exists():
+            raise forms.ValidationError("Another student record already exists with this email address.")
+
+        return email
+
+    def save(self, commit=True):
+        student = super().save(commit=commit)
+        # Synchronize first_name, last_name, and email to auth.User
+        if self.user:
+            self.user.first_name = self.cleaned_data.get("first_name", "").strip()
+            self.user.last_name = self.cleaned_data.get("last_name", "").strip()
+            self.user.email = self.cleaned_data.get("email", "").strip().lower()
+            if commit:
+                self.user.save(update_fields=["first_name", "last_name", "email"])
+        return student
+
+
+

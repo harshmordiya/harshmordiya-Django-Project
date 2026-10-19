@@ -64,6 +64,7 @@
                                 <span class="user-role-tag">{{ nav_user_role }}</span>
                             {% endif %}
                         </a>
+                        <a href="{% url 'student_profile' %}" class="btn btn-secondary btn-sm" title="My Profile">Profile</a>
                     {% endif %}
 
                     <a href="{% url 'logout' %}" class="btn btn-secondary btn-sm">Logout</a>
@@ -136,6 +137,7 @@
                 <ul class="footer-links">
                     {% if user.is_authenticated %}
                         <li><a href="{% url 'dashboard' %}">Dashboard</a></li>
+                        <li><a href="{% url 'student_profile' %}">My Profile</a></li>
                         <li><a href="{% url 'cart' %}">Shopping Cart</a></li>
                         <li><a href="{% url 'logout' %}">Logout</a></li>
                     {% else %}

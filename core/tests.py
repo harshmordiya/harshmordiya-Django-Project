@@ -902,4 +902,185 @@ class CustomDashboardSearchAndSortTests(TestCase):
         self.assertEqual(cat_courses[0].title, "Zenith AI")
 
 
+class StudentModelAndProfileTests(TestCase):
+    def setUp(self):
+        self.client = Client()
+        # Student user
+        self.student_user = User.objects.create_user(
+            username="john_doe",
+            email="john.doe@example.com",
+            password="securepassword123",
+            first_name="John",
+            last_name="Doe",
+        )
+        UserProfile.objects.create(user=self.student_user, role="student")
+        self.student = Student.objects.create(
+            first_name="John",
+            last_name="Doe",
+            email="john.doe@example.com",
+            phone="+919876543210",
+            address="Mumbai, India",
+            bio="Aspiring full-stack engineer and Python enthusiast.",
+        )
+
+        # Other student for email collision test
+        self.other_user = User.objects.create_user(
+            username="jane_smith",
+            email="jane.smith@example.com",
+            password="securepassword123",
+        )
+        UserProfile.objects.create(user=self.other_user, role="student")
+        self.other_student = Student.objects.create(
+            first_name="Jane",
+            last_name="Smith",
+            email="jane.smith@example.com",
+        )
+
+        # Admin user
+        self.admin_user = User.objects.create_superuser(
+            username="super_admin",
+            email="admin@example.com",
+            password="adminpassword123",
+        )
+        UserProfile.objects.create(user=self.admin_user, role="admin")
+
+        # Instructor & Course
+        self.instructor = Instructor.objects.create(
+            first_name="Guido",
+            last_name="Rossum",
+            email="guido@example.com",
+        )
+        self.course = Course.objects.create(
+            title="Mastering Django 5",
+            category="web_development",
+            price=1499,
+            duration="20 hours",
+            instructor=self.instructor,
+        )
+        self.enrollment = Enrollment.objects.create(
+            student=self.student,
+            course=self.course,
+            status="active",
+        )
+
+    def test_student_model_properties_and_str(self):
+        """Student model string representation, full_name, and user link."""
+        self.assertEqual(str(self.student), "John Doe")
+        self.assertEqual(self.student.full_name, "John Doe")
+        self.assertEqual(self.student.user, self.student_user)
+        self.assertEqual(self.student.enrolled_courses_count, 1)
+
+    def test_student_profile_view_requires_login(self):
+        """Unauthenticated user is redirected to login page when accessing profile."""
+        response = self.client.get(reverse("student_profile"))
+        self.assertEqual(response.status_code, 302)
+        self.assertIn(reverse("login"), response.url)
+
+    def test_student_profile_view_loads_for_student(self):
+        """Authenticated student can view their profile with courses, bio, and stats."""
+        self.client.login(username="john_doe", password="securepassword123")
+        response = self.client.get(reverse("student_profile"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "John Doe")
+        self.assertContains(response, "Aspiring full-stack engineer")
+        self.assertContains(response, "Mastering Django 5")
+        self.assertEqual(response.context["total_enrolled"], 1)
+
+    def test_student_profile_edit_form_get(self):
+        """Edit profile form loads with current student data pre-filled."""
+        self.client.login(username="john_doe", password="securepassword123")
+        response = self.client.get(reverse("student_profile_edit"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "John")
+        self.assertContains(response, "Doe")
+        self.assertContains(response, "john.doe@example.com")
+        self.assertContains(response, "Aspiring full-stack engineer")
+
+    def test_student_profile_edit_form_post_success(self):
+        """Submitting valid profile form updates Student model and auth.User."""
+        self.client.login(username="john_doe", password="securepassword123")
+        update_data = {
+            "first_name": "Johnny",
+            "last_name": "Doestar",
+            "email": "johnny.doestar@example.com",
+            "phone": "+919999888877",
+            "date_of_birth": "2000-05-15",
+            "address": "Bangalore, Karnataka",
+            "bio": "Updated bio: Full-stack developer in training.",
+        }
+        response = self.client.post(reverse("student_profile_edit"), update_data)
+        self.assertRedirects(response, reverse("student_profile"))
+
+        # Verify Student model was updated
+        self.student.refresh_from_db()
+        self.assertEqual(self.student.first_name, "Johnny")
+        self.assertEqual(self.student.last_name, "Doestar")
+        self.assertEqual(self.student.email, "johnny.doestar@example.com")
+        self.assertEqual(self.student.phone, "+919999888877")
+        self.assertEqual(str(self.student.date_of_birth), "2000-05-15")
+        self.assertEqual(self.student.address, "Bangalore, Karnataka")
+        self.assertEqual(self.student.bio, "Updated bio: Full-stack developer in training.")
+
+        # Verify auth.User was synchronized
+        self.student_user.refresh_from_db()
+        self.assertEqual(self.student_user.first_name, "Johnny")
+        self.assertEqual(self.student_user.last_name, "Doestar")
+        self.assertEqual(self.student_user.email, "johnny.doestar@example.com")
+
+    def test_student_profile_edit_duplicate_email_fails(self):
+        """Attempting to use an email already taken by another user fails with validation error."""
+        self.client.login(username="john_doe", password="securepassword123")
+        update_data = {
+            "first_name": "Johnny",
+            "last_name": "Doe",
+            "email": "jane.smith@example.com",  # Already taken
+            "phone": "+919999888877",
+            "address": "Delhi",
+            "bio": "Testing duplicate email",
+        }
+        response = self.client.post(reverse("student_profile_edit"), update_data)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "This email is already associated with another account")
+
+        # Verify no changes made
+        self.student.refresh_from_db()
+        self.assertEqual(self.student.email, "john.doe@example.com")
+
+    def test_admin_can_view_student_profile_detail(self):
+        """Admin can view any student's profile via student_profile_detail."""
+        self.client.login(username="super_admin", password="adminpassword123")
+        url = reverse("student_profile_detail", args=[self.student.student_id])
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "John Doe")
+
+    def test_unauthenticated_profile_redirects_to_custom_login_not_404(self):
+        """Unauthenticated access to profile redirects to /login/?next=/profile/ (never 404)."""
+        response = self.client.get("/profile/")
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, "/login/?next=/profile/")
+
+    def test_accounts_login_redirects_to_login_with_query_params(self):
+        """Legacy /accounts/login/?next=/profile/ smoothly redirects to /login/?next=/profile/."""
+        response = self.client.get("/accounts/login/?next=/profile/")
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, "/login/?next=/profile/")
+
+    def test_deactivated_logged_in_student_redirected_with_message(self):
+        """A student deactivated while logged in is safely redirected to login with an alert, no 404."""
+        self.client.login(username="john_doe", password="securepassword123")
+
+        # Admin deactivates student
+        self.student_user.is_active = False
+        self.student_user.save()
+
+        # Student attempts to navigate to /profile/
+        response = self.client.get("/profile/", follow=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("/login/", response.request["PATH_INFO"])
+        self.assertContains(response, "Your account has been deactivated by an administrator")
+
+
+
+
 

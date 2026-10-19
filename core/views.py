@@ -17,9 +17,7 @@ from django.conf import settings
 from django.views.decorators.csrf import csrf_exempt
 from django.urls import reverse
 
-# Create your views here.
-
-from .forms import RegistrationForm, CourseForm, CourseContentForm
+from .forms import RegistrationForm, CourseForm, CourseContentForm, StudentProfileForm
 from .models import Cart, Course, CourseContent, PasswordResetOTP, Student, UserProfile, Payment, Enrollment, Instructor
 
 
@@ -171,8 +169,8 @@ def login_view(request):
             role_display = f" ({role.title()})" if role else ""
             messages.success(request, f"Welcome back, {user.first_name or user.username}! You are now signed in{role_display}.")
 
-            next_url = request.GET.get("next")
-            if next_url:
+            next_url = request.POST.get("next") or request.GET.get("next")
+            if next_url and next_url.startswith("/"):
                 return redirect(next_url)
             if is_admin_user(user):
                 return redirect("admin_dashboard")
@@ -257,6 +255,119 @@ def dashboard_view(request):
     )
 
 
+@login_required
+def student_profile_view(request):
+    """
+    Displays the authenticated student's profile information, enrolled courses,
+    learning statistics, and payment history.
+    """
+    student = get_student_for_user(request.user)
+    if not student:
+        messages.error(request, "Student profile could not be found for your account.")
+        return redirect("dashboard")
+
+    enrollments = (
+        Enrollment.objects.filter(student=student)
+        .select_related("course", "course__instructor")
+        .order_by("-enrollment_date")
+    )
+    payments = (
+        Payment.objects.filter(student=student)
+        .order_by("-created_at")[:10]
+    )
+
+    active_enrollments = enrollments.filter(status="active")
+    completed_enrollments = enrollments.filter(status="completed")
+
+    context = {
+        "student": student,
+        "enrollments": enrollments,
+        "active_enrollments": active_enrollments,
+        "completed_enrollments": completed_enrollments,
+        "payments": payments,
+        "total_enrolled": enrollments.count(),
+        "active_count": active_enrollments.count(),
+        "completed_count": completed_enrollments.count(),
+        "total_paid": student.paid_total,
+        "is_own_profile": True,
+        "is_admin": is_admin_user(request.user),
+    }
+    return render(request, "student_profile.html", context)
+
+
+@login_required
+def student_profile_edit_view(request):
+    """
+    Allows a student to edit their profile details (name, email, phone, date of birth,
+    address, bio) with live synchronization back to their Django user account.
+    """
+    student = get_student_for_user(request.user)
+    if not student:
+        messages.error(request, "Student profile not found.")
+        return redirect("dashboard")
+
+    if request.method == "POST":
+        form = StudentProfileForm(request.POST, instance=student, user=request.user)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Your student profile has been updated successfully!")
+            return redirect("student_profile")
+        else:
+            messages.error(request, "Please review the highlighted errors below and try again.")
+    else:
+        form = StudentProfileForm(instance=student, user=request.user)
+
+    return render(
+        request,
+        "student_profile_edit.html",
+        {
+            "form": form,
+            "student": student,
+        }
+    )
+
+
+@login_required
+def student_profile_detail_view(request, student_id):
+    """
+    Displays an individual student's profile.
+    Accessible to administrators, or to the student themselves.
+    """
+    target_student = get_object_or_404(Student, student_id=student_id)
+    is_admin = is_admin_user(request.user)
+    is_owner = bool(request.user.email and target_student.email.lower() == request.user.email.lower())
+
+    if not (is_admin or is_owner):
+        messages.error(request, "You are not authorized to view that student profile.")
+        return redirect("student_list")
+
+    enrollments = (
+        Enrollment.objects.filter(student=target_student)
+        .select_related("course", "course__instructor")
+        .order_by("-enrollment_date")
+    )
+    payments = (
+        Payment.objects.filter(student=target_student)
+        .order_by("-created_at")[:10]
+    )
+
+    active_enrollments = enrollments.filter(status="active")
+    completed_enrollments = enrollments.filter(status="completed")
+
+    context = {
+        "student": target_student,
+        "enrollments": enrollments,
+        "active_enrollments": active_enrollments,
+        "completed_enrollments": completed_enrollments,
+        "payments": payments,
+        "total_enrolled": enrollments.count(),
+        "active_count": active_enrollments.count(),
+        "completed_count": completed_enrollments.count(),
+        "total_paid": target_student.paid_total,
+        "is_own_profile": is_owner,
+        "is_admin": is_admin,
+    }
+    return render(request, "student_profile.html", context)
 
 
 def logout_view(request):

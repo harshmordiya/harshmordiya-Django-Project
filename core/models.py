@@ -24,6 +24,7 @@ class Student(models.Model):
     date_of_birth = models.DateField(null=True, blank=True)
     phone = models.CharField(max_length=15, blank=True, default="")
     address = models.TextField(blank=True, default="")
+    bio = models.TextField(blank=True, default="", help_text="Short biography or learning goals")
     enrollment_date = models.DateTimeField(default=timezone.now, null=True, blank=True)
 
     class Meta:
@@ -39,6 +40,11 @@ class Student(models.Model):
     def full_name(self):
         full = f"{self.first_name} {self.last_name}".strip()
         return full if full else self.email
+
+    @property
+    def user(self):
+        from django.contrib.auth.models import User
+        return User.objects.filter(email__iexact=self.email).first()
 
     @property
     def enrolled_courses_count(self):

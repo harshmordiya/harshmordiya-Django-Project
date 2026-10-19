@@ -196,6 +196,9 @@
                             <!-- Actions -->
                             <td class="text-end text-nowrap">
                                 <div class="d-inline-flex align-items-center gap-1.5">
+                                    <a href="{% url 'student_profile_detail' student.student_id %}" class="btn btn-outline-info btn-sm rounded-pill px-2.5" title="View Student Profile">
+                                        <i class="bi bi-person-badge me-1"></i> Profile
+                                    </a>
                                     <a href="{% url 'admin_enrollments' %}?q={{ student.email }}" class="btn btn-outline-primary btn-sm rounded-pill px-2.5" title="View Course Enrollments">
                                         <i class="bi bi-clipboard-check me-1"></i> Enrollments
                                     </a>

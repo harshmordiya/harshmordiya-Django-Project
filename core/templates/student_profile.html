@@ -1,0 +1,428 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ student.full_name }}'s Profile - EduLearn{% endblock %}
+
+{% block extra_css %}
+<style>
+.profile-hero {
+    background: linear-gradient(135deg, #065f46 0%, #059669 50%, #10b981 100%);
+    border-radius: var(--radius-xl);
+    padding: 2.5rem;
+    color: white;
+    margin-bottom: 2rem;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 10px 25px -5px rgba(5, 150, 105, 0.3);
+}
+.profile-hero::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: radial-gradient(rgba(255, 255, 255, 0.15) 1.5px, transparent 1.5px);
+    background-size: 16px 16px;
+    pointer-events: none;
+}
+.profile-hero-content {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+}
+.profile-avatar-wrap {
+    width: 90px;
+    height: 90px;
+    border-radius: 50%;
+    background: white;
+    color: #059669;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.2rem;
+    font-weight: 800;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    border: 4px solid rgba(255, 255, 255, 0.4);
+    flex-shrink: 0;
+}
+.profile-card {
+    background: var(--white);
+    border: 1px solid var(--slate-200);
+    border-radius: var(--radius-xl);
+    padding: 1.75rem;
+    margin-bottom: 1.75rem;
+    box-shadow: var(--shadow-sm);
+    transition: var(--transition);
+}
+.profile-card:hover {
+    box-shadow: var(--shadow-md);
+}
+.profile-stat-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.75rem;
+}
+.profile-stat-box {
+    background: var(--white);
+    border: 1px solid var(--slate-200);
+    border-radius: var(--radius-lg);
+    padding: 1.25rem;
+    text-align: center;
+    box-shadow: var(--shadow-sm);
+}
+.profile-stat-val {
+    font-size: 1.65rem;
+    font-weight: 800;
+    color: var(--slate-900);
+    line-height: 1.2;
+}
+.profile-stat-lbl {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 600;
+    color: var(--slate-500);
+    margin-top: 0.35rem;
+}
+.info-row {
+    display: flex;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid var(--slate-100);
+    align-items: flex-start;
+}
+.info-row:last-child {
+    border-bottom: none;
+}
+.info-label {
+    width: 140px;
+    color: var(--slate-500);
+    font-size: 0.88rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    flex-shrink: 0;
+}
+.info-val {
+    color: var(--slate-900);
+    font-size: 0.92rem;
+    font-weight: 500;
+    word-break: break-word;
+}
+.enrolled-course-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    border: 1px solid var(--slate-200);
+    border-radius: var(--radius-lg);
+    margin-bottom: 0.85rem;
+    background: var(--slate-50);
+    transition: var(--transition);
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+.enrolled-course-item:hover {
+    border-color: #cbd5e1;
+    background: var(--white);
+    transform: translateX(4px);
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 1140px; margin-top: 1.5rem; margin-bottom: 3.5rem;">
+
+    <!-- Profile Hero Banner -->
+    <div class="profile-hero">
+        <div class="profile-hero-content">
+            <div style="display: flex; align-items: center; gap: 1.5rem; flex-wrap: wrap;">
+                <div class="profile-avatar-wrap">
+                    {{ student.first_name|first|upper }}{{ student.last_name|first|upper }}
+                </div>
+                <div>
+                    <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 0.35rem;">
+                        <h1 style="font-size: 2rem; font-weight: 800; color: white; margin: 0;">
+                            {{ student.full_name }}
+                        </h1>
+                        <span class="badge" style="background: rgba(255, 255, 255, 0.25); color: white; border: 1px solid rgba(255,255,255,0.4); padding: 0.35rem 0.75rem; border-radius: 9999px; font-weight: 600; font-size: 0.82rem;">
+                            🎓 Student #{{ student.student_id }}
+                        </span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 1.25rem; flex-wrap: wrap; font-size: 0.92rem; opacity: 0.95;">
+                        <span><i class="bi bi-envelope"></i> {{ student.email }}</span>
+                        {% if student.phone %}
+                            <span><i class="bi bi-telephone"></i> {{ student.phone }}</span>
+                        {% endif %}
+                        <span><i class="bi bi-calendar3"></i> Joined {{ student.enrollment_date|date:"M Y"|default:"Recently" }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Profile Action Buttons -->
+            <div style="display: flex; align-items: center; gap: 0.75rem;">
+                {% if is_own_profile or is_admin %}
+                    <a href="{% url 'student_profile_edit' %}" class="btn" style="background: white; color: #065f46; font-weight: 700; border-radius: 9999px; padding: 0.65rem 1.4rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                        ✏️ Edit Profile
+                    </a>
+                {% endif %}
+                <a href="{% url 'dashboard' %}" class="btn" style="background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.4); border-radius: 9999px; padding: 0.65rem 1.25rem;">
+                    Back to Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content Layout (2 Columns) -->
+    <div style="display: grid; grid-template-columns: 360px 1fr; gap: 2rem; align-items: start;">
+
+        <!-- Left Column: Personal Information & Bio -->
+        <div>
+            <!-- Personal Bio Card -->
+            <div class="profile-card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; padding-bottom: 0.75rem; border-bottom: 1px solid var(--slate-100);">
+                    <h3 style="font-size: 1.15rem; font-weight: 700; color: var(--slate-900); margin: 0;">
+                        About Learner
+                    </h3>
+                    {% if is_own_profile %}
+                        <a href="{% url 'student_profile_edit' %}" class="btn btn-sm btn-secondary" style="font-size: 0.78rem; padding: 0.25rem 0.65rem;">
+                            Edit
+                        </a>
+                    {% endif %}
+                </div>
+
+                {% if student.bio %}
+                    <p style="color: var(--slate-700); font-size: 0.92rem; line-height: 1.6; margin: 0;">
+                        {{ student.bio|linebreaksbr }}
+                    </p>
+                {% else %}
+                    <p style="color: var(--slate-400); font-size: 0.88rem; font-style: italic; margin: 0;">
+                        No biography added yet.
+                        {% if is_own_profile %}
+                            <a href="{% url 'student_profile_edit' %}" style="color: #059669; font-weight: 600;">Tell others about your goals!</a>
+                        {% endif %}
+                    </p>
+                {% endif %}
+            </div>
+
+            <!-- Detailed Contact Info Card -->
+            <div class="profile-card">
+                <h3 style="font-size: 1.15rem; font-weight: 700; color: var(--slate-900); margin: 0 0 1rem 0; padding-bottom: 0.75rem; border-bottom: 1px solid var(--slate-100);">
+                    Contact & Details
+                </h3>
+
+                <div class="info-row">
+                    <div class="info-label">👤 Full Name</div>
+                    <div class="info-val">{{ student.full_name }}</div>
+                </div>
+
+                <div class="info-row">
+                    <div class="info-label">📧 Email</div>
+                    <div class="info-val">{{ student.email }}</div>
+                </div>
+
+                <div class="info-row">
+                    <div class="info-label">📞 Phone</div>
+                    <div class="info-val">{{ student.phone|default:"Not specified" }}</div>
+                </div>
+
+                <div class="info-row">
+                    <div class="info-label">🎂 Birthday</div>
+                    <div class="info-val">{{ student.date_of_birth|date:"d M, Y"|default:"Not specified" }}</div>
+                </div>
+
+                <div class="info-row">
+                    <div class="info-label">📍 Address</div>
+                    <div class="info-val">{{ student.address|default:"Not specified" }}</div>
+                </div>
+
+                <div class="info-row">
+                    <div class="info-label">📅 Enrolled</div>
+                    <div class="info-val">{{ student.enrollment_date|date:"d M, Y"|default:"Recently" }}</div>
+                </div>
+
+                <div class="info-row">
+                    <div class="info-label">🛡️ Status</div>
+                    <div class="info-val">
+                        <span class="badge" style="background: #dcfce7; color: #15803d; font-weight: 700; border: 1px solid #bbf7d0; border-radius: 9999px; padding: 0.25rem 0.65rem; font-size: 0.8rem;">
+                            ● Active Student
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Links Card -->
+            <div class="profile-card">
+                <h3 style="font-size: 1.15rem; font-weight: 700; color: var(--slate-900); margin: 0 0 1rem 0; padding-bottom: 0.75rem; border-bottom: 1px solid var(--slate-100);">
+                    Quick Navigation
+                </h3>
+                <div style="display: flex; flex-direction: column; gap: 0.6rem;">
+                    <a href="{% url 'course_list' %}" class="btn btn-secondary btn-sm" style="text-align: left; display: flex; align-items: center; gap: 0.5rem;">
+                        <span>📚</span> Explore Courses
+                    </a>
+                    <a href="{% url 'cart' %}" class="btn btn-secondary btn-sm" style="text-align: left; display: flex; align-items: center; gap: 0.5rem;">
+                        <span>🛒</span> My Shopping Cart
+                    </a>
+                    {% if is_admin %}
+                        <a href="{% url 'admin_students' %}" class="btn btn-secondary btn-sm" style="text-align: left; display: flex; align-items: center; gap: 0.5rem;">
+                            <span>🛡️</span> All Registered Students (Admin)
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column: Learning Analytics, Enrolled Courses & Receipts -->
+        <div>
+            <!-- Stats Grid -->
+            <div class="profile-stat-grid">
+                <div class="profile-stat-box">
+                    <div class="profile-stat-val" style="color: #059669;">{{ total_enrolled }}</div>
+                    <div class="profile-stat-lbl">Courses Enrolled</div>
+                </div>
+                <div class="profile-stat-box">
+                    <div class="profile-stat-val" style="color: #2563eb;">{{ active_count }}</div>
+                    <div class="profile-stat-lbl">In Progress</div>
+                </div>
+                <div class="profile-stat-box">
+                    <div class="profile-stat-val" style="color: #16a34a;">{{ completed_count }}</div>
+                    <div class="profile-stat-lbl">Completed</div>
+                </div>
+                <div class="profile-stat-box">
+                    <div class="profile-stat-val" style="color: #d97706;">₹{{ total_paid|default:"0.00" }}</div>
+                    <div class="profile-stat-lbl">Total Invested</div>
+                </div>
+            </div>
+
+            <!-- Enrolled Courses Card -->
+            <div class="profile-card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; padding-bottom: 0.75rem; border-bottom: 1px solid var(--slate-100); flex-wrap: wrap; gap: 0.5rem;">
+                    <div>
+                        <h3 style="font-size: 1.25rem; font-weight: 700; color: var(--slate-900); margin: 0 0 0.2rem 0;">
+                            Enrolled Courses
+                        </h3>
+                        <p style="color: var(--slate-500); font-size: 0.85rem; margin: 0;">
+                            Access lessons, notes documents, and syllabus content.
+                        </p>
+                    </div>
+                    <span class="badge" style="background: var(--slate-100); color: var(--slate-700); font-weight: 600; padding: 0.35rem 0.75rem; border-radius: 9999px;">
+                        {{ enrollments.count }} Total
+                    </span>
+                </div>
+
+                {% if enrollments %}
+                    {% for enr in enrollments %}
+                        <div class="enrolled-course-item">
+                            <div style="min-width: 0;">
+                                <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem; flex-wrap: wrap;">
+                                    <h4 style="font-size: 1.05rem; font-weight: 700; color: var(--slate-900); margin: 0;">
+                                        {{ enr.course.title }}
+                                    </h4>
+                                    <span class="badge" style="background: #e0e7ff; color: #4338ca; font-size: 0.75rem; padding: 0.2rem 0.5rem; border-radius: 9999px;">
+                                        {{ enr.course.get_category_display }}
+                                    </span>
+                                </div>
+                                <div style="font-size: 0.82rem; color: var(--slate-500); display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
+                                    {% if enr.course.instructor %}
+                                        <span>👨‍🏫 {{ enr.course.instructor.full_name }}</span>
+                                    {% endif %}
+                                    <span>📅 Enrolled {{ enr.enrollment_date|date:"d M, Y" }}</span>
+                                </div>
+                            </div>
+
+                            <div style="display: flex; align-items: center; gap: 0.75rem;">
+                                {% if enr.status == 'active' %}
+                                    <span class="badge" style="background: #dcfce7; color: #15803d; border-radius: 9999px; padding: 0.35rem 0.75rem; font-weight: 600; font-size: 0.78rem;">
+                                        Active
+                                    </span>
+                                {% elif enr.status == 'completed' %}
+                                    <span class="badge" style="background: #dbeafe; color: #1d4ed8; border-radius: 9999px; padding: 0.35rem 0.75rem; font-weight: 600; font-size: 0.78rem;">
+                                        Completed
+                                    </span>
+                                {% else %}
+                                    <span class="badge" style="background: #f1f5f9; color: #64748b; border-radius: 9999px; padding: 0.35rem 0.75rem; font-weight: 600; font-size: 0.78rem;">
+                                        {{ enr.status|title }}
+                                    </span>
+                                {% endif %}
+
+                                <a href="{% url 'course_detail' enr.course.course_id %}" class="btn btn-primary btn-sm" style="font-size: 0.82rem; border-radius: 9999px; padding: 0.35rem 0.85rem;">
+                                    View Syllabus
+                                </a>
+                            </div>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <div style="text-align: center; padding: 2.5rem 1rem; color: var(--slate-400);">
+                        <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">🎓</div>
+                        <h4 style="color: var(--slate-700); margin-bottom: 0.25rem;">No courses enrolled yet</h4>
+                        <p style="font-size: 0.88rem; margin-bottom: 1rem;">Browse the course catalog and discover new subjects to master.</p>
+                        <a href="{% url 'course_list' %}" class="btn btn-primary btn-sm">Explore Courses</a>
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- Recent Payment Receipts Card -->
+            <div class="profile-card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; padding-bottom: 0.75rem; border-bottom: 1px solid var(--slate-100);">
+                    <div>
+                        <h3 style="font-size: 1.25rem; font-weight: 700; color: var(--slate-900); margin: 0 0 0.2rem 0;">
+                            Recent Transactions
+                        </h3>
+                        <p style="color: var(--slate-500); font-size: 0.85rem; margin: 0;">
+                            Payment orders and checkout invoices processed via Razorpay.
+                        </p>
+                    </div>
+                </div>
+
+                {% if payments %}
+                    <div style="overflow-x: auto;">
+                        <table style="width: 100%; border-collapse: collapse; font-size: 0.88rem;">
+                            <thead>
+                                <tr style="border-bottom: 2px solid var(--slate-200); text-align: left; color: var(--slate-500);">
+                                    <th style="padding: 0.6rem 0.5rem;">Order ID</th>
+                                    <th style="padding: 0.6rem 0.5rem;">Amount</th>
+                                    <th style="padding: 0.6rem 0.5rem;">Status</th>
+                                    <th style="padding: 0.6rem 0.5rem; text-align: right;">Date</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for pay in payments %}
+                                    <tr style="border-bottom: 1px solid var(--slate-100);">
+                                        <td style="padding: 0.75rem 0.5rem; font-family: monospace; color: var(--slate-700);">
+                                            {{ pay.razorpay_order_id|truncatechars:18 }}
+                                        </td>
+                                        <td style="padding: 0.75rem 0.5rem; font-weight: 700; color: var(--slate-900);">
+                                            ₹{{ pay.amount }}
+                                        </td>
+                                        <td style="padding: 0.75rem 0.5rem;">
+                                            {% if pay.status == 'paid' %}
+                                                <span class="badge" style="background: #dcfce7; color: #15803d; font-size: 0.75rem; padding: 0.2rem 0.5rem; border-radius: 9999px;">Paid</span>
+                                            {% elif pay.status == 'created' %}
+                                                <span class="badge" style="background: #fef3c7; color: #b45309; font-size: 0.75rem; padding: 0.2rem 0.5rem; border-radius: 9999px;">Pending</span>
+                                            {% else %}
+                                                <span class="badge" style="background: #fee2e2; color: #b91c1c; font-size: 0.75rem; padding: 0.2rem 0.5rem; border-radius: 9999px;">{{ pay.status }}</span>
+                                            {% endif %}
+                                        </td>
+                                        <td style="padding: 0.75rem 0.5rem; text-align: right; color: var(--slate-500); font-size: 0.82rem;">
+                                            {{ pay.created_at|date:"d M, Y" }}
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <p style="color: var(--slate-400); font-size: 0.88rem; margin: 0; padding: 1rem 0; text-align: center;">
+                        No payment transactions recorded yet.
+                    </p>
+                {% endif %}
+            </div>
+
+        </div>
+    </div>
+
+</div>
+{% endblock %}

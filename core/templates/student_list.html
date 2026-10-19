@@ -248,6 +248,10 @@
                                 <div class="member-stat-lbl">Joined</div>
                             </div>
                         </div>
+
+                        <a href="{% url 'student_profile_detail' st.student_id %}" class="btn btn-secondary btn-sm" style="margin-top: 1rem; width: 100%; border-radius: var(--radius-md); text-align: center; font-size: 0.85rem; font-weight: 600;">
+                            View Profile
+                        </a>
                     </div>
                 </div>
             {% endfor %}

@@ -174,8 +174,8 @@ class StudentAdmin(admin.ModelAdmin):
         StudentEnrollmentFilter,
         ("enrollment_date", admin.DateFieldListFilter),
     )
-    search_fields = ("first_name", "last_name", "email", "phone", "address")
-    search_help_text = "Search students by first name, last name, email, phone, or address"
+    search_fields = ("first_name", "last_name", "email", "phone", "address", "bio")
+    search_help_text = "Search students by first name, last name, email, phone, address, or bio"
     ordering = ("-student_id",)
     date_hierarchy = "enrollment_date"
     list_per_page = 25

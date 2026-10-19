@@ -28,12 +28,20 @@ from core.views import (
     reset_password_view,
 )
 
+from django.views.generic import RedirectView
+
 urlpatterns = [
     path('', views.home_view, name='home'),
     path('admin/', admin.site.urls),
     path("register/", register_view, name="register"),
     path("login/", login_view, name="login"),
+    path("accounts/login/", RedirectView.as_view(pattern_name="login", permanent=False, query_string=True)),
     path("dashboard/", dashboard_view, name="dashboard"),
+    path("profile/", views.student_profile_view, name="student_profile"),
+    path("profile/edit/", views.student_profile_edit_view, name="student_profile_edit"),
+    path("student/profile/", views.student_profile_view, name="student_profile_alt"),
+    path("student/profile/edit/", views.student_profile_edit_view, name="student_profile_edit_alt"),
+    path("students/<int:student_id>/profile/", views.student_profile_detail_view, name="student_profile_detail"),
     path("logout/", logout_view, name="logout"),
     path("forgot-password/", forgot_password_view, name="forgot_password"),
     path("verify-otp/", verify_otp_view, name="verify_otp"),
