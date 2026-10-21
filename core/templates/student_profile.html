@@ -402,8 +402,8 @@
                                             ₹{{ pay.amount }}
                                         </td>
                                         <td style="padding: 0.75rem 0.5rem;">
-                                            {% if pay.status == 'paid' %}
-                                                <span class="badge" style="background: #dcfce7; color: #15803d; font-size: 0.75rem; padding: 0.2rem 0.5rem; border-radius: 9999px;">Paid</span>
+                                            {% if pay.status == 'paid' or pay.status == 'verified' or pay.status == 'captured' or pay.status == 'success' %}
+                                                <span class="badge" style="background: #dcfce7; color: #15803d; font-size: 0.75rem; padding: 0.2rem 0.5rem; border-radius: 9999px;">Verified</span>
                                             {% elif pay.status == 'created' %}
                                                 <span class="badge" style="background: #fef3c7; color: #b45309; font-size: 0.75rem; padding: 0.2rem 0.5rem; border-radius: 9999px;">Pending</span>
                                             {% else %}

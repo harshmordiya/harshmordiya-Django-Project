@@ -383,7 +383,7 @@
                             <i class="bi bi-camera-video me-1"></i> Videos <span class="badge bg-secondary-subtle text-secondary rounded-pill ms-1">{{ video_count|default:0 }}</span>
                         </button>
                         <button class="nav-link" data-filter="document">
-                            <i class="bi bi-file-text me-1"></i> Documents <span class="badge bg-secondary-subtle text-secondary rounded-pill ms-1">{{ document_count|default:0 }}</span>
+                            <i class="bi bi-file-earmark-text me-1"></i> Documents & Notes <span class="badge bg-secondary-subtle text-secondary rounded-pill ms-1">{{ document_count|default:0 }}</span>
                         </button>
                         <button class="nav-link" data-filter="preview">
                             <i class="bi bi-unlock me-1"></i> Free Previews <span class="badge bg-secondary-subtle text-secondary rounded-pill ms-1">{{ preview_count|default:0 }}</span>
@@ -442,6 +442,7 @@
                             <tr class="lesson-row" 
                                 id="lesson-{{ item.content_id }}"
                                 data-type="{{ item.content_type }}"
+                                data-has-notes="{% if item.notes_file %}true{% else %}false{% endif %}"
                                 data-preview="{{ item.is_free_preview|yesno:'true,false' }}"
                                 data-title="{{ item.title|lower }}"
                                 data-desc="{{ item.description|default:''|lower }}">
@@ -728,6 +729,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 matchesFilter = true;
             } else if (currentFilter === 'preview') {
                 matchesFilter = (rowPreview === 'true');
+            } else if (currentFilter === 'document') {
+                const hasNotes = row.getAttribute('data-has-notes');
+                matchesFilter = (rowType === 'document' || rowType === 'article' || hasNotes === 'true');
             } else if (currentFilter === rowType) {
                 matchesFilter = true;
             }

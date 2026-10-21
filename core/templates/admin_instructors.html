@@ -23,41 +23,37 @@
         </div>
     </div>
 
-    <!-- Search & Status Filter Toolbar Card -->
-    <div class="admin-card p-3.5 mb-4">
-        <div class="row align-items-center justify-content-between g-3">
-            <!-- Status Filter Pills -->
-            <div class="col-lg-6">
-                <div class="d-flex align-items-center gap-1.5 flex-wrap">
-                    <span class="text-muted small fw-semibold me-1">Filter:</span>
-                    <a href="{% url 'admin_instructors' %}{% if search_query %}?q={{ search_query }}{% endif %}" 
-                       class="btn btn-sm rounded-pill px-3 fw-semibold {% if status_filter == 'all' %}btn-primary{% else %}btn-outline-secondary border-0 bg-light text-secondary{% endif %}">
-                        All Faculty
-                    </a>
-                    <a href="{% url 'admin_instructors' %}?status=active{% if search_query %}&q={{ search_query }}{% endif %}" 
-                       class="btn btn-sm rounded-pill px-3 fw-semibold {% if status_filter == 'active' %}btn-success{% else %}btn-outline-secondary border-0 bg-light text-secondary{% endif %}">
-                        <i class="bi bi-check-circle-fill me-1"></i> Active
-                    </a>
-                    <a href="{% url 'admin_instructors' %}?status=inactive{% if search_query %}&q={{ search_query }}{% endif %}" 
-                       class="btn btn-sm rounded-pill px-3 fw-semibold {% if status_filter == 'inactive' %}btn-secondary{% else %}btn-outline-secondary border-0 bg-light text-secondary{% endif %}">
-                        <i class="bi bi-person-slash me-1"></i> Deactivated
-                    </a>
-                </div>
+    <!-- Search & Filters Toolbar Card -->
+    <div class="admin-toolbar-box">
+        <form method="get" class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+            <!-- Left: Search Input -->
+            <div class="input-group" style="flex: 1 1 300px; max-width: 440px;">
+                <span class="input-group-text bg-white border-end-0 text-muted ps-3">
+                    <i class="bi bi-search"></i>
+                </span>
+                <input type="text" name="q" value="{{ search_query }}" class="form-control border-start-0 ps-1" placeholder="Search by name, email, or specialization..." aria-label="Search instructors">
             </div>
 
-            <!-- Search & Sort Controls -->
-            <div class="col-lg-6 col-xl-6">
-                <form method="get" class="d-flex gap-2 align-items-center flex-wrap flex-md-nowrap">
-                    {% if status_filter != 'all' %}
-                        <input type="hidden" name="status" value="{{ status_filter }}">
-                    {% endif %}
-                    <div class="input-group">
-                        <span class="input-group-text bg-white border-end-0 text-muted ps-3">
-                            <i class="bi bi-search"></i>
-                        </span>
-                        <input type="text" name="q" value="{{ search_query }}" class="form-control border-start-0 ps-1" placeholder="Search by name, email, or specialization..." aria-label="Search instructors">
-                    </div>
-                    <select name="sort" class="form-select form-select-sm rounded-pill border" style="min-width: 145px;" onchange="this.form.submit()" title="Sort order">
+            <!-- Right: Dropdown Filters & Actions -->
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <!-- Status Filter Dropdown -->
+                <div class="d-flex align-items-center gap-1.5">
+                    <label class="text-muted small fw-semibold text-nowrap d-none d-sm-inline">
+                        <i class="bi bi-funnel me-1"></i>Status:
+                    </label>
+                    <select name="status" class="form-select form-select-sm rounded-pill border" style="min-width: 155px;" onchange="this.form.submit()" title="Filter by Account Status">
+                        <option value="all" {% if status_filter == 'all' or not status_filter %}selected{% endif %}>All Faculty</option>
+                        <option value="active" {% if status_filter == 'active' %}selected{% endif %}>Active Only</option>
+                        <option value="inactive" {% if status_filter == 'inactive' %}selected{% endif %}>Deactivated Only</option>
+                    </select>
+                </div>
+
+                <!-- Sort Order Dropdown (with dedicated spacing from Status) -->
+                <div class="d-flex align-items-center gap-1.5 ms-sm-2 ms-md-3">
+                    <label class="text-muted small fw-semibold text-nowrap d-none d-sm-inline">
+                        <i class="bi bi-arrow-down-up me-1"></i>Sort:
+                    </label>
+                    <select name="sort" class="form-select form-select-sm rounded-pill border" style="min-width: 155px;" onchange="this.form.submit()" title="Sort order">
                         <option value="recent" {% if sort_by == 'recent' %}selected{% endif %}>Newest First</option>
                         <option value="oldest" {% if sort_by == 'oldest' %}selected{% endif %}>Oldest First</option>
                         <option value="name_asc" {% if sort_by == 'name_asc' %}selected{% endif %}>Name (A-Z)</option>
@@ -65,15 +61,19 @@
                         <option value="courses_desc" {% if sort_by == 'courses_desc' %}selected{% endif %}>Most Courses</option>
                         <option value="students_desc" {% if sort_by == 'students_desc' %}selected{% endif %}>Most Students</option>
                     </select>
-                    <button type="submit" class="btn btn-primary rounded-pill px-3 fw-semibold">Search</button>
-                    {% if search_query or status_filter != 'all' or sort_by != 'recent' %}
-                        <a href="{% url 'admin_instructors' %}" class="btn btn-outline-secondary rounded-pill px-3" title="Clear Filters & Search">
-                            <i class="bi bi-arrow-counterclockwise"></i>
-                        </a>
-                    {% endif %}
-                </form>
+                </div>
+
+                <!-- Submit / Reset Buttons -->
+                <button type="submit" class="btn btn-primary btn-sm rounded-pill px-3 fw-semibold ms-sm-1">
+                    Search
+                </button>
+                {% if search_query or status_filter != 'all' or sort_by != 'recent' %}
+                    <a href="{% url 'admin_instructors' %}" class="btn btn-outline-secondary btn-sm rounded-pill px-3" title="Clear All Filters & Search">
+                        <i class="bi bi-arrow-counterclockwise me-1"></i> Reset
+                    </a>
+                {% endif %}
             </div>
-        </div>
+        </form>
     </div>
 
     <!-- Instructors Table Card -->
@@ -93,30 +93,29 @@
             <table class="table admin-table mb-0 align-middle">
                 <thead>
                     <tr>
-                        <th style="width: 75px;">
+                        <th style="width: 70px;" class="text-nowrap">
                             <a href="{% url 'admin_instructors' %}?sort={% if sort_by == 'oldest' %}recent{% else %}oldest{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}{% if status_filter != 'all' %}&status={{ status_filter }}{% endif %}" class="text-dark text-decoration-none d-inline-flex align-items-center gap-1" title="Sort by ID">
                                 ID <i class="bi bi-arrow-down-up small text-muted"></i>
                             </a>
                         </th>
-                        <th style="min-width: 200px;">
+                        <th style="min-width: 180px;" class="text-nowrap">
                             <a href="{% url 'admin_instructors' %}?sort={% if sort_by == 'name_asc' %}name_desc{% else %}name_asc{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}{% if status_filter != 'all' %}&status={{ status_filter }}{% endif %}" class="text-dark text-decoration-none d-inline-flex align-items-center gap-1" title="Sort by Faculty Name">
                                 Faculty Member <i class="bi bi-arrow-down-up small text-muted"></i>
                             </a>
                         </th>
-                        <th style="min-width: 200px;">Email & Phone</th>
-                        <th style="min-width: 150px;">Specialization</th>
-                        <th style="width: 130px;">
+                        <th style="min-width: 180px;" class="text-nowrap">Email & Phone</th>
+                        <th style="width: 140px;" class="text-nowrap">Specialization</th>
+                        <th style="width: 110px;" class="text-nowrap">
                             <a href="{% url 'admin_instructors' %}?sort=courses_desc{% if search_query %}&q={{ search_query }}{% endif %}{% if status_filter != 'all' %}&status={{ status_filter }}{% endif %}" class="text-dark text-decoration-none d-inline-flex align-items-center gap-1" title="Sort by Courses Taught">
                                 Courses <i class="bi bi-arrow-down-up small text-muted"></i>
                             </a>
                         </th>
-                        <th style="width: 130px;">
+                        <th style="width: 115px;" class="text-nowrap">
                             <a href="{% url 'admin_instructors' %}?sort=students_desc{% if search_query %}&q={{ search_query }}{% endif %}{% if status_filter != 'all' %}&status={{ status_filter }}{% endif %}" class="text-dark text-decoration-none d-inline-flex align-items-center gap-1" title="Sort by Students Reached">
                                 Students <i class="bi bi-arrow-down-up small text-muted"></i>
                             </a>
                         </th>
-                        <th style="width: 120px;">Status</th>
-                        <th class="text-end" style="width: 190px;">Actions</th>
+                        <th class="text-end text-nowrap" style="width: 275px;">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -136,7 +135,18 @@
                                         {{ instructor.first_name|first|upper }}{{ instructor.last_name|first|upper }}
                                     </div>
                                     <div class="min-w-0">
-                                        <div class="fw-bold text-dark fs-6 text-truncate">{{ instructor.first_name }} {{ instructor.last_name }}</div>
+                                        <div class="d-flex align-items-center gap-2 mb-0.5 flex-wrap">
+                                            <span class="fw-bold text-dark fs-6 text-truncate">{{ instructor.first_name }} {{ instructor.last_name }}</span>
+                                            {% if instructor.is_active %}
+                                                <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2 py-0.5 fw-semibold" style="font-size: 0.68rem;">
+                                                    ● Active
+                                                </span>
+                                            {% else %}
+                                                <span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill px-2 py-0.5 fw-semibold" style="font-size: 0.68rem;">
+                                                    ○ Deactivated
+                                                </span>
+                                            {% endif %}
+                                        </div>
                                         <span class="badge bg-light text-muted border rounded-pill px-2 py-0.5" style="font-size: 0.72rem;">
                                             Faculty
                                         </span>
@@ -178,48 +188,48 @@
                                 </span>
                             </td>
 
-                            <!-- Status Badge -->
-                            <td>
-                                {% if instructor.is_active %}
-                                    <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2.5 py-1 fw-semibold">
-                                        ● Active
-                                    </span>
-                                {% else %}
-                                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill px-2.5 py-1 fw-semibold">
-                                        ○ Deactivated
-                                    </span>
-                                {% endif %}
-                            </td>
-
-                            <!-- Actions -->
+                            <!-- Actions (Courses, Activate/Deactivate Toggle, Delete) -->
                             <td class="text-end text-nowrap">
-                                <div class="d-inline-flex align-items-center gap-1.5">
-                                    <a href="{% url 'admin_courses' %}?q={{ instructor.first_name }}" class="btn btn-outline-primary btn-sm rounded-pill px-2.5" title="View Assigned Courses">
+                                <div class="d-inline-flex align-items-center gap-2">
+                                    <!-- Courses Button -->
+                                    <a href="{% url 'admin_courses' %}?q={{ instructor.first_name }}" 
+                                       class="btn btn-outline-primary btn-sm rounded-pill px-2.5 py-1 text-nowrap fw-medium" 
+                                       title="View Assigned Courses">
                                         <i class="bi bi-journal-text me-1"></i> Courses
                                     </a>
+
+                                    <!-- Status Toggle Button -->
                                     {% if instructor.linked_user %}
                                         {% if instructor.is_active %}
                                             <a href="{% url 'admin_user_toggle_status' instructor.linked_user.id %}" 
-                                               class="btn btn-outline-danger btn-sm rounded-pill px-2.5 fw-semibold" 
-                                               title="Deactivate Faculty Account"
-                                               onclick="return confirm('Are you sure you want to deactivate the account for instructor {{ instructor.first_name }} {{ instructor.last_name }}? They will not be able to log in or manage courses until reactivated.');">
-                                                <i class="bi bi-person-slash me-1"></i> Deactivate
+                                               class="btn btn-outline-success btn-sm rounded-pill px-2.5 py-1 text-nowrap fw-semibold shadow-sm" 
+                                               title="Currently Active - Click to Deactivate"
+                                               onclick="return confirm('Are you sure you want to deactivate instructor {{ instructor.first_name }} {{ instructor.last_name }}? They will not be able to log in until reactivated.');">
+                                                <i class="bi bi-person-check me-1"></i> Activate
                                             </a>
                                         {% else %}
                                             <a href="{% url 'admin_user_toggle_status' instructor.linked_user.id %}" 
-                                               class="btn btn-outline-success btn-sm rounded-pill px-2.5 fw-semibold" 
-                                               title="Reactivate Faculty Account"
-                                               onclick="return confirm('Reactivate account for instructor {{ instructor.first_name }} {{ instructor.last_name }}?');">
-                                                <i class="bi bi-person-check me-1"></i> Activate
+                                               class="btn btn-outline-danger btn-sm rounded-pill px-2.5 py-1 text-nowrap fw-semibold shadow-sm" 
+                                               title="Currently Deactivated - Click to Activate"
+                                               onclick="return confirm('Reactivate instructor {{ instructor.first_name }} {{ instructor.last_name }}?');">
+                                                <i class="bi bi-person-slash me-1"></i> Deactivate
                                             </a>
                                         {% endif %}
                                     {% endif %}
+
+                                    <!-- Delete Instructor Button -->
+                                    <a href="{% url 'admin_instructor_delete' instructor.instructor_id %}" 
+                                       class="btn btn-outline-danger btn-sm rounded-pill px-2.5 py-1 text-nowrap fw-medium shadow-sm" 
+                                       title="Permanently Delete Instructor" 
+                                       onclick="return confirm('Are you sure you want to permanently delete instructor {{ instructor.first_name }} {{ instructor.last_name }} ({{ instructor.email }})? Their courses will be preserved.');">
+                                        <i class="bi bi-trash3 me-1"></i> Delete
+                                    </a>
                                 </div>
                             </td>
                         </tr>
                     {% empty %}
                         <tr>
-                            <td colspan="8" class="text-center py-5 text-muted">
+                            <td colspan="7" class="text-center py-5 text-muted">
                                 <div class="fs-1 mb-2">👨‍🏫</div>
                                 <h5 class="fw-bold text-dark">No instructors found</h5>
                                 <p class="small mb-3">No instructor profiles match your current search query.</p>

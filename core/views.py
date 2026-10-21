@@ -10,7 +10,8 @@ from django.contrib.auth.models import User
 from django.core.mail import send_mail
 from django.utils import timezone
 from functools import wraps
-from django.db.models import Q, Count, Sum
+from django.db.models import Q, Count, Sum, Value, DecimalField
+from django.db.models.functions import Coalesce
 from django.core.paginator import Paginator
 from django.contrib import messages
 from django.conf import settings
@@ -19,16 +20,15 @@ from django.urls import reverse
 
 from .forms import RegistrationForm, CourseForm, CourseContentForm, StudentProfileForm, ContactInstructorForm, InstructorReplyForm
 from .models import Cart, Course, CourseContent, PasswordResetOTP, Student, UserProfile, Payment, Enrollment, Instructor, InstructorMessage
+from .email_utils import (
+    send_payment_confirmation_email,
+    send_enrollment_confirmation_email,
+    send_course_completion_email,
+)
 
 
 def get_user_role(user):
-    """
-    Safely determine the effective role of a user: 'admin', 'instructor', or 'student'.
-    - Superusers and staff members are always recognized as 'admin'.
-    - Users with UserProfile role 'admin' are 'admin'.
-    - Users with UserProfile role 'instructor' or an Instructor record are 'instructor'.
-    - Default fallback is 'student'.
-    """
+   
     if not user or not user.is_authenticated:
         return None
     if user.is_superuser or user.is_staff:
@@ -42,10 +42,6 @@ def get_user_role(user):
 
 
 def is_admin_user(user):
-    """
-    Check if a user is an authorized administrator.
-    True if user is superuser, staff, or has UserProfile role == 'admin'.
-    """
     if not user or not user.is_authenticated:
         return False
     if user.is_superuser or user.is_staff:
@@ -55,11 +51,7 @@ def is_admin_user(user):
 
 
 def ensure_user_profile(user):
-    """
-    Safely retrieves or heals the UserProfile for an authenticated user.
-    Ensures superusers/staff are automatically synchronized to 'admin' role
-    so they are never erroneously displayed or treated as a student.
-    """
+   
     if not user or not user.is_authenticated:
         return None
     role = get_user_role(user)
@@ -77,10 +69,7 @@ def ensure_user_profile(user):
 
 
 def admin_required(view_func):
-    """
-    Decorator to ensure the logged-in user is authenticated and is an administrator.
-    Strictly denies access to ordinary students and instructors.
-    """
+   
     @wraps(view_func)
     def _wrapped_view(request, *args, **kwargs):
         if not request.user.is_authenticated:
@@ -1138,14 +1127,17 @@ def payment_callback(request):
         payment.status = "verified"
         payment.save()
 
+        # Capture cart items and course references BEFORE clearing the cart
         cart_items = Cart.objects.filter(
-    student=payment.student
-)
+            student=payment.student
+        ).select_related("course")
 
-        for cart_item in cart_items:
+        courses_to_enroll = [item.course for item in cart_items]
+
+        for course in courses_to_enroll:
             Enrollment.objects.get_or_create(
                 student=payment.student,
-                course=cart_item.course,
+                course=course,
                 defaults={
                     "status": "active"
                 }
@@ -1153,19 +1145,36 @@ def payment_callback(request):
 
         cart_items.delete()
 
-        # Remove purchased courses from cart
-        student = Student.objects.filter(
-            student_id=payment.student_id
-        ).first()
-
+        student = payment.student
         if student:
+            # Heal student email from user if student email is blank and user is authenticated
+            if not student.email and request.user.is_authenticated and request.user.email:
+                student.email = request.user.email
+                student.save(update_fields=["email"])
+
             student.enrollment_date = timezone.now()
             student.save(update_fields=["enrollment_date"])
+            Cart.objects.filter(student=student).delete()
 
-        if student:
-            Cart.objects.filter(
-                student=student
-            ).delete()
+            # Fallback for course list if cart was already empty
+            if not courses_to_enroll:
+                recent_enrollments = Enrollment.objects.filter(student=student).select_related("course").order_by("-enrollment_date")[:5]
+                courses_to_enroll = [enr.course for enr in recent_enrollments]
+
+            first_course = courses_to_enroll[0] if courses_to_enroll else None
+
+            # 1. Payment confirmation email (after successful signature verification)
+            try:
+                send_payment_confirmation_email(student, payment, course=first_course)
+            except Exception as mail_err:
+                print(f"[PAYMENT CALLBACK] Warning: Payment confirmation email dispatch failed: {mail_err}")
+
+            # 2. Course enrollment email (for each enrolled course)
+            for course in courses_to_enroll:
+                try:
+                    send_enrollment_confirmation_email(student, course)
+                except Exception as mail_err:
+                    print(f"[PAYMENT CALLBACK] Warning: Enrollment confirmation email dispatch failed for {course.title}: {mail_err}")
 
         messages.success(
             request,
@@ -1713,7 +1722,10 @@ def course_content_manage_view(request, course_id):
     contents = course.contents.all().order_by("order", "content_id")
     total_lessons = contents.count()
     video_count = contents.filter(content_type="video").count()
-    document_count = contents.filter(content_type="document").count()
+    document_count = contents.filter(
+        Q(content_type__in=["document", "article"]) |
+        (Q(notes_file__isnull=False) & ~Q(notes_file=""))
+    ).distinct().count()
     preview_count = contents.filter(is_free_preview=True).count()
     notes_count = contents.filter(notes_file__isnull=False).exclude(notes_file="").count()
 
@@ -1903,7 +1915,7 @@ def admin_dashboard_view(request):
     cancelled_enrollments = Enrollment.objects.filter(status="cancelled").count()
 
     total_payments = Payment.objects.count()
-    paid_payments = Payment.objects.filter(status__iexact="paid")
+    paid_payments = Payment.objects.filter(status__in=["paid", "verified", "captured", "success", "completed"])
     total_revenue = paid_payments.aggregate(total=Sum("amount"))["total"] or Decimal("0.00")
     total_users = User.objects.count()
 
@@ -1961,7 +1973,14 @@ def admin_students_view(request):
 
     students_qs = Student.objects.annotate(
         enrollments_count=Count("enrollments", distinct=True),
-        paid_total=Sum("payments__amount", filter=Q(payments__status__iexact="paid"))
+        paid_total=Coalesce(
+            Sum(
+                "payments__amount",
+                filter=Q(payments__status__in=["paid", "verified", "captured", "success", "completed"])
+            ),
+            Value(Decimal("0.00")),
+            output_field=DecimalField()
+        )
     )
 
     if q:
@@ -1974,11 +1993,16 @@ def admin_students_view(request):
 
     # Attach linked User and status
     students_list = list(students_qs)
-    emails = [s.email.lower() for s in students_list if s.email]
-    user_map = {u.email.lower(): u for u in User.objects.filter(email__in=emails)}
+    all_users = list(User.objects.all())
+    user_email_map = {u.email.strip().lower(): u for u in all_users if u.email}
+    user_name_map = {u.username.strip().lower(): u for u in all_users}
 
     for s in students_list:
-        linked_u = user_map.get(s.email.lower()) if s.email else None
+        s_email = s.email.strip().lower() if s.email else ""
+        s_name = s.first_name.strip().lower() if s.first_name else ""
+        linked_u = user_email_map.get(s_email) if s_email else None
+        if not linked_u and s_name:
+            linked_u = user_name_map.get(s_name)
         s.linked_user = linked_u
         s.is_active = linked_u.is_active if linked_u else True
 
@@ -2003,7 +2027,7 @@ def admin_students_view(request):
 
     context = {
         "students": students_list,
-        "total_count": len(students_list),
+        "total_count": Student.objects.count(),
         "search_query": q,
         "status_filter": status_filter,
         "sort_by": sort_by,
@@ -2039,11 +2063,16 @@ def admin_instructors_view(request):
 
     # Attach linked User and status
     instructors_list = list(instructors_qs)
-    emails = [i.email.lower() for i in instructors_list if i.email]
-    user_map = {u.email.lower(): u for u in User.objects.filter(email__in=emails)}
+    all_users = list(User.objects.all())
+    user_email_map = {u.email.strip().lower(): u for u in all_users if u.email}
+    user_name_map = {u.username.strip().lower(): u for u in all_users}
 
     for i in instructors_list:
-        linked_u = user_map.get(i.email.lower()) if i.email else None
+        i_email = i.email.strip().lower() if i.email else ""
+        i_name = i.first_name.strip().lower() if i.first_name else ""
+        linked_u = user_email_map.get(i_email) if i_email else None
+        if not linked_u and i_name:
+            linked_u = user_name_map.get(i_name)
         i.linked_user = linked_u
         i.is_active = linked_u.is_active if linked_u else True
 
@@ -2068,7 +2097,7 @@ def admin_instructors_view(request):
 
     context = {
         "instructors": instructors_list,
-        "total_count": len(instructors_list),
+        "total_count": Instructor.objects.count(),
         "search_query": q,
         "status_filter": status_filter,
         "sort_by": sort_by,
@@ -2102,6 +2131,88 @@ def admin_user_toggle_status_view(request, user_id):
 
     referer = request.META.get("HTTP_REFERER")
     return redirect(referer if referer else "admin_dashboard")
+
+
+@admin_required
+def admin_student_delete_view(request, student_id):
+    """
+    Permanently deletes a student record from the platform, including their
+    associated cart items, enrollments, and linked auth.User account (if not an admin/superuser).
+    """
+    student = get_object_or_404(Student, student_id=student_id)
+    student_name = f"{student.first_name} {student.last_name}".strip()
+    student_email = student.email.strip() if student.email else ""
+
+    # Locate linked user account
+    linked_user = None
+    if student_email:
+        linked_user = User.objects.filter(email__iexact=student_email).first()
+    if not linked_user and student.first_name:
+        linked_user = User.objects.filter(username__iexact=student.first_name).first()
+
+    # Safety checks
+    if linked_user:
+        if linked_user.is_superuser or linked_user == request.user:
+            messages.error(request, "Security safeguard: You cannot delete a superuser or your own administrative account.")
+            return redirect("admin_students")
+        profile = UserProfile.objects.filter(user=linked_user).first()
+        if profile and profile.role == "admin":
+            messages.error(request, "Security safeguard: You cannot delete an administrator account through the student directory.")
+            return redirect("admin_students")
+
+    # Delete Student record
+    student.delete()
+
+    # Delete linked user account if exists
+    if linked_user:
+        linked_user.delete()
+
+    messages.success(
+        request,
+        f'Student "{student_name}" ({student_email or "No email"}) was successfully deleted from the platform.'
+    )
+    return redirect("admin_students")
+
+
+@admin_required
+def admin_instructor_delete_view(request, instructor_id):
+    """
+    Permanently deletes an instructor record from the platform.
+    Courses assigned to this instructor are preserved (instructor set to null).
+    """
+    instructor = get_object_or_404(Instructor, instructor_id=instructor_id)
+    instructor_name = instructor.full_name
+    instructor_email = instructor.email.strip() if instructor.email else ""
+
+    # Locate linked user account
+    linked_user = None
+    if instructor_email:
+        linked_user = User.objects.filter(email__iexact=instructor_email).first()
+    if not linked_user and instructor.first_name:
+        linked_user = User.objects.filter(username__iexact=instructor.first_name).first()
+
+    # Safety checks
+    if linked_user:
+        if linked_user.is_superuser or linked_user == request.user:
+            messages.error(request, "Security safeguard: You cannot delete a superuser or your own administrative account.")
+            return redirect("admin_instructors")
+        profile = UserProfile.objects.filter(user=linked_user).first()
+        if profile and profile.role == "admin":
+            messages.error(request, "Security safeguard: You cannot delete an administrator account through the instructor directory.")
+            return redirect("admin_instructors")
+
+    # Delete Instructor record (Course.instructor is set to null automatically)
+    instructor.delete()
+
+    # Delete linked user account if exists
+    if linked_user:
+        linked_user.delete()
+
+    messages.success(
+        request,
+        f'Instructor "{instructor_name}" ({instructor_email or "No email"}) was successfully deleted from the platform.'
+    )
+    return redirect("admin_instructors")
 
 
 
@@ -2207,7 +2318,7 @@ def admin_enrollments_view(request):
 
     context = {
         "enrollments": enrollments_qs,
-        "total_count": enrollments_qs.count(),
+        "total_count": Enrollment.objects.count(),
         "active_count": Enrollment.objects.filter(status="active").count(),
         "completed_count": Enrollment.objects.filter(status="completed").count(),
         "cancelled_count": Enrollment.objects.filter(status="cancelled").count(),
@@ -2225,9 +2336,17 @@ def admin_enrollment_update_status_view(request, enrollment_id, new_status):
     """
     enrollment = get_object_or_404(Enrollment, enrollment_id=enrollment_id)
     if new_status in ["active", "completed", "cancelled"]:
+        old_status = enrollment.status
         enrollment.status = new_status
         enrollment.save(update_fields=["status"])
         messages.success(request, f'Enrollment #{enrollment.enrollment_id} updated to {new_status.title()}.')
+
+        # Trigger completion email if transitioning to completed
+        if new_status == "completed" and old_status != "completed":
+            try:
+                send_course_completion_email(enrollment.student, enrollment.course)
+            except Exception as mail_err:
+                print(f"[ENROLLMENT STATUS] Warning: Course completion email dispatch failed: {mail_err}")
     else:
         messages.error(request, f'Invalid status choice: {new_status}')
     return redirect("admin_enrollments")
@@ -2244,7 +2363,11 @@ def admin_payments_view(request):
 
     payments_qs = Payment.objects.select_related("student").order_by("-created_at")
 
-    if status_filter != "all":
+    paid_statuses = ["paid", "verified", "captured", "success", "completed"]
+
+    if status_filter in ["paid", "verified"]:
+        payments_qs = payments_qs.filter(status__in=paid_statuses)
+    elif status_filter != "all":
         payments_qs = payments_qs.filter(status__iexact=status_filter)
 
     if q:
@@ -2257,9 +2380,9 @@ def admin_payments_view(request):
         )
 
     total_volume = Payment.objects.aggregate(total=Sum("amount"))["total"] or Decimal("0.00")
-    paid_volume = Payment.objects.filter(status__iexact="paid").aggregate(total=Sum("amount"))["total"] or Decimal("0.00")
+    paid_volume = Payment.objects.filter(status__in=paid_statuses).aggregate(total=Sum("amount"))["total"] or Decimal("0.00")
     total_tx = Payment.objects.count()
-    paid_tx = Payment.objects.filter(status__iexact="paid").count()
+    paid_tx = Payment.objects.filter(status__in=paid_statuses).count()
 
     context = {
         "payments": payments_qs,
@@ -2272,4 +2395,4 @@ def admin_payments_view(request):
         "search_query": q,
         "active_tab": "payments",
     }
-    return render(request, "admin_payments.html", context)
+    return render(request, "admin_payments.html", context)

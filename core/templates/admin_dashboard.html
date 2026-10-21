@@ -16,120 +16,97 @@
             </p>
         </div>
         <div class="d-flex align-items-center gap-2">
-            <a href="{% url 'course_create' %}" class="btn btn-edu-primary d-inline-flex align-items-center gap-1.5 shadow-sm">
-                <i class="bi bi-plus-lg"></i>
-                <span>Add New Course</span>
-            </a>
             <a href="{% url 'admin_courses' %}" class="btn btn-outline-secondary btn-sm rounded-pill px-3 py-1.5">
                 <i class="bi bi-journal-text me-1"></i> View Catalog
             </a>
         </div>
     </div>
 
-    <!-- KPI Metric Cards Grid (6 Summary Cards) -->
-    <div class="row g-3 mb-4">
+    <!-- KPI Metric Cards Grid (6 Balanced Summary Cards) -->
+    <div class="admin-stats-grid">
         <!-- 1. Total Students -->
-        <div class="col-sm-6 col-xl-4 col-xxl-2">
-            <div class="admin-card p-3.5 h-100">
-                <div class="d-flex align-items-center justify-content-between mb-2.5">
-                    <span class="text-muted small fw-semibold">Total Students</span>
-                    <div class="rounded-circle bg-primary-subtle text-primary d-inline-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
-                        <i class="bi bi-people-fill fs-5"></i>
-                    </div>
+        <div class="admin-stat-card">
+            <div class="admin-stat-top">
+                <span class="admin-stat-label">Total Students</span>
+                <div class="admin-stat-icon bg-primary-subtle text-primary">
+                    <i class="bi bi-people-fill"></i>
                 </div>
-                <div class="h3 fw-bold text-dark mb-1">{{ total_students }}</div>
-                <div class="small text-muted d-flex align-items-center gap-1">
-                    <a href="{% url 'admin_students' %}" class="text-primary text-decoration-none fw-semibold">
-                        View directory &rarr;
-                    </a>
-                </div>
+            </div>
+            <div class="admin-stat-value">{{ total_students }}</div>
+            <div class="admin-stat-footer">
+                <span class="badge bg-primary-subtle text-primary rounded-pill px-2 py-0.5">Learners</span>
+                <a href="{% url 'admin_students' %}" class="text-primary text-decoration-none fw-semibold">
+                    Directory &rarr;
+                </a>
             </div>
         </div>
 
-        <!-- 2. Total Instructors -->
-        <div class="col-sm-6 col-xl-4 col-xxl-2">
-            <div class="admin-card p-3.5 h-100">
-                <div class="d-flex align-items-center justify-content-between mb-2.5">
-                    <span class="text-muted small fw-semibold">Total Faculty</span>
-                    <div class="rounded-circle bg-info-subtle text-info-emphasis d-inline-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
-                        <i class="bi bi-person-workspace fs-5"></i>
-                    </div>
+        <!-- 2. Total Faculty -->
+        <div class="admin-stat-card">
+            <div class="admin-stat-top">
+                <span class="admin-stat-label">Total Faculty</span>
+                <div class="admin-stat-icon bg-info-subtle text-info-emphasis">
+                    <i class="bi bi-person-workspace"></i>
                 </div>
-                <div class="h3 fw-bold text-dark mb-1">{{ total_instructors }}</div>
-                <div class="small text-muted d-flex align-items-center gap-1">
-                    <a href="{% url 'admin_instructors' %}" class="text-info-emphasis text-decoration-none fw-semibold">
-                        Instructors list &rarr;
-                    </a>
-                </div>
+            </div>
+            <div class="admin-stat-value">{{ total_instructors }}</div>
+            <div class="admin-stat-footer">
+                <span class="badge bg-info-subtle text-info-emphasis rounded-pill px-2 py-0.5">Faculty</span>
+                <a href="{% url 'admin_instructors' %}" class="text-info-emphasis text-decoration-none fw-semibold">
+                    Instructors &rarr;
+                </a>
             </div>
         </div>
 
-        <!-- 3. Total Courses -->
-        <div class="col-sm-6 col-xl-4 col-xxl-2">
-            <div class="admin-card p-3.5 h-100">
-                <div class="d-flex align-items-center justify-content-between mb-2.5">
-                    <span class="text-muted small fw-semibold">Total Courses</span>
-                    <div class="rounded-circle bg-success-subtle text-success d-inline-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
-                        <i class="bi bi-journal-bookmark-fill fs-5"></i>
-                    </div>
-                </div>
-                <div class="h3 fw-bold text-dark mb-1">{{ total_courses }}</div>
-                <div class="small text-muted">
-                    <span class="badge bg-success-subtle text-success rounded-pill px-2 py-0.5 fw-semibold">{{ active_courses }} Active</span>
-                    {% if inactive_courses > 0 %}
-                        <span class="badge bg-secondary-subtle text-secondary rounded-pill px-2 py-0.5">{{ inactive_courses }} Draft</span>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
 
         <!-- 4. Active Courses -->
-        <div class="col-sm-6 col-xl-4 col-xxl-2">
-            <div class="admin-card p-3.5 h-100">
-                <div class="d-flex align-items-center justify-content-between mb-2.5">
-                    <span class="text-muted small fw-semibold">Active Courses</span>
-                    <div class="rounded-circle bg-success-subtle text-success d-inline-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
-                        <i class="bi bi-check2-circle fs-5"></i>
-                    </div>
+        <div class="admin-stat-card">
+            <div class="admin-stat-top">
+                <span class="admin-stat-label">Active Courses</span>
+                <div class="admin-stat-icon bg-success-subtle text-success">
+                    <i class="bi bi-check2-circle"></i>
                 </div>
-                <div class="h3 fw-bold text-success mb-1">{{ active_courses }}</div>
-                <div class="small text-muted">
-                    <a href="{% url 'admin_courses' %}?status=active" class="text-success text-decoration-none fw-semibold">
-                        Live in catalog &rarr;
-                    </a>
-                </div>
+            </div>
+            <div class="admin-stat-value text-success">{{ active_courses }}</div>
+            <div class="admin-stat-footer">
+                <span class="badge bg-light text-secondary border rounded-pill px-2 py-0.5">Catalog</span>
+                <a href="{% url 'admin_courses' %}?status=active" class="text-success text-decoration-none fw-semibold">
+                    Published &rarr;
+                </a>
             </div>
         </div>
 
         <!-- 5. Total Enrollments -->
-        <div class="col-sm-6 col-xl-4 col-xxl-2">
-            <div class="admin-card p-3.5 h-100">
-                <div class="d-flex align-items-center justify-content-between mb-2.5">
-                    <span class="text-muted small fw-semibold">Total Enrollments</span>
-                    <div class="rounded-circle bg-warning-subtle text-warning-emphasis d-inline-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
-                        <i class="bi bi-clipboard-check-fill fs-5"></i>
-                    </div>
+        <div class="admin-stat-card">
+            <div class="admin-stat-top">
+                <span class="admin-stat-label">Enrollments</span>
+                <div class="admin-stat-icon bg-warning-subtle text-warning-emphasis">
+                    <i class="bi bi-clipboard-check-fill"></i>
                 </div>
-                <div class="h3 fw-bold text-dark mb-1">{{ total_enrollments }}</div>
-                <div class="small text-muted">
-                    <span class="badge bg-warning-subtle text-warning-emphasis rounded-pill px-2 py-0.5">{{ active_enrollments }} Active</span>
-                </div>
+            </div>
+            <div class="admin-stat-value">{{ total_enrollments }}</div>
+            <div class="admin-stat-footer">
+                <span class="badge bg-warning-subtle text-warning-emphasis rounded-pill px-2 py-0.5">{{ active_enrollments }} Active</span>
+                <a href="{% url 'admin_enrollments' %}" class="text-warning-emphasis text-decoration-none fw-semibold">
+                    Records &rarr;
+                </a>
             </div>
         </div>
 
         <!-- 6. Verified Revenue -->
-        <div class="col-sm-6 col-xl-4 col-xxl-2">
-            <div class="admin-card p-3.5 h-100">
-                <div class="d-flex align-items-center justify-content-between mb-2.5">
-                    <span class="text-muted small fw-semibold">Verified Revenue</span>
-                    <div class="rounded-circle bg-danger-subtle text-danger d-inline-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
-                        <i class="bi bi-currency-rupee fs-5"></i>
-                    </div>
+        <div class="admin-stat-card">
+            <div class="admin-stat-top">
+                <span class="admin-stat-label">Realized Revenue</span>
+                <div class="admin-stat-icon bg-success-subtle text-success">
+                    <i class="bi bi-currency-rupee"></i>
                 </div>
-                <div class="h3 fw-bold text-dark mb-1">₹{{ total_revenue|floatformat:0 }}</div>
-                <div class="small text-muted">
-                    <span class="badge bg-danger-subtle text-danger rounded-pill px-2 py-0.5">{{ paid_payments_count }} Paid orders</span>
-                </div>
+            </div>
+            <div class="admin-stat-value text-success">₹{{ total_revenue|floatformat:2 }}</div>
+            <div class="admin-stat-footer">
+                <span class="badge bg-success-subtle text-success rounded-pill px-2 py-0.5">{{ paid_payments_count }} Paid orders</span>
+                <a href="{% url 'admin_payments' %}" class="text-success text-decoration-none fw-semibold">
+                    Reconcile &rarr;
+                </a>
             </div>
         </div>
     </div>
@@ -144,177 +121,154 @@
                 Total System Accounts: <strong>{{ total_users }}</strong>
             </div>
         </div>
-        <div class="row g-2.5">
-            <div class="col-6 col-md-4 col-xl-2">
-                <a href="{% url 'admin_students' %}" class="btn btn-outline-light text-dark w-100 border text-start p-2.5 rounded-3 d-flex align-items-center gap-2">
-                    <span class="fs-5">🎓</span>
-                    <div>
-                        <div class="fw-bold small lh-1">Students</div>
-                        <span class="text-muted" style="font-size: 0.75rem;">{{ total_students }} records</span>
-                    </div>
-                </a>
-            </div>
-            <div class="col-6 col-md-4 col-xl-2">
-                <a href="{% url 'admin_instructors' %}" class="btn btn-outline-light text-dark w-100 border text-start p-2.5 rounded-3 d-flex align-items-center gap-2">
-                    <span class="fs-5">👨‍🏫</span>
-                    <div>
-                        <div class="fw-bold small lh-1">Instructors</div>
-                        <span class="text-muted" style="font-size: 0.75rem;">{{ total_instructors }} faculty</span>
-                    </div>
-                </a>
-            </div>
-            <div class="col-6 col-md-4 col-xl-2">
-                <a href="{% url 'admin_courses' %}" class="btn btn-outline-light text-dark w-100 border text-start p-2.5 rounded-3 d-flex align-items-center gap-2">
-                    <span class="fs-5">📚</span>
-                    <div>
-                        <div class="fw-bold small lh-1">Courses</div>
-                        <span class="text-muted" style="font-size: 0.75rem;">{{ total_courses }} catalog</span>
-                    </div>
-                </a>
-            </div>
-            <div class="col-6 col-md-4 col-xl-2">
-                <a href="{% url 'admin_enrollments' %}" class="btn btn-outline-light text-dark w-100 border text-start p-2.5 rounded-3 d-flex align-items-center gap-2">
-                    <span class="fs-5">📋</span>
-                    <div>
-                        <div class="fw-bold small lh-1">Enrollments</div>
-                        <span class="text-muted" style="font-size: 0.75rem;">{{ total_enrollments }} student slots</span>
-                    </div>
-                </a>
-            </div>
-            <div class="col-6 col-md-4 col-xl-2">
-                <a href="{% url 'admin_payments' %}" class="btn btn-outline-light text-dark w-100 border text-start p-2.5 rounded-3 d-flex align-items-center gap-2">
-                    <span class="fs-5">💳</span>
-                    <div>
-                        <div class="fw-bold small lh-1">Revenue</div>
-                        <span class="text-muted" style="font-size: 0.75rem;">₹{{ total_revenue|floatformat:0 }} collected</span>
-                    </div>
-                </a>
-            </div>
-            <div class="col-6 col-md-4 col-xl-2">
-                <a href="{% url 'course_create' %}" class="btn btn-primary w-100 text-start p-2.5 rounded-3 d-flex align-items-center gap-2">
-                    <span class="fs-5">➕</span>
-                    <div>
-                        <div class="fw-bold small lh-1">New Course</div>
-                        <span class="text-white-50" style="font-size: 0.75rem;">Publish offering</span>
-                    </div>
-                </a>
-            </div>
+        <div class="admin-portals-grid">
+            <a href="{% url 'admin_students' %}" class="admin-portal-card">
+                <div class="admin-portal-icon bg-primary-subtle text-primary">🎓</div>
+                <div>
+                    <div class="admin-portal-title">Students</div>
+                    <div class="admin-portal-desc">{{ total_students }} registered</div>
+                </div>
+            </a>
+            <a href="{% url 'admin_instructors' %}" class="admin-portal-card">
+                <div class="admin-portal-icon bg-info-subtle text-info-emphasis">👨‍🏫</div>
+                <div>
+                    <div class="admin-portal-title">Instructors</div>
+                    <div class="admin-portal-desc">{{ total_instructors }} faculty</div>
+                </div>
+            </a>
+            <a href="{% url 'admin_courses' %}" class="admin-portal-card">
+                <div class="admin-portal-icon bg-success-subtle text-success">📚</div>
+                <div>
+                    <div class="admin-portal-title">Courses</div>
+                    <div class="admin-portal-desc">Manage catalog</div>
+                </div>
+            </a>
+            <a href="{% url 'admin_enrollments' %}" class="admin-portal-card">
+                <div class="admin-portal-icon bg-warning-subtle text-warning-emphasis">📋</div>
+                <div>
+                    <div class="admin-portal-title">Enrollments</div>
+                    <div class="admin-portal-desc">{{ total_enrollments }} records</div>
+                </div>
+            </a>
+            <a href="{% url 'admin_payments' %}" class="admin-portal-card">
+                <div class="admin-portal-icon bg-success-subtle text-success">💳</div>
+                <div>
+                    <div class="admin-portal-title">Revenue</div>
+                    <div class="admin-portal-desc">₹{{ total_revenue|floatformat:0 }} collected</div>
+                </div>
+            </a>
         </div>
     </div>
 
-    <!-- Live Activity Tables (2 Columns) -->
-    <div class="row g-4 mb-4">
+    <!-- Live Activity Tables (2 Balanced SaaS Columns) -->
+    <div class="admin-two-col-grid">
         <!-- Recent Student Enrollments -->
-        <div class="col-lg-6">
-            <div class="admin-card h-100">
-                <div class="card-header bg-white py-3 px-3.5 border-bottom d-flex justify-content-between align-items-center">
-                    <div class="fw-bold text-dark d-flex align-items-center gap-2">
-                        <i class="bi bi-clock-history text-primary"></i>
-                        <span>Recent Student Enrollments</span>
-                    </div>
-                    <a href="{% url 'admin_enrollments' %}" class="btn btn-outline-primary btn-sm rounded-pill px-2.5 py-0.5" style="font-size: 0.78rem;">
-                        View All
-                    </a>
+        <div class="admin-card h-100">
+            <div class="card-header bg-white py-3 px-3.5 border-bottom d-flex justify-content-between align-items-center">
+                <div class="fw-bold text-dark d-flex align-items-center gap-2">
+                    <i class="bi bi-clock-history text-primary"></i>
+                    <span>Recent Student Enrollments</span>
                 </div>
-                <div class="table-responsive">
-                    <table class="table admin-table mb-0">
-                        <thead>
+                <a href="{% url 'admin_enrollments' %}" class="btn btn-outline-primary btn-sm rounded-pill px-2.5 py-0.5" style="font-size: 0.78rem;">
+                    View All
+                </a>
+            </div>
+            <div class="table-responsive">
+                <table class="table admin-table mb-0 align-middle">
+                    <thead>
+                        <tr>
+                            <th style="min-width: 140px;">Student</th>
+                            <th style="min-width: 140px;">Enrolled Course</th>
+                            <th style="width: 90px;" class="text-nowrap">Status</th>
+                            <th class="text-end text-nowrap" style="width: 95px;">Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for enr in recent_enrollments %}
                             <tr>
-                                <th>Student</th>
-                                <th>Enrolled Course</th>
-                                <th>Status</th>
-                                <th class="text-end">Date</th>
+                                <td>
+                                    <div class="fw-semibold text-dark">{{ enr.student.first_name }} {{ enr.student.last_name }}</div>
+                                    <div class="text-muted small">{{ enr.student.email }}</div>
+                                </td>
+                                <td>
+                                    <div class="fw-semibold text-dark text-truncate" style="max-width: 170px;" title="{{ enr.course.title }}">
+                                        {{ enr.course.title }}
+                                    </div>
+                                </td>
+                                <td class="text-nowrap">
+                                    {% if enr.status == 'active' %}
+                                        <span class="badge bg-success-subtle text-success rounded-pill px-2 py-0.5">Active</span>
+                                    {% elif enr.status == 'completed' %}
+                                        <span class="badge bg-primary-subtle text-primary rounded-pill px-2 py-0.5">Completed</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary-subtle text-secondary rounded-pill px-2 py-0.5">{{ enr.status|title }}</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-end text-muted small text-nowrap">
+                                    {{ enr.enrollment_date|date:"d M, Y" }}
+                                </td>
                             </tr>
-                        </thead>
-                        <tbody>
-                            {% for enr in recent_enrollments %}
-                                <tr>
-                                    <td>
-                                        <div class="fw-semibold text-dark">{{ enr.student.first_name }} {{ enr.student.last_name }}</div>
-                                        <div class="text-muted small">{{ enr.student.email }}</div>
-                                    </td>
-                                    <td>
-                                        <div class="fw-semibold text-dark text-truncate" style="max-width: 170px;" title="{{ enr.course.title }}">
-                                            {{ enr.course.title }}
-                                        </div>
-                                    </td>
-                                    <td>
-                                        {% if enr.status == 'active' %}
-                                            <span class="badge bg-success-subtle text-success rounded-pill px-2 py-0.5">Active</span>
-                                        {% elif enr.status == 'completed' %}
-                                            <span class="badge bg-primary-subtle text-primary rounded-pill px-2 py-0.5">Completed</span>
-                                        {% else %}
-                                            <span class="badge bg-secondary-subtle text-secondary rounded-pill px-2 py-0.5">{{ enr.status|title }}</span>
-                                        {% endif %}
-                                    </td>
-                                    <td class="text-end text-muted small">
-                                        {{ enr.enrollment_date|date:"d M, Y" }}
-                                    </td>
-                                </tr>
-                            {% empty %}
-                                <tr>
-                                    <td colspan="4" class="text-center text-muted py-4">No recent enrollments recorded.</td>
-                                </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
+                        {% empty %}
+                            <tr>
+                                <td colspan="4" class="text-center text-muted py-4">No recent enrollments recorded.</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
         </div>
 
         <!-- Recent Payment Transactions -->
-        <div class="col-lg-6">
-            <div class="admin-card h-100">
-                <div class="card-header bg-white py-3 px-3.5 border-bottom d-flex justify-content-between align-items-center">
-                    <div class="fw-bold text-dark d-flex align-items-center gap-2">
-                        <i class="bi bi-credit-card-2-front text-success"></i>
-                        <span>Recent Transactions</span>
-                    </div>
-                    <a href="{% url 'admin_payments' %}" class="btn btn-outline-success btn-sm rounded-pill px-2.5 py-0.5" style="font-size: 0.78rem;">
-                        View All
-                    </a>
+        <div class="admin-card h-100">
+            <div class="card-header bg-white py-3 px-3.5 border-bottom d-flex justify-content-between align-items-center">
+                <div class="fw-bold text-dark d-flex align-items-center gap-2">
+                    <i class="bi bi-credit-card-2-front text-success"></i>
+                    <span>Recent Transactions</span>
                 </div>
-                <div class="table-responsive">
-                    <table class="table admin-table mb-0">
-                        <thead>
+                <a href="{% url 'admin_payments' %}" class="btn btn-outline-success btn-sm rounded-pill px-2.5 py-0.5" style="font-size: 0.78rem;">
+                    View All
+                </a>
+            </div>
+            <div class="table-responsive">
+                <table class="table admin-table mb-0 align-middle">
+                    <thead>
+                        <tr>
+                            <th style="min-width: 140px;">Student</th>
+                            <th style="width: 120px;" class="text-nowrap">Order ID</th>
+                            <th style="width: 80px;" class="text-nowrap">Amount</th>
+                            <th class="text-end text-nowrap" style="width: 95px;">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for pay in recent_payments %}
                             <tr>
-                                <th>Student</th>
-                                <th>Order ID</th>
-                                <th>Amount</th>
-                                <th class="text-end">Status</th>
+                                <td>
+                                    <div class="fw-semibold text-dark">{{ pay.student.first_name }} {{ pay.student.last_name }}</div>
+                                    <div class="text-muted small">{{ pay.student.email }}</div>
+                                </td>
+                                <td class="text-nowrap">
+                                    <code class="small text-secondary">{{ pay.razorpay_order_id|truncatechars:18 }}</code>
+                                </td>
+                                <td class="fw-bold text-dark text-nowrap">
+                                    ₹{{ pay.amount }}
+                                </td>
+                                <td class="text-end text-nowrap">
+                                    {% if pay.status == 'paid' or pay.status == 'verified' or pay.status == 'captured' or pay.status == 'success' %}
+                                        <span class="badge bg-success-subtle text-success rounded-pill px-2.5 py-0.5"><i class="bi bi-check-circle-fill me-1"></i>Verified</span>
+                                    {% elif pay.status == 'created' %}
+                                        <span class="badge bg-warning-subtle text-warning-emphasis rounded-pill px-2.5 py-0.5"><i class="bi bi-clock-history me-1"></i>Created</span>
+                                    {% else %}
+                                        <span class="badge bg-danger-subtle text-danger rounded-pill px-2.5 py-0.5">{{ pay.status }}</span>
+                                    {% endif %}
+                                </td>
                             </tr>
-                        </thead>
-                        <tbody>
-                            {% for pay in recent_payments %}
-                                <tr>
-                                    <td>
-                                        <div class="fw-semibold text-dark">{{ pay.student.first_name }} {{ pay.student.last_name }}</div>
-                                        <div class="text-muted small">{{ pay.student.email }}</div>
-                                    </td>
-                                    <td>
-                                        <code class="small text-secondary">{{ pay.razorpay_order_id|truncatechars:18 }}</code>
-                                    </td>
-                                    <td class="fw-bold text-dark">
-                                        ₹{{ pay.amount }}
-                                    </td>
-                                    <td class="text-end">
-                                        {% if pay.status == 'paid' %}
-                                            <span class="badge bg-success-subtle text-success rounded-pill px-2 py-0.5">Paid</span>
-                                        {% elif pay.status == 'created' %}
-                                            <span class="badge bg-warning-subtle text-warning-emphasis rounded-pill px-2 py-0.5">Created</span>
-                                        {% else %}
-                                            <span class="badge bg-danger-subtle text-danger rounded-pill px-2 py-0.5">{{ pay.status }}</span>
-                                        {% endif %}
-                                    </td>
-                                </tr>
-                            {% empty %}
-                                <tr>
-                                    <td colspan="4" class="text-center text-muted py-4">No payment transactions recorded yet.</td>
-                                </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
+                        {% empty %}
+                            <tr>
+                                <td colspan="4" class="text-center text-muted py-4">No payment transactions recorded yet.</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
@@ -334,12 +288,12 @@
             <table class="table admin-table mb-0 align-middle">
                 <thead>
                     <tr>
-                        <th>Course Title & Category</th>
-                        <th>Instructor</th>
-                        <th>Price</th>
-                        <th>Enrolled Students</th>
-                        <th>Status</th>
-                        <th class="text-end">Actions</th>
+                        <th style="min-width: 170px;">Course Title & Category</th>
+                        <th style="min-width: 130px;">Instructor</th>
+                        <th style="width: 80px;" class="text-nowrap">Price</th>
+                        <th style="width: 110px;" class="text-nowrap">Enrolled Students</th>
+                        <th style="width: 90px;" class="text-nowrap">Status</th>
+                        <th class="text-end text-nowrap" style="width: 130px;">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -356,20 +310,20 @@
                                     <span class="badge bg-warning-subtle text-warning-emphasis">Unassigned</span>
                                 {% endif %}
                             </td>
-                            <td class="fw-bold text-dark">₹{{ course.price }}</td>
-                            <td>
+                            <td class="fw-bold text-dark text-nowrap">₹{{ course.price }}</td>
+                            <td class="text-nowrap">
                                 <span class="badge bg-primary-subtle text-primary rounded-pill px-2.5 py-1 fw-bold">
                                     {{ course.enrolled_count }} enrolled
                                 </span>
                             </td>
-                            <td>
+                            <td class="text-nowrap">
                                 {% if course.is_active %}
                                     <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2 py-0.5">● Active</span>
                                 {% else %}
                                     <span class="badge bg-secondary-subtle text-secondary border rounded-pill px-2 py-0.5">○ Draft</span>
                                 {% endif %}
                             </td>
-                            <td class="text-end">
+                            <td class="text-end text-nowrap">
                                 <a href="{% url 'admin_course_toggle_status' course.course_id %}" class="btn btn-sm {% if course.is_active %}btn-outline-warning text-dark{% else %}btn-outline-success{% endif %} py-0.5 px-2 rounded-pill me-1" title="Toggle visibility">
                                     {% if course.is_active %}Hide{% else %}Publish{% endif %}
                                 </a>

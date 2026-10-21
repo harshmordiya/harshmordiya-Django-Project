@@ -1,3 +1,4 @@
+from unittest.mock import patch, MagicMock
 from django.test import TestCase, Client
 from django.contrib.auth.models import User
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -5,7 +6,7 @@ from django.core import mail
 from django.urls import reverse
 from decimal import Decimal
 
-from core.models import Course, CourseContent, Instructor, UserProfile, Student, Enrollment, Payment, InstructorMessage
+from core.models import Course, CourseContent, Instructor, UserProfile, Student, Enrollment, Payment, InstructorMessage, Cart
 from core.forms import CourseContentForm
 
 
@@ -902,6 +903,160 @@ class CustomDashboardSearchAndSortTests(TestCase):
         self.assertEqual(len(cat_courses), 1)
         self.assertEqual(cat_courses[0].title, "Zenith AI")
 
+    def test_admin_enrollments_status_dropdown_filter_and_search(self):
+        """Enrollments page renders dropdown filter and handles status and search query."""
+        from .models import Enrollment
+        self.client.login(username="admin_dash_sort", password="adminpassword123")
+        e1 = Enrollment.objects.create(student=self.st1, course=self.c1, status="active")
+        e2 = Enrollment.objects.create(student=self.st2, course=self.c2, status="completed")
+
+        # Test dropdown markup exists
+        resp = self.client.get(reverse("admin_enrollments"))
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, '<select name="status"')
+        self.assertContains(resp, 'All Records')
+        self.assertEqual(len(resp.context["enrollments"]), 2)
+
+        # Test filtering by status=active
+        resp_active = self.client.get(reverse("admin_enrollments") + "?status=active")
+        self.assertEqual(resp_active.status_code, 200)
+        active_list = list(resp_active.context["enrollments"])
+        self.assertEqual(len(active_list), 1)
+        self.assertEqual(active_list[0].enrollment_id, e1.enrollment_id)
+
+        # Test search by student name
+        resp_search = self.client.get(reverse("admin_enrollments") + "?q=Aaron")
+        self.assertEqual(resp_search.status_code, 200)
+        search_list = list(resp_search.context["enrollments"])
+        self.assertEqual(len(search_list), 1)
+        self.assertEqual(search_list[0].enrollment_id, e2.enrollment_id)
+
+    def test_admin_payments_status_dropdown_filter_and_search(self):
+        """Payments page renders dropdown filter and handles status and search query."""
+        from .models import Payment
+        self.client.login(username="admin_dash_sort", password="adminpassword123")
+        p1 = Payment.objects.create(
+            student=self.st1,
+            amount=Decimal("2000.00"),
+            status="paid",
+            razorpay_order_id="order_aaa_111",
+            razorpay_payment_id="pay_aaa_111"
+        )
+        p2 = Payment.objects.create(
+            student=self.st2,
+            amount=Decimal("500.00"),
+            status="created",
+            razorpay_order_id="order_bbb_222"
+        )
+
+        # Test dropdown markup exists
+        resp = self.client.get(reverse("admin_payments"))
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, '<select name="status"')
+        self.assertContains(resp, 'All Orders')
+        self.assertEqual(len(resp.context["payments"]), 2)
+
+        # Test filtering by status=paid
+        resp_paid = self.client.get(reverse("admin_payments") + "?status=paid")
+        self.assertEqual(resp_paid.status_code, 200)
+        paid_list = list(resp_paid.context["payments"])
+        self.assertEqual(len(paid_list), 1)
+        self.assertEqual(paid_list[0].payment_id, p1.payment_id)
+
+        # Test search by order id
+        resp_search = self.client.get(reverse("admin_payments") + "?q=order_bbb_222")
+        self.assertEqual(resp_search.status_code, 200)
+        search_list = list(resp_search.context["payments"])
+        self.assertEqual(len(search_list), 1)
+        self.assertEqual(search_list[0].payment_id, p2.payment_id)
+
+    def test_admin_can_delete_student_and_delete_button_renders(self):
+        """Administrator can delete a student and delete button is rendered in the student directory."""
+        from .models import Enrollment
+        self.client.login(username="admin_dash_sort", password="adminpassword123")
+
+        # Create a student with a linked User
+        st_user = User.objects.create_user(
+            username="student_to_delete",
+            email="delete.me@example.com",
+            password="password123"
+        )
+        UserProfile.objects.create(user=st_user, role="student")
+        st = Student.objects.create(
+            first_name="Delete",
+            last_name="Target",
+            email="delete.me@example.com"
+        )
+        Enrollment.objects.create(student=st, course=self.c1, status="active")
+
+        # Verify page renders delete button with confirmation
+        resp = self.client.get(reverse("admin_students"))
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, f'admin-dashboard/students/{st.student_id}/delete/')
+        self.assertContains(resp, 'Delete')
+
+        # Perform deletion
+        del_resp = self.client.get(reverse("admin_student_delete", args=[st.student_id]), follow=True)
+        self.assertEqual(del_resp.status_code, 200)
+
+        # Verify Student record and User are deleted
+        self.assertFalse(Student.objects.filter(student_id=st.student_id).exists())
+        self.assertFalse(User.objects.filter(id=st_user.id).exists())
+        self.assertFalse(Enrollment.objects.filter(student=st).exists())
+
+    def test_admin_can_delete_instructor_and_courses_are_preserved(self):
+        """Administrator can delete an instructor and assigned courses are preserved."""
+        self.client.login(username="admin_dash_sort", password="adminpassword123")
+
+        inst_user = User.objects.create_user(
+            username="inst_to_delete",
+            email="inst.del@example.com",
+            password="password123"
+        )
+        UserProfile.objects.create(user=inst_user, role="instructor")
+        inst = Instructor.objects.create(
+            first_name="Archimedes",
+            last_name="Syracuse",
+            email="inst.del@example.com"
+        )
+        course = Course.objects.create(
+            title="Buoyancy and Levers",
+            category="other",
+            price=100,
+            duration="2 hours",
+            instructor=inst
+        )
+
+        # Verify page renders delete button
+        resp = self.client.get(reverse("admin_instructors"))
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, f'admin-dashboard/instructors/{inst.instructor_id}/delete/')
+
+        # Perform deletion
+        del_resp = self.client.get(reverse("admin_instructor_delete", args=[inst.instructor_id]), follow=True)
+        self.assertEqual(del_resp.status_code, 200)
+
+        # Verify instructor deleted but course preserved with instructor=None
+        self.assertFalse(Instructor.objects.filter(instructor_id=inst.instructor_id).exists())
+        self.assertFalse(User.objects.filter(id=inst_user.id).exists())
+        course.refresh_from_db()
+        self.assertIsNone(course.instructor)
+        self.assertEqual(course.title, "Buoyancy and Levers")
+
+    def test_admin_cannot_delete_superuser_account(self):
+        """Safeguard prevents deleting superuser account."""
+        self.client.login(username="admin_dash_sort", password="adminpassword123")
+        # Create student record that shares email with admin
+        st_admin = Student.objects.create(
+            first_name="Admin",
+            last_name="Sort",
+            email="admin.dash@example.com"
+        )
+        resp = self.client.get(reverse("admin_student_delete", args=[st_admin.student_id]), follow=True)
+        self.assertEqual(resp.status_code, 200)
+        # Student should not be deleted, admin should not be deleted
+        self.assertTrue(User.objects.filter(id=self.admin.id).exists())
+
 
 class StudentModelAndProfileTests(TestCase):
     def setUp(self):
@@ -1416,6 +1571,311 @@ class ContactInstructorTests(TestCase):
         self.assertEqual(mail.outbox[0].to, ["alice@example.com"])
 
 
+class AdminDashboardRevenueAndFormattingTests(TestCase):
+    """
+    Validates that:
+    1. Verified payments correctly aggregate into total revenue and paid count in admin dashboard and admin payments.
+    2. Student total paid amount correctly includes verified payments.
+    3. Status filter 'paid' in admin payments includes verified payments.
+    4. Course list template renders the two-tier card footer with Add to Cart and View Details buttons.
+    """
+
+    def setUp(self):
+        self.admin_user = User.objects.create_superuser(
+            username="testadmin_rev",
+            email="admin_rev@edulearn.test",
+            password="adminpassword123"
+        )
+        UserProfile.objects.create(user=self.admin_user, role="admin")
+
+        self.student_user = User.objects.create_user(
+            username="student_rev",
+            email="student_rev@edulearn.test",
+            password="studentpassword123"
+        )
+        UserProfile.objects.create(user=self.student_user, role="student")
+        self.student = Student.objects.create(
+            first_name="Verified",
+            last_name="Buyer",
+            email="student_rev@edulearn.test"
+        )
+
+        self.instructor = Instructor.objects.create(
+            first_name="Prof",
+            last_name="Turing",
+            email="turing@edulearn.test"
+        )
+
+        self.course = Course.objects.create(
+            title="Full Stack Architecture",
+            category="Web Development",
+            price=Decimal("1500.00"),
+            description="Comprehensive architecture course",
+            instructor=self.instructor,
+            is_active=True
+        )
+
+        # Create verified payment
+        self.verified_payment = Payment.objects.create(
+            student=self.student,
+            razorpay_order_id="order_verified_999",
+            razorpay_payment_id="pay_verified_999",
+            amount=Decimal("1500.00"),
+            status="verified"
+        )
+
+        # Create another created (pending) payment
+        self.created_payment = Payment.objects.create(
+            student=self.student,
+            razorpay_order_id="order_pending_111",
+            amount=Decimal("500.00"),
+            status="created"
+        )
+
+    def test_admin_dashboard_includes_verified_revenue(self):
+        self.client.login(username="testadmin_rev", password="adminpassword123")
+        response = self.client.get(reverse("admin_dashboard"))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context["total_revenue"], Decimal("1500.00"))
+        self.assertEqual(response.context["paid_payments_count"], 1)
+        self.assertContains(response, "1500")
+
+    def test_admin_payments_reconciliation_verified_revenue(self):
+        self.client.login(username="testadmin_rev", password="adminpassword123")
+        response = self.client.get(reverse("admin_payments"))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context["paid_volume"], Decimal("1500.00"))
+        self.assertEqual(response.context["total_volume"], Decimal("2000.00"))
+        self.assertEqual(response.context["paid_tx"], 1)
+        self.assertEqual(response.context["total_tx"], 2)
+
+        # Filter by paid
+        paid_filter_resp = self.client.get(reverse("admin_payments") + "?status=paid")
+        self.assertEqual(paid_filter_resp.status_code, 200)
+        self.assertEqual(len(paid_filter_resp.context["payments"]), 1)
+        self.assertEqual(paid_filter_resp.context["payments"][0].razorpay_order_id, "order_verified_999")
+
+    def test_student_total_paid_amount_with_verified_status(self):
+        self.student.refresh_from_db()
+        self.assertEqual(self.student.total_paid_amount, Decimal("1500.00"))
+        self.assertEqual(self.student.paid_total, Decimal("1500.00"))
+
+        self.client.login(username="testadmin_rev", password="adminpassword123")
+        response = self.client.get(reverse("admin_students"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "1500")
+
+    def test_course_list_action_buttons_and_add_to_cart_rendered(self):
+        self.client.login(username="student_rev", password="studentpassword123")
+        response = self.client.get(reverse("course_list"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "course-card-price-row")
+        self.assertContains(response, "course-card-actions")
+        self.assertContains(response, "Add to Cart")
+        self.assertContains(response, "View Details")
 
 
 
+
+
+
+
+
+class EmailNotificationTests(TestCase):
+    """
+    Tests for the email notification system:
+    - Payment confirmation email
+    - Enrollment confirmation email
+    - Course completion email
+    - Email validation and error safety
+    - Razorpay payment callback email dispatch
+    - Admin enrollment completion email dispatch
+    - Password reset OTP email verification
+    """
+
+    def setUp(self):
+        mail.outbox.clear()
+
+        # Admin user
+        self.admin_user = User.objects.create_superuser(
+            username="email_admin",
+            email="admin@edulearn.test",
+            password="adminpassword123"
+        )
+        UserProfile.objects.create(user=self.admin_user, role="admin")
+
+        # Student user and Student record
+        self.student_user = User.objects.create_user(
+            username="email_student",
+            email="student@edulearn.test",
+            password="studentpassword123",
+            first_name="Harsh",
+            last_name="Patel"
+        )
+        UserProfile.objects.create(user=self.student_user, role="student")
+        self.student = Student.objects.create(
+            first_name="Harsh",
+            last_name="Patel",
+            email="student@edulearn.test"
+        )
+
+        # Instructor and Course
+        self.instructor = Instructor.objects.create(
+            first_name="Guido",
+            last_name="Rossum",
+            email="guido@edulearn.test",
+            specialization="Python"
+        )
+        self.course = Course.objects.create(
+            title="Advanced Django Architecture",
+            description="Deep dive into Django internals",
+            instructor=self.instructor,
+            category="development",
+            duration="10 Weeks",
+            price=Decimal("1200.00"),
+            is_active=True
+        )
+
+    def test_send_payment_confirmation_email_content_and_recipient(self):
+        from core.email_utils import send_payment_confirmation_email
+        payment = Payment.objects.create(
+            student=self.student,
+            razorpay_order_id="order_test_123456",
+            razorpay_payment_id="pay_test_987654",
+            amount=Decimal("1200.00"),
+            status="verified"
+        )
+
+        success = send_payment_confirmation_email(self.student, payment, course=self.course)
+        self.assertTrue(success)
+        self.assertEqual(len(mail.outbox), 1)
+
+        sent_mail = mail.outbox[0]
+        self.assertIn("Payment Successful", sent_mail.subject)
+        self.assertEqual(sent_mail.to, [self.student.email])
+        self.assertIn("Harsh", sent_mail.body)
+        self.assertIn("Advanced Django Architecture", sent_mail.body)
+        self.assertIn("1200.00", sent_mail.body)
+        self.assertIn("pay_test_987654", sent_mail.body)
+        self.assertIn("order_test_123456", sent_mail.body)
+
+    def test_send_enrollment_confirmation_email_content_and_recipient(self):
+        from core.email_utils import send_enrollment_confirmation_email
+
+        success = send_enrollment_confirmation_email(self.student, self.course)
+        self.assertTrue(success)
+        self.assertEqual(len(mail.outbox), 1)
+
+        sent_mail = mail.outbox[0]
+        self.assertIn("Enrollment Successful", sent_mail.subject)
+        self.assertIn("Advanced Django Architecture", sent_mail.subject)
+        self.assertEqual(sent_mail.to, [self.student.email])
+        self.assertIn("Harsh", sent_mail.body)
+        self.assertIn("Advanced Django Architecture", sent_mail.body)
+        self.assertIn("dashboard", sent_mail.body.lower())
+
+    def test_send_course_completion_email_content_and_recipient(self):
+        from core.email_utils import send_course_completion_email
+
+        success = send_course_completion_email(self.student, self.course)
+        self.assertTrue(success)
+        self.assertEqual(len(mail.outbox), 1)
+
+        sent_mail = mail.outbox[0]
+        self.assertIn("Congratulations! You Completed", sent_mail.subject)
+        self.assertEqual(sent_mail.to, [self.student.email])
+        self.assertIn("Harsh", sent_mail.body)
+        self.assertIn("Advanced Django Architecture", sent_mail.body)
+        self.assertIn("completed", sent_mail.body.lower())
+
+    def test_email_validation_blocks_placeholder_recipient(self):
+        from core.email_utils import send_payment_confirmation_email
+        bad_student = Student(first_name="Ghost", email="YOUR_RECEIVING_EMAIL@gmail.com")
+        payment = Payment(student=bad_student, razorpay_order_id="order_x", amount=Decimal("100.00"), status="verified")
+
+        result = send_payment_confirmation_email(bad_student, payment, self.course)
+        self.assertFalse(result)
+        self.assertEqual(len(mail.outbox), 0)
+
+    def test_email_validation_blocks_invalid_format(self):
+        from core.email_utils import send_enrollment_confirmation_email
+        bad_student = Student(first_name="Bad", email="not-an-email")
+
+        result = send_enrollment_confirmation_email(bad_student, self.course)
+        self.assertFalse(result)
+        self.assertEqual(len(mail.outbox), 0)
+
+    @patch("razorpay.Client")
+    def test_payment_callback_triggers_payment_and_enrollment_emails(self, mock_razorpay_client):
+        # Mock signature verification
+        mock_instance = MagicMock()
+        mock_instance.utility.verify_payment_signature.return_value = True
+        mock_razorpay_client.return_value = mock_instance
+
+        # Put course in student cart
+        Cart.objects.create(student=self.student, course=self.course)
+
+        # Create payment record
+        order_id = "order_rzp_mock_111"
+        payment = Payment.objects.create(
+            student=self.student,
+            razorpay_order_id=order_id,
+            amount=Decimal("1200.00"),
+            status="created"
+        )
+
+        self.client.login(username="email_student", password="studentpassword123")
+        response = self.client.post(reverse("payment_callback"), {
+            "razorpay_order_id": order_id,
+            "razorpay_payment_id": "pay_rzp_mock_222",
+            "razorpay_signature": "mock_valid_signature",
+        })
+
+        self.assertEqual(response.status_code, 302)
+        payment.refresh_from_db()
+        self.assertEqual(payment.status, "verified")
+        self.assertEqual(payment.razorpay_payment_id, "pay_rzp_mock_222")
+
+        # Cart should be cleared and Enrollment created
+        self.assertFalse(Cart.objects.filter(student=self.student).exists())
+        self.assertTrue(Enrollment.objects.filter(student=self.student, course=self.course, status="active").exists())
+
+        # Emails sent: 1 payment confirmation + 1 enrollment confirmation
+        self.assertEqual(len(mail.outbox), 2)
+        recipients = [m.to[0] for m in mail.outbox]
+        self.assertEqual(recipients, [self.student.email, self.student.email])
+
+        subjects = [m.subject for m in mail.outbox]
+        self.assertTrue(any("Payment Successful" in s for s in subjects))
+        self.assertTrue(any("Enrollment Successful" in s for s in subjects))
+
+    def test_admin_update_enrollment_status_to_completed_triggers_email(self):
+        enrollment = Enrollment.objects.create(
+            student=self.student,
+            course=self.course,
+            status="active"
+        )
+
+        self.client.login(username="email_admin", password="adminpassword123")
+        response = self.client.get(reverse("admin_enrollment_update_status", args=[enrollment.enrollment_id, "completed"]))
+        self.assertEqual(response.status_code, 302)
+
+        enrollment.refresh_from_db()
+        self.assertEqual(enrollment.status, "completed")
+
+        # Course completion email sent
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].to, [self.student.email])
+        self.assertIn("Congratulations! You Completed", mail.outbox[0].subject)
+
+    def test_password_reset_otp_email_works_without_regression(self):
+        response = self.client.post(reverse("forgot_password"), {
+            "email": self.student_user.email
+        })
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, reverse("verify_otp"))
+
+        # Check OTP email in outbox
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].to, [self.student_user.email])
+        self.assertIn("Password Reset Verification Code", mail.outbox[0].subject)

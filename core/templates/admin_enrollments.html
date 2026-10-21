@@ -23,53 +23,43 @@
         </div>
     </div>
 
-    <!-- Filter & Search Toolbar Card -->
-    <div class="admin-card p-3.5 mb-4">
-        <div class="row align-items-center justify-content-between g-3">
-            <!-- Status Filter Pills -->
-            <div class="col-lg-6">
-                <div class="d-flex align-items-center gap-1.5 flex-wrap">
-                    <span class="text-muted small fw-semibold me-1">Status:</span>
-                    <a href="{% url 'admin_enrollments' %}{% if search_query %}?q={{ search_query }}{% endif %}" 
-                       class="btn btn-sm rounded-pill px-3 fw-semibold {% if status_filter == 'all' %}btn-primary{% else %}btn-outline-secondary border-0 bg-light text-secondary{% endif %}">
-                        All <span class="badge rounded-pill ms-1 {% if status_filter == 'all' %}bg-white text-primary{% else %}bg-secondary-subtle text-secondary{% endif %}">{{ total_count }}</span>
-                    </a>
-                    <a href="{% url 'admin_enrollments' %}?status=active{% if search_query %}&q={{ search_query }}{% endif %}" 
-                       class="btn btn-sm rounded-pill px-3 fw-semibold {% if status_filter == 'active' %}btn-success{% else %}btn-outline-secondary border-0 bg-light text-secondary{% endif %}">
-                        <i class="bi bi-check-circle-fill me-1"></i> Active <span class="badge rounded-pill ms-1 {% if status_filter == 'active' %}bg-white text-success{% else %}bg-secondary-subtle text-secondary{% endif %}">{{ active_count }}</span>
-                    </a>
-                    <a href="{% url 'admin_enrollments' %}?status=completed{% if search_query %}&q={{ search_query }}{% endif %}" 
-                       class="btn btn-sm rounded-pill px-3 fw-semibold {% if status_filter == 'completed' %}btn-info text-white{% else %}btn-outline-secondary border-0 bg-light text-secondary{% endif %}">
-                        <i class="bi bi-trophy-fill me-1"></i> Completed <span class="badge rounded-pill ms-1 {% if status_filter == 'completed' %}bg-white text-info{% else %}bg-secondary-subtle text-secondary{% endif %}">{{ completed_count }}</span>
-                    </a>
-                    <a href="{% url 'admin_enrollments' %}?status=cancelled{% if search_query %}&q={{ search_query }}{% endif %}" 
-                       class="btn btn-sm rounded-pill px-3 fw-semibold {% if status_filter == 'cancelled' %}btn-danger{% else %}btn-outline-secondary border-0 bg-light text-secondary{% endif %}">
-                        <i class="bi bi-x-circle-fill me-1"></i> Cancelled <span class="badge rounded-pill ms-1 {% if status_filter == 'cancelled' %}bg-white text-danger{% else %}bg-secondary-subtle text-secondary{% endif %}">{{ cancelled_count }}</span>
-                    </a>
-                </div>
+    <!-- Search & Filters Toolbar Card -->
+    <div class="admin-toolbar-box">
+        <form method="get" class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+            <!-- Left: Search Input -->
+            <div class="input-group" style="flex: 1 1 320px; max-width: 480px;">
+                <span class="input-group-text bg-white border-end-0 text-muted ps-3">
+                    <i class="bi bi-search"></i>
+                </span>
+                <input type="text" name="q" value="{{ search_query }}" class="form-control border-start-0 ps-1" placeholder="Search student or course title..." aria-label="Search enrollments">
             </div>
 
-            <!-- Search Form -->
-            <div class="col-lg-6 col-xl-5">
-                <form method="get" class="d-flex gap-2">
-                    {% if status_filter != 'all' %}
-                        <input type="hidden" name="status" value="{{ status_filter }}">
-                    {% endif %}
-                    <div class="input-group">
-                        <span class="input-group-text bg-white border-end-0 text-muted ps-3">
-                            <i class="bi bi-search"></i>
-                        </span>
-                        <input type="text" name="q" value="{{ search_query }}" class="form-control border-start-0 ps-1" placeholder="Search student or course title..." aria-label="Search enrollments">
-                    </div>
-                    <button type="submit" class="btn btn-primary rounded-pill px-3.5 fw-semibold">Search</button>
-                    {% if search_query or status_filter != 'all' %}
-                        <a href="{% url 'admin_enrollments' %}" class="btn btn-outline-secondary rounded-pill px-3" title="Clear Filters & Search">
-                            <i class="bi bi-arrow-counterclockwise"></i>
-                        </a>
-                    {% endif %}
-                </form>
+            <!-- Right: Dropdown Filter & Actions -->
+            <div class="d-flex align-items-center gap-2.5 flex-wrap">
+                <!-- Status Filter Dropdown -->
+                <div class="d-flex align-items-center gap-1.5">
+                    <label class="text-muted small fw-semibold text-nowrap d-none d-sm-inline">
+                        <i class="bi bi-funnel me-1"></i>Status:
+                    </label>
+                    <select name="status" class="form-select form-select-sm rounded-pill border" style="min-width: 175px;" onchange="this.form.submit()" title="Filter by Enrollment Status">
+                        <option value="all" {% if status_filter == 'all' or not status_filter %}selected{% endif %}>All Records ({{ total_count }})</option>
+                        <option value="active" {% if status_filter == 'active' %}selected{% endif %}>Active ({{ active_count }})</option>
+                        <option value="completed" {% if status_filter == 'completed' %}selected{% endif %}>Completed ({{ completed_count }})</option>
+                        <option value="cancelled" {% if status_filter == 'cancelled' %}selected{% endif %}>Cancelled ({{ cancelled_count }})</option>
+                    </select>
+                </div>
+
+                <!-- Submit / Reset Buttons -->
+                <button type="submit" class="btn btn-primary btn-sm rounded-pill px-3 fw-semibold">
+                    Search
+                </button>
+                {% if search_query or status_filter != 'all' %}
+                    <a href="{% url 'admin_enrollments' %}" class="btn btn-outline-secondary btn-sm rounded-pill px-3" title="Clear Filters & Search">
+                        <i class="bi bi-arrow-counterclockwise me-1"></i> Reset
+                    </a>
+                {% endif %}
             </div>
-        </div>
+        </form>
     </div>
 
     <!-- Enrollments Table Card -->
@@ -89,13 +79,13 @@
             <table class="table admin-table mb-0 align-middle">
                 <thead>
                     <tr>
-                        <th style="width: 80px;">ID</th>
-                        <th style="min-width: 220px;">Student</th>
-                        <th style="min-width: 230px;">Course Affiliation</th>
-                        <th style="min-width: 170px;">Instructor</th>
-                        <th style="width: 150px;">Enrollment Date</th>
-                        <th style="width: 120px;">Status</th>
-                        <th class="text-end" style="width: 180px;">Change Status</th>
+                        <th style="width: 60px;">ID</th>
+                        <th style="min-width: 175px;">Student</th>
+                        <th style="min-width: 175px;">Course Affiliation</th>
+                        <th style="min-width: 140px;">Instructor</th>
+                        <th style="width: 120px;" class="text-nowrap">Enrollment Date</th>
+                        <th style="width: 105px;" class="text-nowrap">Status</th>
+                        <th class="text-end text-nowrap" style="width: 120px;">Change Status</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -125,7 +115,7 @@
 
                             <!-- Course Affiliation -->
                             <td>
-                                <a href="{% url 'course_detail' enr.course.course_id %}" target="_blank" class="fw-semibold text-dark text-decoration-none text-truncate d-block" style="max-width: 250px;">
+                                <a href="{% url 'course_detail' enr.course.course_id %}" target="_blank" class="fw-semibold text-dark text-decoration-none text-truncate d-block" style="max-width: 200px;">
                                     {{ enr.course.title }}
                                 </a>
                                 <span class="badge bg-light text-muted border rounded-pill px-2 py-0.5" style="font-size: 0.72rem;">
@@ -144,14 +134,13 @@
                             </td>
 
                             <!-- Enrollment Date -->
-                            <td>
-                                <span class="text-muted small">
-                                    {{ enr.enrollment_date|date:"d M, Y H:i" }}
-                                </span>
+                            <td class="text-nowrap">
+                                <div class="fw-medium text-dark small">{{ enr.enrollment_date|date:"d M, Y" }}</div>
+                                <div class="text-muted" style="font-size: 0.75rem;">{{ enr.enrollment_date|date:"H:i" }}</div>
                             </td>
 
                             <!-- Status Badge -->
-                            <td>
+                            <td class="text-nowrap">
                                 {% if enr.status == 'active' %}
                                     <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2.5 py-1 fw-semibold">
                                         ● Active
@@ -172,9 +161,9 @@
                             </td>
 
                             <!-- Update Status Action Dropdown -->
-                            <td class="text-end">
+                            <td class="text-end text-nowrap">
                                 <div class="dropdown d-inline-block">
-                                    <button class="btn btn-outline-secondary btn-sm rounded-pill px-3 py-1 dropdown-toggle fw-semibold" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <button class="btn btn-outline-secondary btn-sm rounded-pill px-2.5 py-1 dropdown-toggle fw-semibold" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                                         <i class="bi bi-sliders me-1"></i> Update
                                     </button>
                                     <ul class="dropdown-menu dropdown-menu-end shadow-sm border rounded-3 mt-1">

@@ -97,7 +97,9 @@ urlpatterns = [
     # Custom EduLearn Administrator Portal & Dashboards
     path("admin-dashboard/", views.admin_dashboard_view, name="admin_dashboard"),
     path("admin-dashboard/students/", views.admin_students_view, name="admin_students"),
+    path("admin-dashboard/students/<int:student_id>/delete/", views.admin_student_delete_view, name="admin_student_delete"),
     path("admin-dashboard/instructors/", views.admin_instructors_view, name="admin_instructors"),
+    path("admin-dashboard/instructors/<int:instructor_id>/delete/", views.admin_instructor_delete_view, name="admin_instructor_delete"),
     path("admin-dashboard/users/<int:user_id>/toggle-status/", views.admin_user_toggle_status_view, name="admin_user_toggle_status"),
     path("admin-dashboard/courses/", views.admin_courses_view, name="admin_courses"),
     path("admin-dashboard/courses/<int:course_id>/toggle-status/", views.admin_course_toggle_status_view, name="admin_course_toggle_status"),

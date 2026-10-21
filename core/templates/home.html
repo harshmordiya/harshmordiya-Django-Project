@@ -127,14 +127,19 @@
                             </div>
 
                             <div class="course-card-footer">
-                                <div class="course-price">₹{{ course.price }}</div>
-                                <div style="display: flex; gap: 0.5rem;">
+                                <div class="course-card-price-row">
+                                    <div>
+                                        <span class="course-price-label">Price</span>
+                                        <div class="course-price">₹{{ course.price }}</div>
+                                    </div>
+                                </div>
+                                <div class="course-card-actions">
                                     <a href="{% url 'course_detail' course.course_id %}" class="btn btn-outline btn-sm">
                                         View Details
                                     </a>
                                     {% if user.is_authenticated %}
-                                        <a href="{% url 'add_to_cart' course.course_id %}" class="btn btn-success btn-sm" title="Add to Cart">
-                                            🛒 Add
+                                        <a href="{% url 'add_to_cart' course.course_id %}" class="btn btn-cart btn-sm" title="Add to Cart">
+                                            🛒 Add to Cart
                                         </a>
                                     {% endif %}
                                 </div>

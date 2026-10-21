@@ -13,58 +13,55 @@
                 Course Catalog Management
             </h1>
             <p class="text-muted small mb-0">
-                Publish new courses, manage pricing and curriculum, track student enrollment volumes, and control course availability.
+                Manage pricing, curriculum, and lesson contents, track student enrollment volumes, and control course availability.
             </p>
-        </div>
-        <div>
-            <a href="{% url 'course_create' %}" class="btn btn-edu-primary d-inline-flex align-items-center gap-2 shadow-sm px-4 py-2">
-                <i class="bi bi-plus-lg fs-6"></i>
-                <span>Add New Course</span>
-            </a>
         </div>
     </div>
 
-    <!-- Search & Status Filters Toolbar Card -->
-    <div class="admin-card p-3.5 mb-4">
-        <div class="row align-items-center justify-content-between g-3">
-            <!-- Status Filter Pills -->
-            <div class="col-lg-6">
-                <div class="d-flex align-items-center gap-1.5 flex-wrap">
-                    <span class="text-muted small fw-semibold me-1">Filter:</span>
-                    <a href="{% url 'admin_courses' %}{% if search_query %}?q={{ search_query }}{% endif %}" 
-                       class="btn btn-sm rounded-pill px-3 fw-semibold {% if status_filter == 'all' %}btn-primary{% else %}btn-outline-secondary border-0 bg-light text-secondary{% endif %}">
-                        All Courses <span class="badge rounded-pill ms-1 {% if status_filter == 'all' %}bg-white text-primary{% else %}bg-secondary-subtle text-secondary{% endif %}">{{ total_count }}</span>
-                    </a>
-                    <a href="{% url 'admin_courses' %}?status=active{% if search_query %}&q={{ search_query }}{% endif %}" 
-                       class="btn btn-sm rounded-pill px-3 fw-semibold {% if status_filter == 'active' %}btn-success{% else %}btn-outline-secondary border-0 bg-light text-secondary{% endif %}">
-                        <i class="bi bi-check-circle-fill me-1"></i> Active <span class="badge rounded-pill ms-1 {% if status_filter == 'active' %}bg-white text-success{% else %}bg-secondary-subtle text-secondary{% endif %}">{{ active_courses_count }}</span>
-                    </a>
-                    <a href="{% url 'admin_courses' %}?status=inactive{% if search_query %}&q={{ search_query }}{% endif %}" 
-                       class="btn btn-sm rounded-pill px-3 fw-semibold {% if status_filter == 'inactive' %}btn-secondary{% else %}btn-outline-secondary border-0 bg-light text-secondary{% endif %}">
-                        <i class="bi bi-eye-slash-fill me-1"></i> Drafts <span class="badge rounded-pill ms-1 {% if status_filter == 'inactive' %}bg-white text-dark{% else %}bg-secondary-subtle text-secondary{% endif %}">{{ inactive_courses_count }}</span>
-                    </a>
-                </div>
+    <!-- Search & Filters Toolbar Card -->
+    <div class="admin-toolbar-box">
+        <form method="get" class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+            <!-- Left: Search Input -->
+            <div class="input-group" style="flex: 1 1 260px; max-width: 380px;">
+                <span class="input-group-text bg-white border-end-0 text-muted ps-3">
+                    <i class="bi bi-search"></i>
+                </span>
+                <input type="text" name="q" value="{{ search_query }}" class="form-control border-start-0 ps-1" placeholder="Search title, category, instructor..." aria-label="Search courses">
             </div>
 
-            <!-- Search & Sort Controls Toolbar -->
-            <div class="col-lg-6 col-xl-7">
-                <form method="get" class="d-flex gap-2 align-items-center flex-wrap flex-md-nowrap">
-                    {% if status_filter != 'all' %}
-                        <input type="hidden" name="status" value="{{ status_filter }}">
-                    {% endif %}
-                    <div class="input-group">
-                        <span class="input-group-text bg-white border-end-0 text-muted ps-3">
-                            <i class="bi bi-search"></i>
-                        </span>
-                        <input type="text" name="q" value="{{ search_query }}" class="form-control border-start-0 ps-1" placeholder="Search title, category, instructor..." aria-label="Search courses">
-                    </div>
-                    <select name="category" class="form-select form-select-sm rounded-pill border" style="min-width: 135px;" onchange="this.form.submit()" title="Filter by Category">
+            <!-- Right: Dropdown Filters & Actions -->
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <!-- Status Filter Dropdown -->
+                <div class="d-flex align-items-center gap-1.5">
+                    <label class="text-muted small fw-semibold text-nowrap d-none d-xl-inline">
+                        <i class="bi bi-funnel me-1"></i>Status:
+                    </label>
+                    <select name="status" class="form-select form-select-sm rounded-pill border" style="min-width: 140px;" onchange="this.form.submit()" title="Filter by Course Status">
+                        <option value="all" {% if status_filter == 'all' %}selected{% endif %}>All Courses ({{ total_count }})</option>
+                        <option value="active" {% if status_filter == 'active' %}selected{% endif %}>Active ({{ active_courses_count }})</option>
+                        <option value="inactive" {% if status_filter == 'inactive' %}selected{% endif %}>Drafts ({{ inactive_courses_count }})</option>
+                    </select>
+                </div>
+
+                <!-- Category Filter Dropdown -->
+                <div class="d-flex align-items-center gap-1.5">
+                    <label class="text-muted small fw-semibold text-nowrap d-none d-xl-inline">
+                        <i class="bi bi-tag me-1"></i>Category:
+                    </label>
+                    <select name="category" class="form-select form-select-sm rounded-pill border" style="min-width: 140px;" onchange="this.form.submit()" title="Filter by Category">
                         <option value="all" {% if category_filter == 'all' %}selected{% endif %}>All Categories</option>
                         {% for cat_val, cat_label in categories %}
                             <option value="{{ cat_val }}" {% if category_filter == cat_val %}selected{% endif %}>{{ cat_label }}</option>
                         {% endfor %}
                     </select>
-                    <select name="sort" class="form-select form-select-sm rounded-pill border" style="min-width: 135px;" onchange="this.form.submit()" title="Sort order">
+                </div>
+
+                <!-- Sort Order Dropdown -->
+                <div class="d-flex align-items-center gap-1.5">
+                    <label class="text-muted small fw-semibold text-nowrap d-none d-xl-inline">
+                        <i class="bi bi-arrow-down-up me-1"></i>Sort:
+                    </label>
+                    <select name="sort" class="form-select form-select-sm rounded-pill border" style="min-width: 145px;" onchange="this.form.submit()" title="Sort order">
                         <option value="recent" {% if sort_by == 'recent' %}selected{% endif %}>Newest First</option>
                         <option value="oldest" {% if sort_by == 'oldest' %}selected{% endif %}>Oldest First</option>
                         <option value="title_asc" {% if sort_by == 'title_asc' %}selected{% endif %}>Title (A-Z)</option>
@@ -72,15 +69,19 @@
                         <option value="price_desc" {% if sort_by == 'price_desc' %}selected{% endif %}>Price: High → Low</option>
                         <option value="enrollments_desc" {% if sort_by == 'enrollments_desc' %}selected{% endif %}>Most Enrolled</option>
                     </select>
-                    <button type="submit" class="btn btn-primary rounded-pill px-3 fw-semibold">Search</button>
-                    {% if search_query or status_filter != 'all' or category_filter != 'all' or sort_by != 'recent' %}
-                        <a href="{% url 'admin_courses' %}" class="btn btn-outline-secondary rounded-pill px-3" title="Clear Filters & Search">
-                            <i class="bi bi-arrow-counterclockwise"></i>
-                        </a>
-                    {% endif %}
-                </form>
+                </div>
+
+                <!-- Submit / Reset Buttons -->
+                <button type="submit" class="btn btn-primary btn-sm rounded-pill px-3 fw-semibold">
+                    Search
+                </button>
+                {% if search_query or status_filter != 'all' or category_filter != 'all' or sort_by != 'recent' %}
+                    <a href="{% url 'admin_courses' %}" class="btn btn-outline-secondary btn-sm rounded-pill px-3" title="Clear Filters & Search">
+                        <i class="bi bi-arrow-counterclockwise me-1"></i> Reset
+                    </a>
+                {% endif %}
             </div>
-        </div>
+        </form>
     </div>
 
     <!-- Courses Table Card -->
@@ -100,30 +101,30 @@
             <table class="table admin-table mb-0 align-middle">
                 <thead>
                     <tr>
-                        <th style="width: 80px;">
+                        <th style="width: 60px;">
                             <a href="{% url 'admin_courses' %}?sort={% if sort_by == 'oldest' %}recent{% else %}oldest{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}{% if status_filter != 'all' %}&status={{ status_filter }}{% endif %}{% if category_filter != 'all' %}&category={{ category_filter }}{% endif %}" class="text-dark text-decoration-none d-inline-flex align-items-center gap-1" title="Sort by Course ID">
                                 ID <i class="bi bi-arrow-down-up small text-muted"></i>
                             </a>
                         </th>
-                        <th style="min-width: 240px;">
+                        <th style="min-width: 190px;">
                             <a href="{% url 'admin_courses' %}?sort={% if sort_by == 'title_asc' %}recent{% else %}title_asc{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}{% if status_filter != 'all' %}&status={{ status_filter }}{% endif %}{% if category_filter != 'all' %}&category={{ category_filter }}{% endif %}" class="text-dark text-decoration-none d-inline-flex align-items-center gap-1" title="Sort by Course Title">
                                 Course Details <i class="bi bi-arrow-down-up small text-muted"></i>
                             </a>
                         </th>
-                        <th style="min-width: 170px;">Instructor</th>
-                        <th style="width: 120px;">
+                        <th style="min-width: 140px;">Instructor</th>
+                        <th style="width: 85px;">
                             <a href="{% url 'admin_courses' %}?sort={% if sort_by == 'price_asc' %}price_desc{% else %}price_asc{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}{% if status_filter != 'all' %}&status={{ status_filter }}{% endif %}{% if category_filter != 'all' %}&category={{ category_filter }}{% endif %}" class="text-dark text-decoration-none d-inline-flex align-items-center gap-1" title="Sort by Price">
                                 Price <i class="bi bi-arrow-down-up small text-muted"></i>
                             </a>
                         </th>
-                        <th style="width: 130px;">Curriculum</th>
-                        <th style="width: 130px;">
+                        <th style="width: 110px;">Curriculum</th>
+                        <th style="width: 110px;">
                             <a href="{% url 'admin_courses' %}?sort=enrollments_desc{% if search_query %}&q={{ search_query }}{% endif %}{% if status_filter != 'all' %}&status={{ status_filter }}{% endif %}{% if category_filter != 'all' %}&category={{ category_filter }}{% endif %}" class="text-dark text-decoration-none d-inline-flex align-items-center gap-1" title="Sort by Enrolled Students">
                                 Enrollment <i class="bi bi-arrow-down-up small text-muted"></i>
                             </a>
                         </th>
-                        <th style="width: 110px;">Status</th>
-                        <th class="text-end" style="min-width: 220px;">Actions</th>
+                        <th style="width: 90px;">Status</th>
+                        <th class="text-end text-nowrap" style="width: 175px;">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -273,8 +274,8 @@
                                 <div class="fs-1 mb-2">📚</div>
                                 <h5 class="fw-bold text-dark">No courses found</h5>
                                 <p class="small mb-3">No course offerings match the active filter or search query.</p>
-                                <a href="{% url 'course_create' %}" class="btn btn-edu-primary btn-sm">
-                                    <i class="bi bi-plus-lg me-1"></i> Create First Course
+                                <a href="{% url 'admin_courses' %}" class="btn btn-outline-secondary btn-sm rounded-pill px-3">
+                                    <i class="bi bi-arrow-clockwise me-1"></i> Reset Filters
                                 </a>
                             </td>
                         </tr>

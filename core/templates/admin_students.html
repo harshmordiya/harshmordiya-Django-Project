@@ -23,41 +23,37 @@
         </div>
     </div>
 
-    <!-- Search & Status Filter Toolbar Card -->
-    <div class="admin-card p-3.5 mb-4">
-        <div class="row align-items-center justify-content-between g-3">
-            <!-- Status Filter Pills -->
-            <div class="col-lg-6">
-                <div class="d-flex align-items-center gap-1.5 flex-wrap">
-                    <span class="text-muted small fw-semibold me-1">Filter:</span>
-                    <a href="{% url 'admin_students' %}{% if search_query %}?q={{ search_query }}{% endif %}" 
-                       class="btn btn-sm rounded-pill px-3 fw-semibold {% if status_filter == 'all' %}btn-primary{% else %}btn-outline-secondary border-0 bg-light text-secondary{% endif %}">
-                        All Students
-                    </a>
-                    <a href="{% url 'admin_students' %}?status=active{% if search_query %}&q={{ search_query }}{% endif %}" 
-                       class="btn btn-sm rounded-pill px-3 fw-semibold {% if status_filter == 'active' %}btn-success{% else %}btn-outline-secondary border-0 bg-light text-secondary{% endif %}">
-                        <i class="bi bi-check-circle-fill me-1"></i> Active
-                    </a>
-                    <a href="{% url 'admin_students' %}?status=inactive{% if search_query %}&q={{ search_query }}{% endif %}" 
-                       class="btn btn-sm rounded-pill px-3 fw-semibold {% if status_filter == 'inactive' %}btn-secondary{% else %}btn-outline-secondary border-0 bg-light text-secondary{% endif %}">
-                        <i class="bi bi-person-slash me-1"></i> Deactivated
-                    </a>
-                </div>
+    <!-- Search & Filters Toolbar Card -->
+    <div class="admin-toolbar-box">
+        <form method="get" class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+            <!-- Left: Search Input -->
+            <div class="input-group" style="flex: 1 1 300px; max-width: 440px;">
+                <span class="input-group-text bg-white border-end-0 text-muted ps-3">
+                    <i class="bi bi-search"></i>
+                </span>
+                <input type="text" name="q" value="{{ search_query }}" class="form-control border-start-0 ps-1" placeholder="Search by name, email, or phone..." aria-label="Search students">
             </div>
 
-            <!-- Search & Sort Controls -->
-            <div class="col-lg-6 col-xl-6">
-                <form method="get" class="d-flex gap-2 align-items-center flex-wrap flex-md-nowrap">
-                    {% if status_filter != 'all' %}
-                        <input type="hidden" name="status" value="{{ status_filter }}">
-                    {% endif %}
-                    <div class="input-group">
-                        <span class="input-group-text bg-white border-end-0 text-muted ps-3">
-                            <i class="bi bi-search"></i>
-                        </span>
-                        <input type="text" name="q" value="{{ search_query }}" class="form-control border-start-0 ps-1" placeholder="Search by name, email, or phone..." aria-label="Search students">
-                    </div>
-                    <select name="sort" class="form-select form-select-sm rounded-pill border" style="min-width: 145px;" onchange="this.form.submit()" title="Sort order">
+            <!-- Right: Dropdown Filters & Actions -->
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <!-- Status Filter Dropdown -->
+                <div class="d-flex align-items-center gap-1.5">
+                    <label class="text-muted small fw-semibold text-nowrap d-none d-sm-inline">
+                        <i class="bi bi-funnel me-1"></i>Status:
+                    </label>
+                    <select name="status" class="form-select form-select-sm rounded-pill border" style="min-width: 155px;" onchange="this.form.submit()" title="Filter by Account Status">
+                        <option value="all" {% if status_filter == 'all' or not status_filter %}selected{% endif %}>All Students</option>
+                        <option value="active" {% if status_filter == 'active' %}selected{% endif %}>Active Only</option>
+                        <option value="inactive" {% if status_filter == 'inactive' %}selected{% endif %}>Deactivated Only</option>
+                    </select>
+                </div>
+
+                <!-- Sort Order Dropdown (with dedicated spacing from Status) -->
+                <div class="d-flex align-items-center gap-1.5 ms-sm-2 ms-md-3">
+                    <label class="text-muted small fw-semibold text-nowrap d-none d-sm-inline">
+                        <i class="bi bi-arrow-down-up me-1"></i>Sort:
+                    </label>
+                    <select name="sort" class="form-select form-select-sm rounded-pill border" style="min-width: 155px;" onchange="this.form.submit()" title="Sort order">
                         <option value="recent" {% if sort_by == 'recent' %}selected{% endif %}>Newest First</option>
                         <option value="oldest" {% if sort_by == 'oldest' %}selected{% endif %}>Oldest First</option>
                         <option value="name_asc" {% if sort_by == 'name_asc' %}selected{% endif %}>Name (A-Z)</option>
@@ -65,15 +61,19 @@
                         <option value="enrollments_desc" {% if sort_by == 'enrollments_desc' %}selected{% endif %}>Most Enrolled</option>
                         <option value="paid_desc" {% if sort_by == 'paid_desc' %}selected{% endif %}>Highest Paid</option>
                     </select>
-                    <button type="submit" class="btn btn-primary rounded-pill px-3 fw-semibold">Search</button>
-                    {% if search_query or status_filter != 'all' or sort_by != 'recent' %}
-                        <a href="{% url 'admin_students' %}" class="btn btn-outline-secondary rounded-pill px-3" title="Clear Filters & Search">
-                            <i class="bi bi-arrow-counterclockwise"></i>
-                        </a>
-                    {% endif %}
-                </form>
+                </div>
+
+                <!-- Submit / Reset Buttons -->
+                <button type="submit" class="btn btn-primary btn-sm rounded-pill px-3 fw-semibold ms-sm-1">
+                    Search
+                </button>
+                {% if search_query or status_filter != 'all' or sort_by != 'recent' %}
+                    <a href="{% url 'admin_students' %}" class="btn btn-outline-secondary btn-sm rounded-pill px-3" title="Clear All Filters & Search">
+                        <i class="bi bi-arrow-counterclockwise me-1"></i> Reset
+                    </a>
+                {% endif %}
             </div>
-        </div>
+        </form>
     </div>
 
     <!-- Students Table Card -->
@@ -93,74 +93,74 @@
             <table class="table admin-table mb-0 align-middle">
                 <thead>
                     <tr>
-                        <th style="width: 75px;">
-                            <a href="{% url 'admin_students' %}?sort={% if sort_by == 'oldest' %}recent{% else %}oldest{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}{% if status_filter != 'all' %}&status={{ status_filter }}{% endif %}" class="text-dark text-decoration-none d-inline-flex align-items-center gap-1" title="Sort by ID">
-                                ID <i class="bi bi-arrow-down-up small text-muted"></i>
-                            </a>
-                        </th>
-                        <th style="min-width: 200px;">
+                        <th style="min-width: 240px;" class="text-nowrap">
                             <a href="{% url 'admin_students' %}?sort={% if sort_by == 'name_asc' %}name_desc{% else %}name_asc{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}{% if status_filter != 'all' %}&status={{ status_filter }}{% endif %}" class="text-dark text-decoration-none d-inline-flex align-items-center gap-1" title="Sort by Student Name">
                                 Student Details <i class="bi bi-arrow-down-up small text-muted"></i>
                             </a>
                         </th>
-                        <th style="min-width: 200px;">Email & Contact</th>
-                        <th style="width: 140px;">
+                        <th style="width: 130px;" class="text-nowrap">
                             <a href="{% url 'admin_students' %}?sort=enrollments_desc{% if search_query %}&q={{ search_query }}{% endif %}{% if status_filter != 'all' %}&status={{ status_filter }}{% endif %}" class="text-dark text-decoration-none d-inline-flex align-items-center gap-1" title="Sort by Enrolled Courses">
-                                Enrolled Courses <i class="bi bi-arrow-down-up small text-muted"></i>
+                                Courses <i class="bi bi-arrow-down-up small text-muted"></i>
                             </a>
                         </th>
-                        <th style="width: 130px;">
+                        <th style="width: 140px;" class="text-nowrap">
                             <a href="{% url 'admin_students' %}?sort=paid_desc{% if search_query %}&q={{ search_query }}{% endif %}{% if status_filter != 'all' %}&status={{ status_filter }}{% endif %}" class="text-dark text-decoration-none d-inline-flex align-items-center gap-1" title="Sort by Total Spent">
                                 Total Paid <i class="bi bi-arrow-down-up small text-muted"></i>
                             </a>
                         </th>
-                        <th style="width: 130px;">Joined Date</th>
-                        <th style="width: 120px;">Status</th>
-                        <th class="text-end" style="width: 160px;">Actions</th>
+                        <th style="width: 145px;" class="text-nowrap">
+                            <a href="{% url 'admin_students' %}?sort={% if sort_by == 'oldest' %}recent{% else %}oldest{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}{% if status_filter != 'all' %}&status={{ status_filter }}{% endif %}" class="text-dark text-decoration-none d-inline-flex align-items-center gap-1" title="Sort by Joined Date">
+                                Joined Date <i class="bi bi-arrow-down-up small text-muted"></i>
+                            </a>
+                        </th>
+                        <th class="text-end text-nowrap" style="width: 280px;">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for student in students %}
                         <tr>
-                            <!-- Student ID -->
+                            <!-- Student Details (Avatar, Name, ID, Status, Email, Phone, Address) -->
                             <td>
-                                <span class="badge bg-light text-secondary border rounded-pill px-2 py-1">
-                                    #{{ student.student_id }}
-                                </span>
-                            </td>
-
-                            <!-- Student Name & Avatar -->
-                            <td>
-                                <div class="d-flex align-items-center gap-2.5">
-                                    <div class="rounded-circle d-inline-flex align-items-center justify-content-center text-white fw-bold shadow-sm" style="width: 38px; height: 38px; background: linear-gradient(135deg, #4f46e5, #06b6d4); font-size: 0.85rem; flex-shrink: 0; overflow: hidden;">
-                                        {% if student.profile_picture %}
-                                            <img src="{{ student.profile_picture.url }}" alt="{{ student.first_name }}" style="width: 100%; height: 100%; object-fit: cover;">
-                                        {% else %}
-                                            {{ student.first_name|first|upper }}{{ student.last_name|first|upper }}
-                                        {% endif %}
-                                    </div>
+                                <div class="d-flex align-items-center gap-3">
+                                    <a href="{% url 'student_profile_detail' student.student_id %}" class="text-decoration-none" title="View {{ student.first_name }}'s Profile">
+                                        <div class="rounded-circle d-inline-flex align-items-center justify-content-center text-white fw-bold shadow-sm" style="width: 44px; height: 44px; background: linear-gradient(135deg, #4f46e5, #06b6d4); font-size: 0.9rem; flex-shrink: 0; overflow: hidden;">
+                                            {% if student.profile_picture %}
+                                                <img src="{{ student.profile_picture.url }}" alt="{{ student.first_name }}" style="width: 100%; height: 100%; object-fit: cover;">
+                                            {% else %}
+                                                {{ student.first_name|first|upper }}{{ student.last_name|first|upper }}
+                                            {% endif %}
+                                        </div>
+                                    </a>
                                     <div class="min-w-0">
-                                        <div class="fw-bold text-dark fs-6 text-truncate">{{ student.first_name }} {{ student.last_name }}</div>
+                                        <div class="d-flex align-items-center gap-2 mb-0.5 flex-wrap">
+                                            <a href="{% url 'student_profile_detail' student.student_id %}" class="fw-bold text-dark text-decoration-none fs-6 text-truncate" title="Click to view student profile">
+                                                {{ student.first_name }} {{ student.last_name }}
+                                            </a>
+                                            <span class="badge bg-light text-secondary border rounded-pill px-1.5 py-0.5" style="font-size: 0.7rem;">#{{ student.student_id }}</span>
+                                            {% if student.is_active %}
+                                                <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2 py-0.5 fw-semibold" style="font-size: 0.68rem;">
+                                                    ● Active
+                                                </span>
+                                            {% else %}
+                                                <span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill px-2 py-0.5 fw-semibold" style="font-size: 0.68rem;">
+                                                    ○ Deactivated
+                                                </span>
+                                            {% endif %}
+                                        </div>
+                                        <div class="text-muted small text-truncate d-flex align-items-center gap-1.5" style="font-size: 0.82rem;">
+                                            <span><i class="bi bi-envelope me-1 text-secondary"></i>{{ student.email }}</span>
+                                            {% if student.phone %}
+                                                <span class="text-muted-50">•</span>
+                                                <span><i class="bi bi-telephone me-1 text-secondary"></i>{{ student.phone }}</span>
+                                            {% endif %}
+                                        </div>
                                         {% if student.address %}
-                                            <div class="text-muted small text-truncate" style="max-width: 180px; font-size: 0.78rem;">
-                                                <i class="bi bi-geo-alt me-0.5"></i>{{ student.address }}
+                                            <div class="text-muted small text-truncate mt-0.5" style="font-size: 0.75rem;">
+                                                <i class="bi bi-geo-alt me-0.5 text-secondary"></i>{{ student.address }}
                                             </div>
                                         {% endif %}
                                     </div>
                                 </div>
-                            </td>
-
-                            <!-- Email & Phone -->
-                            <td>
-                                <div class="d-flex align-items-center gap-1.5 text-dark fw-medium" style="font-size: 0.88rem;">
-                                    <i class="bi bi-envelope text-muted"></i>
-                                    <span>{{ student.email }}</span>
-                                </div>
-                                {% if student.phone %}
-                                    <div class="text-muted small mt-0.5" style="font-size: 0.78rem;">
-                                        <i class="bi bi-telephone me-1"></i>{{ student.phone }}
-                                    </div>
-                                {% endif %}
                             </td>
 
                             <!-- Enrolled Courses -->
@@ -173,65 +173,59 @@
                             <!-- Total Paid -->
                             <td>
                                 <span class="fw-bold text-success fs-6">
-                                    ₹{{ student.paid_total|default:"0.00" }}
+                                    ₹{{ student.paid_total|default:0|floatformat:2 }}
                                 </span>
                             </td>
 
                             <!-- Joined Date -->
                             <td>
-                                <span class="text-muted small">
+                                <span class="text-muted small text-nowrap">
                                     {{ student.enrollment_date|date:"d M, Y"|default:"—" }}
                                 </span>
                             </td>
 
-                            <!-- Account Status Badge -->
-                            <td>
-                                {% if student.is_active %}
-                                    <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2.5 py-1 fw-semibold">
-                                        ● Active
-                                    </span>
-                                {% else %}
-                                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill px-2.5 py-1 fw-semibold">
-                                        ○ Deactivated
-                                    </span>
-                                {% endif %}
-                            </td>
-
-                            <!-- Actions -->
+                            <!-- Actions (Enrollments, Activate/Deactivate Toggle, Delete) -->
                             <td class="text-end text-nowrap">
-                                <div class="d-inline-flex align-items-center gap-1.5">
-                                    <a href="{% url 'student_profile_detail' student.student_id %}" class="btn btn-outline-info btn-sm rounded-pill px-2.5" title="View Student Profile">
-                                        <i class="bi bi-person-badge me-1"></i> Profile
-                                    </a>
-                                    <a href="{% url 'admin_enrollments' %}?q={{ student.email }}" class="btn btn-outline-primary btn-sm rounded-pill px-2.5" title="View Course Enrollments">
+                                <div class="d-inline-flex align-items-center gap-2">
+                                    <!-- Enrollments Button -->
+                                    <a href="{% url 'admin_enrollments' %}?q={{ student.email }}" 
+                                       class="btn btn-outline-primary btn-sm rounded-pill px-2.5 py-1 text-nowrap fw-medium" 
+                                       title="View Course Enrollments for {{ student.first_name }}">
                                         <i class="bi bi-clipboard-check me-1"></i> Enrollments
                                     </a>
-                                    <a href="{% url 'admin_payments' %}?q={{ student.email }}" class="btn btn-outline-secondary btn-sm rounded-pill px-2" title="View Payment Receipts">
-                                        <i class="bi bi-receipt"></i>
-                                    </a>
+
+                                    <!-- Status Toggle Button -->
                                     {% if student.linked_user %}
                                         {% if student.is_active %}
                                             <a href="{% url 'admin_user_toggle_status' student.linked_user.id %}" 
-                                               class="btn btn-outline-danger btn-sm rounded-pill px-2.5 fw-semibold" 
-                                               title="Deactivate Student Account" 
-                                               onclick="return confirm('Are you sure you want to deactivate the account for {{ student.first_name }} {{ student.last_name }}? They will not be able to log in until reactivated.');">
-                                                <i class="bi bi-person-slash me-1"></i> Deactivate
+                                               class="btn btn-outline-success btn-sm rounded-pill px-2.5 py-1 text-nowrap fw-semibold shadow-sm" 
+                                               title="Currently Active - Click to Deactivate" 
+                                               onclick="return confirm('Deactivate student account for {{ student.first_name }} {{ student.last_name }}? They will not be able to log in until reactivated.');">
+                                                <i class="bi bi-person-check me-1"></i> Activate
                                             </a>
                                         {% else %}
                                             <a href="{% url 'admin_user_toggle_status' student.linked_user.id %}" 
-                                               class="btn btn-outline-success btn-sm rounded-pill px-2.5 fw-semibold" 
-                                               title="Reactivate Student Account"
-                                               onclick="return confirm('Reactivate account for {{ student.first_name }} {{ student.last_name }}?');">
-                                                <i class="bi bi-person-check me-1"></i> Activate
+                                               class="btn btn-outline-danger btn-sm rounded-pill px-2.5 py-1 text-nowrap fw-semibold shadow-sm" 
+                                               title="Currently Deactivated - Click to Activate" 
+                                               onclick="return confirm('Activate student account for {{ student.first_name }} {{ student.last_name }}?');">
+                                                <i class="bi bi-person-slash me-1"></i> Deactivate
                                             </a>
                                         {% endif %}
                                     {% endif %}
+
+                                    <!-- Delete Student Button -->
+                                    <a href="{% url 'admin_student_delete' student.student_id %}" 
+                                       class="btn btn-outline-danger btn-sm rounded-pill px-2.5 py-1 text-nowrap fw-medium shadow-sm" 
+                                       title="Permanently Delete Student" 
+                                       onclick="return confirm('Are you sure you want to permanently delete student {{ student.first_name }} {{ student.last_name }} ({{ student.email }})? All their enrollments and cart items will be removed permanently.');">
+                                        <i class="bi bi-trash3 me-1"></i> Delete
+                                    </a>
                                 </div>
                             </td>
                         </tr>
                     {% empty %}
                         <tr>
-                            <td colspan="8" class="text-center py-5 text-muted">
+                            <td colspan="5" class="text-center py-5 text-muted">
                                 <div class="fs-1 mb-2">🎓</div>
                                 <h5 class="fw-bold text-dark">No students found</h5>
                                 <p class="small mb-3">No student records match your current search query.</p>

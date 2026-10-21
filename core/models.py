@@ -85,7 +85,9 @@ class Student(models.Model):
     def total_paid_amount(self):
         if "total_paid_amount" in self.__dict__:
             return self.__dict__["total_paid_amount"]
-        total = self.payments.filter(status__iexact="paid").aggregate(models.Sum("amount"))["amount__sum"]
+        total = self.payments.filter(
+            status__in=["paid", "verified", "captured", "success", "completed"]
+        ).aggregate(models.Sum("amount"))["amount__sum"]
         return total or Decimal("0.00")
 
     @total_paid_amount.setter

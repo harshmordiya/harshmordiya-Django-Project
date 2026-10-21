@@ -59,8 +59,13 @@
                 {% if is_admin or user_role == 'admin' or profile.role == 'admin' %}
                     <a href="{% url 'admin_dashboard' %}" class="feature-box" style="padding: 1.5rem; text-decoration: none; border-left: 4px solid var(--primary);">
                         <div class="feature-box-icon" style="margin-bottom: 0.75rem;">🛡️</div>
-                        <h3 style="font-size: 1.05rem; margin-bottom: 0.35rem;">EduLearn Admin Dashboard</h3>
-                        <p style="font-size: 0.85rem; margin: 0;">Manage students, instructors, courses, enrollments & payments.</p>
+                        <h3 style="font-size: 1.05rem; margin-bottom: 0.35rem;">EduLearn Admin Operations</h3>
+                        <p style="font-size: 0.85rem; margin: 0;">Metrics, students, instructors, payments & revenue.</p>
+                    </a>
+                    <a href="{% url 'admin_courses' %}" class="feature-box" style="padding: 1.5rem; text-decoration: none; border-left: 4px solid #10b981;">
+                        <div class="feature-box-icon" style="margin-bottom: 0.75rem;">📚</div>
+                        <h3 style="font-size: 1.05rem; margin-bottom: 0.35rem;">Manage Academy Courses</h3>
+                        <p style="font-size: 0.85rem; margin: 0;">Publish courses, edit lessons, upload notes & documents.</p>
                     </a>
                 {% elif user_role == 'instructor' or profile.role == 'instructor' %}
                     <a href="{% url 'instructor_courses' %}" class="feature-box" style="padding: 1.5rem; text-decoration: none;">
@@ -272,6 +277,132 @@
             </div>
         </div>
         {% endif %}
+
+        {% elif is_admin or user_role == 'admin' or profile.role == 'admin' %}
+        <!-- Administrator Course Management Hub -->
+        <div style="margin-top: 2.5rem; padding-top: 2rem; border-top: 1px solid var(--slate-100);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 0.75rem;">
+                <div>
+                    <span class="section-tag" style="font-size: 0.78rem; margin-bottom: 0.2rem; background: #fee2e2; color: #b91c1c; border: 1px solid #fecaca;">Administrator Hub</span>
+                    <h2 style="font-size: 1.35rem; margin-bottom: 0.25rem; color: var(--slate-900);">Course Management & Platform Control</h2>
+                    <p style="color: var(--slate-500); font-size: 0.9rem; margin: 0;">
+                        As an administrator, you manage and supervise all courses, curricula, instructors, and enrollments across the entire academy.
+                    </p>
+                </div>
+                <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
+                    <a href="{% url 'admin_courses' %}" class="btn btn-secondary btn-sm" style="display: flex; align-items: center; gap: 0.35rem;">
+                        <span>📚</span>
+                        <span>All Courses</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Admin Course Quick Operation Cards -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.25rem; margin-bottom: 2rem;">
+                <div style="background: #f8fafc; border: 1px solid var(--slate-200); border-radius: 12px; padding: 1.25rem; display: flex; flex-direction: column; justify-content: space-between;">
+                    <div>
+                        <div style="font-size: 1.5rem; margin-bottom: 0.5rem;">📚</div>
+                        <h3 style="font-size: 1.05rem; font-weight: 700; color: var(--slate-800); margin-bottom: 0.35rem;">Academy Course Catalog</h3>
+                        <p style="font-size: 0.85rem; color: var(--slate-600); line-height: 1.5; margin: 0 0 1rem 0;">
+                            View, edit, publish/unpublish, or delete courses. Manage curriculum sections, lessons, videos, and document notes.
+                        </p>
+                    </div>
+                    <a href="{% url 'admin_courses' %}" class="btn btn-secondary btn-sm" style="text-align: center; justify-content: center;">
+                        Manage Courses →
+                    </a>
+                </div>
+
+                <div style="background: #f8fafc; border: 1px solid var(--slate-200); border-radius: 12px; padding: 1.25rem; display: flex; flex-direction: column; justify-content: space-between;">
+                    <div>
+                        <div style="font-size: 1.5rem; margin-bottom: 0.5rem;">👥</div>
+                        <h3 style="font-size: 1.05rem; font-weight: 700; color: var(--slate-800); margin-bottom: 0.35rem;">Student Enrollments</h3>
+                        <p style="font-size: 0.85rem; color: var(--slate-600); line-height: 1.5; margin: 0 0 1rem 0;">
+                            Track which students are enrolled in which courses, monitor completion statuses, and view enrollment timelines.
+                        </p>
+                    </div>
+                    <a href="{% url 'admin_enrollments' %}" class="btn btn-secondary btn-sm" style="text-align: center; justify-content: center;">
+                        View Enrollments →
+                    </a>
+                </div>
+
+                <div style="background: #f8fafc; border: 1px solid var(--slate-200); border-radius: 12px; padding: 1.25rem; display: flex; flex-direction: column; justify-content: space-between;">
+                    <div>
+                        <div style="font-size: 1.5rem; margin-bottom: 0.5rem;">👨‍🏫</div>
+                        <h3 style="font-size: 1.05rem; font-weight: 700; color: var(--slate-800); margin-bottom: 0.35rem;">Instructor Directory</h3>
+                        <p style="font-size: 0.85rem; color: var(--slate-600); line-height: 1.5; margin: 0 0 1rem 0;">
+                            Manage faculty members, assign instructors to courses, and verify teaching credentials and profiles.
+                        </p>
+                    </div>
+                    <a href="{% url 'admin_instructors' %}" class="btn btn-secondary btn-sm" style="text-align: center; justify-content: center;">
+                        Manage Instructors →
+                    </a>
+                </div>
+
+                <div style="background: #f8fafc; border: 1px solid var(--slate-200); border-radius: 12px; padding: 1.25rem; display: flex; flex-direction: column; justify-content: space-between;">
+                    <div>
+                        <div style="font-size: 1.5rem; margin-bottom: 0.5rem;">💳</div>
+                        <h3 style="font-size: 1.05rem; font-weight: 700; color: var(--slate-800); margin-bottom: 0.35rem;">Payments & Revenue</h3>
+                        <p style="font-size: 0.85rem; color: var(--slate-600); line-height: 1.5; margin: 0 0 1rem 0;">
+                            Review successful student invoices, track platform revenue, and inspect financial transaction history.
+                        </p>
+                    </div>
+                    <a href="{% url 'admin_payments' %}" class="btn btn-secondary btn-sm" style="text-align: center; justify-content: center;">
+                        View Invoices →
+                    </a>
+                </div>
+            </div>
+
+            <!-- Optional Learner Mode for Admin -->
+            {% if enrollments %}
+                <div style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px dashed var(--slate-200);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                        <h3 style="font-size: 1.15rem; color: var(--slate-800); margin: 0;">
+                            🎓 My Personal Enrolled Courses (Learner Preview)
+                        </h3>
+                        <span class="badge-category" style="background: var(--primary-light); color: var(--primary-dark); font-size: 0.8rem;">
+                            {{ total_enrolled }} {{ total_enrolled|pluralize:"Course,Courses" }} Enrolled
+                        </span>
+                    </div>
+                    <div class="course-grid">
+                        {% for enrollment in enrollments %}
+                            <div class="course-card">
+                                <div class="course-card-top bg-{{ enrollment.course.category }}">
+                                    <span class="badge-category">{{ enrollment.course.get_category_display }}</span>
+                                    <span class="badge-status status-{{ enrollment.status }}">
+                                        {{ enrollment.get_status_display }}
+                                    </span>
+                                </div>
+                                <div class="course-card-body">
+                                    <h3 class="course-title">
+                                        <a href="{% url 'course_detail' enrollment.course.course_id %}">
+                                            {{ enrollment.course.title }}
+                                        </a>
+                                    </h3>
+                                    <p class="course-description">{{ enrollment.course.description }}</p>
+                                    <div class="course-card-footer" style="padding-top: 0.85rem; border-top: 1px solid var(--slate-100); margin-top: auto;">
+                                        <a href="{% url 'course_detail' enrollment.course.course_id %}" class="btn btn-primary btn-block" style="text-align: center; text-decoration: none;">
+                                            <span>Continue Learning →</span>
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% else %}
+                <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 12px; padding: 1.25rem 1.5rem; display: flex; align-items: flex-start; gap: 1rem;">
+                    <div style="font-size: 1.5rem; line-height: 1;">💡</div>
+                    <div>
+                        <strong style="color: #1e40af; font-size: 0.95rem; display: block; margin-bottom: 0.25rem;">
+                            How Courses Work on the Admin Side
+                        </strong>
+                        <p style="color: #1e3a8a; font-size: 0.88rem; line-height: 1.5; margin: 0;">
+                            As an <strong>Administrator</strong>, you oversee courses across the entire academy via the <strong>Course Catalog</strong> instead of personal enrollment. If you want to preview lesson content or test the student learning experience, you can explore the course catalog and enroll at any time.
+                        </p>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
 
         {% else %}
         <!-- Student / General User Enrolled Courses Section -->
