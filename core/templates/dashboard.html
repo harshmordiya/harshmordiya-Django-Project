@@ -68,6 +68,11 @@
                         <p style="font-size: 0.85rem; margin: 0;">Publish courses, edit lessons, upload notes & documents.</p>
                     </a>
                 {% elif user_role == 'instructor' or profile.role == 'instructor' %}
+                    <a href="{% url 'instructor_profile' %}" class="feature-box" style="padding: 1.5rem; text-decoration: none; border-left: 4px solid #4f46e5;">
+                        <div class="feature-box-icon" style="margin-bottom: 0.75rem;">👤</div>
+                        <h3 style="font-size: 1.05rem; margin-bottom: 0.35rem;">My Faculty Profile</h3>
+                        <p style="font-size: 0.85rem; margin: 0;">View & edit your bio, photo, specialization, and credentials.</p>
+                    </a>
                     <a href="{% url 'instructor_courses' %}" class="feature-box" style="padding: 1.5rem; text-decoration: none;">
                         <div class="feature-box-icon" style="margin-bottom: 0.75rem;">👨‍🏫</div>
                         <h3 style="font-size: 1.05rem; margin-bottom: 0.35rem;">Instructor Portal</h3>

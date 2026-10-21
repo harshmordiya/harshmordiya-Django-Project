@@ -18,7 +18,7 @@ from django.conf import settings
 from django.views.decorators.csrf import csrf_exempt
 from django.urls import reverse
 
-from .forms import RegistrationForm, CourseForm, CourseContentForm, StudentProfileForm, ContactInstructorForm, InstructorReplyForm
+from .forms import RegistrationForm, CourseForm, CourseContentForm, StudentProfileForm, InstructorProfileForm, ContactInstructorForm, InstructorReplyForm
 from .models import Cart, Course, CourseContent, PasswordResetOTP, Student, UserProfile, Payment, Enrollment, Instructor, InstructorMessage
 from .email_utils import (
     send_payment_confirmation_email,
@@ -333,6 +333,81 @@ def student_profile_edit_view(request):
             "student": student,
         }
     )
+
+
+@login_required
+def user_profile_dispatcher_view(request):
+    """
+    Intelligent profile dispatcher for /profile/ URL:
+    - If user is an instructor -> redirects to instructor_profile
+    - Otherwise -> student_profile
+    """
+    role = get_user_role(request.user)
+    if role == "instructor":
+        return redirect("instructor_profile")
+    return redirect("student_profile")
+
+
+@login_required
+def instructor_profile_view(request):
+    """
+    Displays the authenticated instructor's professional profile, statistics,
+    and authored course catalog.
+    """
+    instructor = get_instructor_for_user(request.user)
+    if not instructor:
+        messages.error(request, "Instructor profile could not be found for your account.")
+        return redirect("dashboard")
+
+    authored_courses = Course.objects.filter(instructor=instructor).annotate(
+        active_enrollments=Count("enrollments", filter=Q(enrollments__status__in=["active", "completed"]))
+    ).order_by("-created_at")
+
+    total_inquiries = InstructorMessage.objects.filter(instructor=instructor).count()
+    replied_inquiries = InstructorMessage.objects.filter(instructor=instructor).exclude(reply_text="").count()
+
+    context = {
+        "instructor": instructor,
+        "authored_courses": authored_courses,
+        "total_authored": authored_courses.count(),
+        "total_students": instructor.students_count,
+        "total_inquiries": total_inquiries,
+        "replied_inquiries": replied_inquiries,
+        "is_own_profile": True,
+        "is_admin": is_admin_user(request.user),
+    }
+    return render(request, "instructor_profile.html", context)
+
+
+@login_required
+def instructor_profile_edit_view(request):
+    """
+    Allows an instructor to edit their personal & faculty profile details
+    (name, email, phone, specialization, bio, profile picture) with live synchronization
+    back to their Django auth.User account.
+    """
+    instructor = get_instructor_for_user(request.user)
+    if not instructor:
+        messages.error(request, "Instructor profile could not be found for your account.")
+        return redirect("dashboard")
+
+    if request.method == "POST":
+        form = InstructorProfileForm(request.POST, request.FILES, instance=instructor, user=request.user)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Your instructor profile has been updated successfully!")
+            return redirect("instructor_profile")
+        else:
+            messages.error(request, "Please review the highlighted errors below and try again.")
+    else:
+        form = InstructorProfileForm(instance=instructor, user=request.user)
+
+    context = {
+        "form": form,
+        "instructor": instructor,
+        "is_own_profile": True,
+    }
+    return render(request, "instructor_profile_edit.html", context)
 
 
 @login_required

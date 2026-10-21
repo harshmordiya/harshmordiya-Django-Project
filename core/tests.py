@@ -2060,3 +2060,135 @@ class StudentDashboardSentMessagesTests(TestCase):
         self.assertEqual(resp.status_code, 200)
         self.msg_pending.refresh_from_db()
         self.assertTrue(self.msg_pending.is_read)
+
+
+
+class InstructorProfileTests(TestCase):
+    """
+    Tests for Instructor Profile Page, Edit Form, and Smart Dispatcher:
+    - Verifies /instructor/profile/ displays faculty credentials, metrics, and courses.
+    - Verifies /instructor/profile/edit/ GET renders InstructorProfileForm.
+    - Verifies /instructor/profile/edit/ POST updates Instructor and syncs auth.User.
+    - Verifies smart /profile/ dispatcher routes instructors to instructor_profile and students to student_profile.
+    - Verifies duplicate email validation prevents collisions.
+    """
+
+    def setUp(self):
+        self.client = Client()
+
+        # Instructor User & Profile
+        self.inst_user = User.objects.create_user(
+            username="sapna_inst",
+            email="sapna@edulearn.test",
+            password="testpassword123",
+            first_name="Sapna",
+            last_name="Adroja"
+        )
+        UserProfile.objects.create(user=self.inst_user, role="instructor")
+        self.instructor = Instructor.objects.create(
+            first_name="Sapna",
+            last_name="Adroja",
+            email="sapna@edulearn.test",
+            phone="+91 9988776655",
+            specialization="Digital Marketing",
+            bio="Seasoned digital marketing consultant with 10+ years experience."
+        )
+
+        # Student User & Profile
+        self.stud_user = User.objects.create_user(
+            username="test_stud",
+            email="stud@edulearn.test",
+            password="testpassword123",
+            first_name="Test",
+            last_name="Learner"
+        )
+        UserProfile.objects.create(user=self.stud_user, role="student")
+        self.student = Student.objects.create(
+            first_name="Test",
+            last_name="Learner",
+            email="stud@edulearn.test"
+        )
+
+        # Course authored by Sapna
+        self.course = Course.objects.create(
+            title="Digital Marketing Fundamentals",
+            description="Comprehensive SEO, SEM, and Social Media Marketing",
+            instructor=self.instructor,
+            category="business",
+            duration="6 Weeks",
+            price=Decimal("999.00"),
+            is_active=True
+        )
+
+    def test_instructor_profile_view_renders_details_and_courses(self):
+        self.client.login(username="sapna_inst", password="testpassword123")
+        response = self.client.get(reverse("instructor_profile"))
+        self.assertEqual(response.status_code, 200)
+
+        self.assertContains(response, "Sapna Adroja")
+        self.assertContains(response, "Digital Marketing")
+        self.assertContains(response, "sapna@edulearn.test")
+        self.assertContains(response, "+91 9988776655")
+        self.assertContains(response, "Seasoned digital marketing consultant")
+        self.assertContains(response, "Digital Marketing Fundamentals")
+        self.assertContains(response, "Edit Profile")
+
+    def test_instructor_profile_edit_view_get(self):
+        self.client.login(username="sapna_inst", password="testpassword123")
+        response = self.client.get(reverse("instructor_profile_edit"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Edit Faculty Profile")
+        self.assertContains(response, 'name="specialization"')
+        self.assertContains(response, "Sapna")
+
+    def test_instructor_profile_edit_view_post_updates_and_syncs_user(self):
+        self.client.login(username="sapna_inst", password="testpassword123")
+        response = self.client.post(reverse("instructor_profile_edit"), {
+            "first_name": "Sapna",
+            "last_name": "Patel",
+            "email": "sapna.new@edulearn.test",
+            "phone": "+91 1122334455",
+            "specialization": "Growth Marketing & SEO",
+            "bio": "Updated bio with deep knowledge of search engines."
+        })
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, reverse("instructor_profile"))
+
+        # Verify Instructor model updated
+        self.instructor.refresh_from_db()
+        self.assertEqual(self.instructor.last_name, "Patel")
+        self.assertEqual(self.instructor.email, "sapna.new@edulearn.test")
+        self.assertEqual(self.instructor.phone, "+91 1122334455")
+        self.assertEqual(self.instructor.specialization, "Growth Marketing & SEO")
+        self.assertEqual(self.instructor.bio, "Updated bio with deep knowledge of search engines.")
+
+        # Verify User model synchronized
+        self.inst_user.refresh_from_db()
+        self.assertEqual(self.inst_user.last_name, "Patel")
+        self.assertEqual(self.inst_user.email, "sapna.new@edulearn.test")
+
+    def test_smart_profile_dispatcher(self):
+        # 1. Instructor visiting /profile/ redirects to instructor_profile
+        self.client.login(username="sapna_inst", password="testpassword123")
+        resp_inst = self.client.get(reverse("profile"))
+        self.assertEqual(resp_inst.status_code, 302)
+        self.assertEqual(resp_inst.url, reverse("instructor_profile"))
+
+        # 2. Student visiting /profile/ redirects to student_profile
+        self.client.login(username="test_stud", password="testpassword123")
+        resp_stud = self.client.get(reverse("profile"))
+        self.assertEqual(resp_stud.status_code, 302)
+        self.assertEqual(resp_stud.url, reverse("student_profile"))
+
+    def test_instructor_profile_edit_prevents_duplicate_email(self):
+        self.client.login(username="sapna_inst", password="testpassword123")
+        # Try to use student's email
+        response = self.client.post(reverse("instructor_profile_edit"), {
+            "first_name": "Sapna",
+            "last_name": "Adroja",
+            "email": "stud@edulearn.test",
+            "specialization": "Digital Marketing",
+            "phone": "+91 9988776655"
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "This email is already associated with another account")

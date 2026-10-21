@@ -1,0 +1,365 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ instructor.full_name }}'s Faculty Profile - EduLearn{% endblock %}
+
+{% block extra_css %}
+<style>
+.profile-hero-instructor {
+    background: linear-gradient(135deg, #1e1b4b 0%, #3730a3 50%, #4f46e5 100%);
+    border-radius: var(--radius-xl);
+    padding: 2.5rem;
+    color: white;
+    margin-bottom: 2rem;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 10px 25px -5px rgba(55, 48, 163, 0.35);
+}
+.profile-hero-instructor::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: radial-gradient(rgba(255, 255, 255, 0.15) 1.5px, transparent 1.5px);
+    background-size: 16px 16px;
+    pointer-events: none;
+}
+.profile-hero-content {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+}
+.profile-avatar-wrap {
+    width: 96px;
+    height: 96px;
+    border-radius: 50%;
+    background: white;
+    color: #4338ca;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.4rem;
+    font-weight: 800;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.25);
+    border: 4px solid rgba(255, 255, 255, 0.4);
+    flex-shrink: 0;
+    overflow: hidden;
+}
+.profile-avatar-wrap img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.profile-card {
+    background: var(--white);
+    border: 1px solid var(--slate-200);
+    border-radius: var(--radius-xl);
+    padding: 1.75rem;
+    margin-bottom: 1.75rem;
+    box-shadow: var(--shadow-sm);
+    transition: var(--transition);
+}
+.profile-card:hover {
+    box-shadow: var(--shadow-md);
+}
+.profile-stat-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.75rem;
+}
+.profile-stat-box {
+    background: var(--white);
+    border: 1px solid var(--slate-200);
+    border-radius: var(--radius-lg);
+    padding: 1.25rem;
+    text-align: center;
+    box-shadow: var(--shadow-sm);
+}
+.profile-stat-val {
+    font-size: 1.65rem;
+    font-weight: 800;
+    color: var(--slate-900);
+    line-height: 1.2;
+}
+.profile-stat-lbl {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 600;
+    color: var(--slate-500);
+    margin-top: 0.35rem;
+}
+.info-row {
+    display: flex;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid var(--slate-100);
+    align-items: flex-start;
+}
+.info-row:last-child {
+    border-bottom: none;
+}
+.info-label {
+    width: 140px;
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: var(--slate-500);
+    flex-shrink: 0;
+}
+.info-value {
+    font-size: 0.92rem;
+    color: var(--slate-800);
+    flex-grow: 1;
+    word-break: break-word;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 1200px; padding: 2rem 1rem;">
+
+    <!-- Instructor Hero Header -->
+    <div class="profile-hero-instructor">
+        <div class="profile-hero-content">
+            <div style="display: flex; align-items: center; gap: 1.5rem; flex-wrap: wrap;">
+                <div class="profile-avatar-wrap">
+                    {% if instructor.profile_picture %}
+                        <img src="{{ instructor.profile_picture.url }}" alt="{{ instructor.full_name }}">
+                    {% else %}
+                        {{ instructor.first_name|first|upper }}{{ instructor.last_name|first|upper }}
+                    {% endif %}
+                </div>
+                <div>
+                    <h1 style="font-size: 2rem; margin: 0 0 0.4rem 0; color: white;">
+                        {{ instructor.full_name }}
+                    </h1>
+                    <div style="display: flex; align-items: center; gap: 0.65rem; flex-wrap: wrap;">
+                        <span style="background: rgba(255, 255, 255, 0.2); color: white; padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.82rem; font-weight: 700; border: 1px solid rgba(255, 255, 255, 0.3);">
+                            👨‍🏫 Faculty Instructor
+                        </span>
+                        <span style="background: rgba(238, 242, 255, 0.25); color: #e0e7ff; padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.82rem; font-weight: 600;">
+                            ✨ {{ instructor.specialization|default:"Specialist" }}
+                        </span>
+                        <span style="color: rgba(255, 255, 255, 0.85); font-size: 0.88rem;">
+                            📧 {{ instructor.email }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+                <a href="{% url 'instructor_profile_edit' %}" class="btn btn-secondary" style="background: white; color: #3730a3; font-weight: 700; border: none; box-shadow: 0 4px 10px rgba(0,0,0,0.15);">
+                    ✏️ Edit Profile
+                </a>
+                <a href="{% url 'instructor_course_create' %}" class="btn btn-primary" style="background: #10b981; border-color: #059669; font-weight: 700;">
+                    ➕ Create Course
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Instructor Analytics / Metric Counters -->
+    <div class="profile-stat-grid">
+        <div class="profile-stat-box">
+            <div class="profile-stat-val" style="color: #4f46e5;">{{ total_authored }}</div>
+            <div class="profile-stat-lbl">Authored Courses</div>
+        </div>
+        <div class="profile-stat-box">
+            <div class="profile-stat-val" style="color: #059669;">{{ total_students }}</div>
+            <div class="profile-stat-lbl">Students Enrolled</div>
+        </div>
+        <div class="profile-stat-box">
+            <div class="profile-stat-val" style="color: #d97706;">{{ total_inquiries }}</div>
+            <div class="profile-stat-lbl">Inquiries ({{ replied_inquiries }} Replied)</div>
+        </div>
+        <div class="profile-stat-box">
+            <div class="profile-stat-val" style="color: var(--slate-700); font-size: 1.25rem; padding-top: 0.35rem;">
+                {{ instructor.hire_date|date:"d M Y" }}
+            </div>
+            <div class="profile-stat-lbl">Faculty Joined</div>
+        </div>
+    </div>
+
+    <!-- Main Content Layout (Two Columns) -->
+    <div style="display: grid; grid-template-columns: 360px 1fr; gap: 1.75rem; align-items: start;">
+        
+        <!-- Left Column: Instructor Information & Biography -->
+        <div>
+            <!-- Personal Information Card -->
+            <div class="profile-card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; padding-bottom: 0.75rem; border-bottom: 1px solid var(--slate-100);">
+                    <h3 style="font-size: 1.15rem; color: var(--slate-900); margin: 0; display: flex; align-items: center; gap: 0.5rem;">
+                        <span>👤</span> Instructor Details
+                    </h3>
+                    <a href="{% url 'instructor_profile_edit' %}" style="font-size: 0.85rem; color: var(--primary); font-weight: 600; text-decoration: none;">
+                        Edit
+                    </a>
+                </div>
+
+                <div class="info-row">
+                    <div class="info-label">Full Name</div>
+                    <div class="info-value"><strong>{{ instructor.full_name }}</strong></div>
+                </div>
+                <div class="info-row">
+                    <div class="info-label">Specialization</div>
+                    <div class="info-value">
+                        <span style="background: #e0e7ff; color: #3730a3; padding: 0.2rem 0.55rem; border-radius: 6px; font-size: 0.82rem; font-weight: 600;">
+                            {{ instructor.specialization }}
+                        </span>
+                    </div>
+                </div>
+                <div class="info-row">
+                    <div class="info-label">Email Address</div>
+                    <div class="info-value">{{ instructor.email }}</div>
+                </div>
+                <div class="info-row">
+                    <div class="info-label">Phone</div>
+                    <div class="info-value">{{ instructor.phone|default:"Not specified" }}</div>
+                </div>
+                <div class="info-row">
+                    <div class="info-label">Account Role</div>
+                    <div class="info-value">
+                        <span style="color: #4338ca; font-weight: 700;">Faculty Instructor</span>
+                    </div>
+                </div>
+                <div class="info-row">
+                    <div class="info-label">Hire Date</div>
+                    <div class="info-value">{{ instructor.hire_date|date:"F d, Y" }}</div>
+                </div>
+            </div>
+
+            <!-- Teaching Biography & Background Card -->
+            <div class="profile-card">
+                <h3 style="font-size: 1.15rem; color: var(--slate-900); margin: 0 0 1rem 0; display: flex; align-items: center; gap: 0.5rem; padding-bottom: 0.75rem; border-bottom: 1px solid var(--slate-100);">
+                    <span>📖</span> Biography & Expertise
+                </h3>
+                {% if instructor.bio %}
+                    <div style="color: var(--slate-700); font-size: 0.92rem; line-height: 1.65; white-space: pre-line;">
+                        {{ instructor.bio }}
+                    </div>
+                {% else %}
+                    <p style="color: var(--slate-400); font-style: italic; font-size: 0.9rem; margin: 0 0 1rem 0;">
+                        You have not written a biography yet. Introduce your industry background, research interests, and teaching goals to prospective students.
+                    </p>
+                    <a href="{% url 'instructor_profile_edit' %}" class="btn btn-secondary btn-sm" style="width: 100%; text-align: center; justify-content: center;">
+                        ➕ Add Biography & Skills
+                    </a>
+                {% endif %}
+            </div>
+
+            <!-- Instructor Quick Portal Navigation -->
+            <div class="profile-card">
+                <h3 style="font-size: 1.15rem; color: var(--slate-900); margin: 0 0 1rem 0; display: flex; align-items: center; gap: 0.5rem; padding-bottom: 0.75rem; border-bottom: 1px solid var(--slate-100);">
+                    <span>⚡</span> Faculty Shortcuts
+                </h3>
+                <div style="display: flex; flex-direction: column; gap: 0.65rem;">
+                    <a href="{% url 'instructor_courses' %}" class="btn btn-secondary btn-sm" style="text-align: left; justify-content: flex-start; padding: 0.65rem 0.9rem;">
+                        <span>📚 Manage My Courses & Curriculum</span>
+                    </a>
+                    <a href="{% url 'instructor_messages' %}" class="btn btn-secondary btn-sm" style="text-align: left; justify-content: flex-start; padding: 0.65rem 0.9rem;">
+                        <span>💬 Student Inquiries Inbox ({{ total_inquiries }})</span>
+                    </a>
+                    <a href="{% url 'dashboard' %}" class="btn btn-secondary btn-sm" style="text-align: left; justify-content: flex-start; padding: 0.65rem 0.9rem;">
+                        <span>📊 Teaching Hub Dashboard</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column: Authored Courses Catalog -->
+        <div>
+            <div class="profile-card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 0.75rem; padding-bottom: 0.85rem; border-bottom: 1px solid var(--slate-100);">
+                    <div>
+                        <h3 style="font-size: 1.25rem; color: var(--slate-900); margin: 0 0 0.25rem 0;">
+                            My Authored Courses ({{ total_authored }})
+                        </h3>
+                        <p style="color: var(--slate-500); font-size: 0.88rem; margin: 0;">
+                            Courses you have published on the EduLearn platform.
+                        </p>
+                    </div>
+                    <a href="{% url 'instructor_course_create' %}" class="btn btn-primary btn-sm">
+                        ➕ Add New Course
+                    </a>
+                </div>
+
+                {% if authored_courses %}
+                    <div style="display: flex; flex-direction: column; gap: 1.25rem;">
+                        {% for course in authored_courses %}
+                            <div style="border: 1px solid var(--slate-200); border-radius: 12px; padding: 1.25rem; background: #ffffff; display: flex; flex-direction: column; gap: 0.85rem; transition: border-color 0.2s ease;">
+                                <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; flex-wrap: wrap;">
+                                    <div>
+                                        <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.35rem; flex-wrap: wrap;">
+                                            <span class="badge-category" style="font-size: 0.75rem; padding: 0.15rem 0.55rem;">
+                                                {{ course.get_category_display }}
+                                            </span>
+                                            {% if course.is_active %}
+                                                <span style="background: #dcfce7; color: #166534; font-size: 0.75rem; font-weight: 700; padding: 0.15rem 0.55rem; border-radius: 9999px;">
+                                                    ● Active
+                                                </span>
+                                            {% else %}
+                                                <span style="background: #f1f5f9; color: #475569; font-size: 0.75rem; font-weight: 700; padding: 0.15rem 0.55rem; border-radius: 9999px;">
+                                                    ○ Draft
+                                                </span>
+                                            {% endif %}
+                                        </div>
+                                        <h4 style="font-size: 1.1rem; color: var(--slate-900); margin: 0 0 0.35rem 0;">
+                                            <a href="{% url 'course_detail' course.course_id %}" style="text-decoration: none; color: inherit;">
+                                                {{ course.title }}
+                                            </a>
+                                        </h4>
+                                        <p style="color: var(--slate-600); font-size: 0.88rem; line-height: 1.5; margin: 0; max-width: 600px;">
+                                            {{ course.description|truncatewords:24 }}
+                                        </p>
+                                    </div>
+
+                                    <div style="text-align: right; flex-shrink: 0;">
+                                        <div style="font-size: 1.25rem; font-weight: 800; color: var(--slate-900);">
+                                            ₹{{ course.price }}
+                                        </div>
+                                        <div style="font-size: 0.8rem; color: #059669; font-weight: 700; margin-top: 0.2rem;">
+                                            👨‍🎓 {{ course.active_enrollments|default:"0" }} Enrolled
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 0.75rem; border-top: 1px solid var(--slate-100); flex-wrap: wrap; gap: 0.5rem;">
+                                    <div style="color: var(--slate-500); font-size: 0.82rem; display: flex; align-items: center; gap: 0.75rem;">
+                                        <span>⏱️ {{ course.duration }}</span>
+                                        <span>📅 Created: {{ course.created_at|date:"d M Y" }}</span>
+                                    </div>
+                                    <div style="display: flex; gap: 0.4rem; flex-wrap: wrap;">
+                                        <a href="{% url 'course_content_manage' course.course_id %}" class="btn btn-secondary btn-sm" title="Lessons & Curriculum">
+                                            📚 Lessons
+                                        </a>
+                                        <a href="{% url 'instructor_course_edit' course.course_id %}" class="btn btn-primary btn-sm" title="Edit Course Details">
+                                            ✏️ Edit
+                                        </a>
+                                        <a href="{% url 'course_detail' course.course_id %}" class="btn btn-outline btn-sm" title="Public Preview">
+                                            👁️ View
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="empty-state" style="padding: 3rem 1.5rem; text-align: center;">
+                        <div class="empty-state-icon" style="font-size: 2.5rem; margin-bottom: 0.75rem;">📚</div>
+                        <h4 style="font-size: 1.15rem; color: var(--slate-900); margin-bottom: 0.35rem;">No Courses Created Yet</h4>
+                        <p style="color: var(--slate-500); max-width: 420px; margin: 0 auto 1.25rem; font-size: 0.9rem;">
+                            Share your technical expertise with thousands of eager learners. Create your first course syllabus now!
+                        </p>
+                        <a href="{% url 'instructor_course_create' %}" class="btn btn-primary">
+                            ➕ Create Your First Course
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -475,6 +475,158 @@ class StudentProfileForm(forms.ModelForm):
         return student
 
 
+class InstructorProfileForm(forms.ModelForm):
+    """
+    Form for instructors to view and update their faculty profile details.
+    Synchronizes first name, last name, and email with the underlying User account.
+    Supports profile picture upload with real-time preview and removal.
+    """
+    clear_profile_picture = forms.BooleanField(
+        required=False,
+        initial=False,
+        widget=forms.HiddenInput(attrs={"id": "id_clear_profile_picture"}),
+        help_text="Remove existing profile picture",
+    )
+
+    class Meta:
+        model = Instructor
+        fields = [
+            "first_name",
+            "last_name",
+            "email",
+            "phone",
+            "specialization",
+            "bio",
+            "profile_picture",
+        ]
+        widgets = {
+            "first_name": forms.TextInput(attrs={
+                "class": "form-input",
+                "placeholder": "Your first name",
+                "required": True,
+            }),
+            "last_name": forms.TextInput(attrs={
+                "class": "form-input",
+                "placeholder": "Your last name (optional)",
+            }),
+            "email": forms.EmailInput(attrs={
+                "class": "form-input",
+                "placeholder": "name@example.com",
+                "required": True,
+            }),
+            "phone": forms.TextInput(attrs={
+                "class": "form-input",
+                "placeholder": "+91 9876543210",
+            }),
+            "specialization": forms.TextInput(attrs={
+                "class": "form-input",
+                "placeholder": "e.g. Full-Stack Web Development, Data Science, AI",
+                "required": True,
+            }),
+            "bio": forms.Textarea(attrs={
+                "class": "form-textarea",
+                "rows": 4,
+                "placeholder": "Share your industry experience, teaching philosophy, and technical credentials...",
+            }),
+            "profile_picture": forms.FileInput(attrs={
+                "class": "form-file-input",
+                "accept": "image/jpeg,image/png,image/webp,image/gif",
+                "id": "id_profile_picture",
+            }),
+        }
+        error_messages = {
+            "profile_picture": {
+                "invalid_image": "The uploaded file is not a valid image. Please select a valid image file.",
+            }
+        }
+
+    def __init__(self, *args, user=None, **kwargs):
+        self.user = user
+        super().__init__(*args, **kwargs)
+
+    def clean_first_name(self):
+        first_name = self.cleaned_data.get("first_name", "").strip()
+        if not first_name:
+            raise forms.ValidationError("First name is required.")
+        return first_name
+
+    def clean_specialization(self):
+        specialization = self.cleaned_data.get("specialization", "").strip()
+        if not specialization:
+            return "General"
+        return specialization
+
+    def clean_email(self):
+        email = self.cleaned_data.get("email", "").strip().lower()
+        if not email:
+            raise forms.ValidationError("Email address is required.")
+
+        user_qs = User.objects.filter(email__iexact=email)
+        if self.user:
+            user_qs = user_qs.exclude(id=self.user.id)
+        if user_qs.exists():
+            raise forms.ValidationError("This email is already associated with another account.")
+
+        inst_qs = Instructor.objects.filter(email__iexact=email)
+        if self.instance and self.instance.pk:
+            inst_qs = inst_qs.exclude(pk=self.instance.pk)
+        if inst_qs.exists():
+            raise forms.ValidationError("Another instructor record already exists with this email address.")
+
+        return email
+
+    def clean_profile_picture(self):
+        picture = self.cleaned_data.get("profile_picture")
+        if not picture:
+            return picture
+
+        if hasattr(picture, "size"):
+            max_size_mb = 5
+            if picture.size > max_size_mb * 1024 * 1024:
+                raise forms.ValidationError(f"Profile picture file size must be under {max_size_mb} MB.")
+
+            from PIL import Image
+            try:
+                img = Image.open(picture)
+                img.verify()
+                allowed_formats = {"JPEG", "JPG", "PNG", "WEBP", "GIF"}
+                if img.format and img.format.upper() not in allowed_formats:
+                    raise forms.ValidationError(
+                        f"Unsupported format ({img.format}). Please upload a JPEG, PNG, WEBP, or GIF image."
+                    )
+                if hasattr(picture, "seek"):
+                    picture.seek(0)
+            except forms.ValidationError:
+                raise
+            except Exception:
+                raise forms.ValidationError("The uploaded file is not a valid image. Please select a JPEG, PNG, WEBP, or GIF file.")
+
+        return picture
+
+    def save(self, commit=True):
+        instructor = super().save(commit=False)
+
+        if self.cleaned_data.get("clear_profile_picture"):
+            if instructor.profile_picture:
+                try:
+                    instructor.profile_picture.delete(save=False)
+                except Exception:
+                    pass
+                instructor.profile_picture = None
+
+        if commit:
+            instructor.save()
+            self.save_m2m()
+
+        if self.user:
+            self.user.first_name = self.cleaned_data.get("first_name", "").strip()
+            self.user.last_name = self.cleaned_data.get("last_name", "").strip()
+            self.user.email = self.cleaned_data.get("email", "").strip().lower()
+            if commit:
+                self.user.save(update_fields=["first_name", "last_name", "email"])
+        return instructor
+
+
 class ContactInstructorForm(forms.ModelForm):
     """
     Form allowing students and site visitors to contact a course instructor

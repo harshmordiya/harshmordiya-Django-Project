@@ -1,0 +1,491 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Edit Instructor Profile - EduLearn{% endblock %}
+
+{% block extra_css %}
+<style>
+.form-card {
+    background: var(--white);
+    border: 1px solid var(--slate-200);
+    border-radius: var(--radius-xl);
+    padding: 2.25rem;
+    box-shadow: var(--shadow-md);
+    margin-bottom: 2rem;
+}
+.form-header {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid var(--slate-100);
+    margin-bottom: 2rem;
+}
+.form-avatar {
+    width: 68px;
+    height: 68px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #3730a3, #4f46e5);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.7rem;
+    font-weight: 800;
+    box-shadow: var(--shadow-sm);
+    flex-shrink: 0;
+    overflow: hidden;
+}
+.form-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.picture-upload-section {
+    background: linear-gradient(to right, #f8fafc, #f1f5f9);
+    border: 2px dashed #cbd5e1;
+    border-radius: var(--radius-lg);
+    padding: 1.75rem;
+    margin-bottom: 2rem;
+    transition: all 0.25s ease;
+}
+.picture-upload-section.dragover {
+    border-color: #4f46e5;
+    background: #eef2ff;
+}
+.picture-preview-row {
+    display: flex;
+    align-items: center;
+    gap: 1.75rem;
+    flex-wrap: wrap;
+}
+.preview-container {
+    position: relative;
+    width: 110px;
+    height: 110px;
+    border-radius: 50%;
+    border: 4px solid white;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+    overflow: hidden;
+    background: linear-gradient(135deg, #3730a3, #4f46e5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+.preview-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+.preview-initials {
+    color: white;
+    font-size: 2.2rem;
+    font-weight: 800;
+    user-select: none;
+}
+.preview-badge-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(0, 0, 0, 0.65);
+    color: white;
+    font-size: 0.65rem;
+    text-align: center;
+    padding: 2px 0;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 700;
+}
+.upload-controls {
+    flex: 1;
+    min-width: 260px;
+}
+.upload-btn-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.65rem 1.25rem;
+    background: #4f46e5;
+    color: white;
+    font-weight: 600;
+    font-size: 0.92rem;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 4px rgba(79, 70, 229, 0.2);
+}
+.upload-btn-label:hover {
+    background: #4338ca;
+    transform: translateY(-1px);
+}
+.upload-btn-label:active {
+    transform: translateY(0);
+}
+.form-file-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    border: 0;
+}
+.btn-remove-pic {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.55rem 1rem;
+    background: #fee2e2;
+    color: #b91c1c;
+    border: 1px solid #fecaca;
+    border-radius: var(--radius-md);
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.btn-remove-pic:hover {
+    background: #fecaca;
+    color: #991b1b;
+}
+.upload-guidelines {
+    font-size: 0.8rem;
+    color: var(--slate-500);
+    margin-top: 0.65rem;
+    line-height: 1.4;
+}
+.form-grid-2 {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 1.25rem;
+    margin-bottom: 1.25rem;
+}
+.form-group {
+    margin-bottom: 1.25rem;
+}
+.form-label {
+    display: block;
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: var(--slate-700);
+    margin-bottom: 0.4rem;
+}
+.form-label .required {
+    color: #dc2626;
+    margin-left: 2px;
+}
+.form-hint {
+    font-size: 0.78rem;
+    color: var(--slate-500);
+    margin-top: 0.3rem;
+    line-height: 1.4;
+}
+.form-error {
+    color: #dc2626;
+    font-size: 0.8rem;
+    margin-top: 0.35rem;
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+.form-actions-bar {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--slate-100);
+    flex-wrap: wrap;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 820px; padding: 2rem 1rem;">
+
+    <!-- Breadcrumb -->
+    <div style="margin-bottom: 1.25rem; font-size: 0.88rem; color: var(--slate-500);">
+        <a href="{% url 'dashboard' %}" style="color: var(--primary); text-decoration: none;">Dashboard</a>
+        <span style="margin: 0 0.5rem;">/</span>
+        <a href="{% url 'instructor_profile' %}" style="color: var(--primary); text-decoration: none;">Faculty Profile</a>
+        <span style="margin: 0 0.5rem;">/</span>
+        <span>Edit Profile</span>
+    </div>
+
+    <div class="form-card">
+        <!-- Form Header -->
+        <div class="form-header">
+            <div class="form-avatar">
+                {% if instructor.profile_picture %}
+                    <img src="{{ instructor.profile_picture.url }}" alt="{{ instructor.full_name }}" id="header-avatar-img">
+                {% else %}
+                    <span id="header-avatar-initials">{{ instructor.first_name|first|upper }}{{ instructor.last_name|first|upper }}</span>
+                {% endif %}
+            </div>
+            <div>
+                <h1 style="font-size: 1.55rem; color: var(--slate-900); margin: 0 0 0.3rem 0;">
+                    Edit Faculty Profile
+                </h1>
+                <p style="color: var(--slate-500); font-size: 0.9rem; margin: 0;">
+                    Update your professional details, contact information, technical specialization, and biography.
+                </p>
+            </div>
+        </div>
+
+        <form method="post" enctype="multipart/form-data" novalidate id="instructor-profile-form">
+            {% csrf_token %}
+            {{ form.clear_profile_picture }}
+
+            <!-- Profile Picture Upload & Live Preview -->
+            <div class="picture-upload-section" id="drop-zone">
+                <label class="form-label" style="font-size: 0.95rem; margin-bottom: 0.85rem;">
+                    Faculty Profile Picture
+                </label>
+
+                <div class="picture-preview-row">
+                    <!-- Preview Circle -->
+                    <div class="preview-container" id="preview-container">
+                        {% if instructor.profile_picture %}
+                            <img src="{{ instructor.profile_picture.url }}" alt="{{ instructor.full_name }}" class="preview-img" id="live-preview-img">
+                            <span class="preview-initials" id="live-preview-initials" style="display: none;">
+                                {{ instructor.first_name|first|upper }}{{ instructor.last_name|first|upper }}
+                            </span>
+                        {% else %}
+                            <img src="" alt="" class="preview-img" id="live-preview-img" style="display: none;">
+                            <span class="preview-initials" id="live-preview-initials">
+                                {{ instructor.first_name|first|upper }}{{ instructor.last_name|first|upper }}
+                            </span>
+                        {% endif %}
+                        <span class="preview-badge-overlay" id="preview-status-badge">
+                            {% if instructor.profile_picture %}Current Photo{% else %}Initial Photo{% endif %}
+                        </span>
+                    </div>
+
+                    <!-- Upload & Remove Controls -->
+                    <div class="upload-controls">
+                        <div style="display: flex; gap: 0.65rem; align-items: center; flex-wrap: wrap;">
+                            <label for="id_profile_picture" class="upload-btn-label">
+                                <span>📷</span>
+                                <span id="upload-btn-text">{% if instructor.profile_picture %}Change Photo{% else %}Upload Photo{% endif %}</span>
+                            </label>
+
+                            <button type="button" class="btn-remove-pic" id="btn-remove-photo" style="display: {% if instructor.profile_picture %}inline-flex{% else %}none{% endif %};">
+                                <span>🗑️</span>
+                                <span>Remove Photo</span>
+                            </button>
+
+                            {{ form.profile_picture }}
+                        </div>
+
+                        <div class="upload-guidelines">
+                            Supports JPG, PNG, WEBP, or GIF. Recommended square format (min 300x300 px, max 5 MB).
+                            You can also drag and drop an image onto this section.
+                        </div>
+
+                        {% if form.profile_picture.errors %}
+                            <div class="form-error">
+                                <span>⚠️</span>
+                                <span>{{ form.profile_picture.errors.0 }}</span>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- First & Last Name -->
+            <div class="form-grid-2">
+                <div class="form-group">
+                    <label class="form-label" for="id_first_name">
+                        First Name <span class="required">*</span>
+                    </label>
+                    {{ form.first_name }}
+                    {% if form.first_name.errors %}
+                        <div class="form-error">
+                            <span>⚠️</span>
+                            <span>{{ form.first_name.errors.0 }}</span>
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="id_last_name">
+                        Last Name
+                    </label>
+                    {{ form.last_name }}
+                    {% if form.last_name.errors %}
+                        <div class="form-error">
+                            <span>⚠️</span>
+                            <span>{{ form.last_name.errors.0 }}</span>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Email Address & Specialization -->
+            <div class="form-grid-2">
+                <div class="form-group">
+                    <label class="form-label" for="id_email">
+                        Email Address <span class="required">*</span>
+                    </label>
+                    {{ form.email }}
+                    <div class="form-hint">
+                        Syncs automatically with your login account. Used for student inquiries.
+                    </div>
+                    {% if form.email.errors %}
+                        <div class="form-error">
+                            <span>⚠️</span>
+                            <span>{{ form.email.errors.0 }}</span>
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="id_specialization">
+                        Domain / Specialization <span class="required">*</span>
+                    </label>
+                    {{ form.specialization }}
+                    <div class="form-hint">
+                        e.g., Digital Marketing, Web Development, Cloud Computing.
+                    </div>
+                    {% if form.specialization.errors %}
+                        <div class="form-error">
+                            <span>⚠️</span>
+                            <span>{{ form.specialization.errors.0 }}</span>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Phone Number -->
+            <div class="form-group">
+                <label class="form-label" for="id_phone">
+                    Phone Number
+                </label>
+                {{ form.phone }}
+                <div class="form-hint">
+                    Optional contact number for academic administration.
+                </div>
+                {% if form.phone.errors %}
+                    <div class="form-error">
+                        <span>⚠️</span>
+                        <span>{{ form.phone.errors.0 }}</span>
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- Biography & Credentials -->
+            <div class="form-group">
+                <label class="form-label" for="id_bio">
+                    Instructor Biography & Academic Credentials
+                </label>
+                {{ form.bio }}
+                <div class="form-hint">
+                    Highlight your industry accomplishments, certifications, research, and teaching focus.
+                </div>
+                {% if form.bio.errors %}
+                    <div class="form-error">
+                        <span>⚠️</span>
+                        <span>{{ form.bio.errors.0 }}</span>
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="form-actions-bar">
+                <a href="{% url 'instructor_profile' %}" class="btn btn-secondary">
+                    Cancel
+                </a>
+                <button type="submit" class="btn btn-primary" style="background: #4f46e5; border-color: #4338ca; padding: 0.75rem 1.75rem; font-weight: 700;">
+                    💾 Save Profile Changes
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const fileInput = document.getElementById("id_profile_picture");
+    const previewImg = document.getElementById("live-preview-img");
+    const previewInitials = document.getElementById("live-preview-initials");
+    const statusBadge = document.getElementById("preview-status-badge");
+    const removeBtn = document.getElementById("btn-remove-photo");
+    const clearInput = document.getElementById("id_clear_profile_picture");
+    const dropZone = document.getElementById("drop-zone");
+    const uploadBtnText = document.getElementById("upload-btn-text");
+
+    if (!fileInput) return;
+
+    // Handle File Selection
+    fileInput.addEventListener("change", function () {
+        if (this.files && this.files[0]) {
+            const file = this.files[0];
+
+            if (!file.type.match(/^image\//)) {
+                alert("Please select a valid image file (JPG, PNG, WEBP, or GIF).");
+                this.value = "";
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                previewImg.src = e.target.result;
+                previewImg.style.display = "block";
+                if (previewInitials) previewInitials.style.display = "none";
+                statusBadge.textContent = "New Preview";
+                statusBadge.style.background = "#10b981";
+                removeBtn.style.display = "inline-flex";
+                if (clearInput) clearInput.value = "false";
+                uploadBtnText.textContent = "Change Photo";
+            };
+            reader.readAsDataURL(file);
+        }
+    });
+
+    // Handle Remove Photo Button
+    if (removeBtn) {
+        removeBtn.addEventListener("click", function () {
+            fileInput.value = "";
+            previewImg.src = "";
+            previewImg.style.display = "none";
+            if (previewInitials) previewInitials.style.display = "block";
+            statusBadge.textContent = "Photo Removed";
+            statusBadge.style.background = "#dc2626";
+            if (clearInput) clearInput.value = "true";
+            this.style.display = "none";
+            uploadBtnText.textContent = "Upload Photo";
+        });
+    }
+
+    // Drag and Drop Effects
+    ["dragenter", "dragover"].forEach(eventName => {
+        dropZone.addEventListener(eventName, function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            dropZone.classList.add("dragover");
+        }, false);
+    });
+
+    ["dragleave", "drop"].forEach(eventName => {
+        dropZone.addEventListener(eventName, function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            dropZone.classList.remove("dragover");
+        }, false);
+    });
+
+    dropZone.addEventListener("drop", function (e) {
+        if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]) {
+            const file = e.dataTransfer.files[0];
+            fileInput.files = e.dataTransfer.files;
+            const event = new Event("change");
+            fileInput.dispatchEvent(event);
+        }
+    });
+});
+</script>
+{% endblock %}

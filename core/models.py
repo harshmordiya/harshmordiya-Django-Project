@@ -62,6 +62,20 @@ class Student(models.Model):
         return User.objects.filter(email__iexact=self.email).first()
 
     @property
+    def profile_picture_url(self):
+        if self.profile_picture:
+            try:
+                return self.profile_picture.url
+            except Exception:
+                return None
+        return None
+
+    @property
+    def user(self):
+        from django.contrib.auth.models import User
+        return User.objects.filter(email__iexact=self.email).first()
+
+    @property
     def enrolled_courses_count(self):
         if "enrolled_courses_count" in self.__dict__:
             return self.__dict__["enrolled_courses_count"]
@@ -113,6 +127,13 @@ class Instructor(models.Model):
     phone = models.CharField(max_length=15, blank=True, default="")
     specialization = models.CharField(max_length=150, blank=True, default="General")
     hire_date = models.DateTimeField(auto_now_add=True)
+    bio = models.TextField(blank=True, default="", help_text="Short biography or teaching background")
+    profile_picture = models.ImageField(
+        upload_to="profile_pics/",
+        blank=True,
+        null=True,
+        help_text="Upload instructor profile picture"
+    )
 
     class Meta:
         ordering = ["-instructor_id"]
