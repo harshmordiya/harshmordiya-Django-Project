@@ -227,6 +227,21 @@ def dashboard_view(request):
                 .order_by("-created_at")
             )
 
+    # Sent instructor inquiries by this user/student
+    sent_messages = (
+        InstructorMessage.objects.filter(
+            Q(sender_user=request.user) | Q(sender_email__iexact=request.user.email)
+        )
+        .select_related("instructor", "course")
+        .order_by("-created_at")
+    )
+    sent_messages_count = sent_messages.count()
+    replied_messages_count = sent_messages.exclude(reply_text="").count()
+
+    active_tab = request.GET.get("tab", "courses").strip().lower()
+    if active_tab not in ["courses", "messages"]:
+        active_tab = "courses"
+
     return render(
         request,
         "dashboard.html",
@@ -240,6 +255,10 @@ def dashboard_view(request):
             "instructor": instructor,
             "authored_courses": authored_courses,
             "total_authored": authored_courses.count(),
+            "sent_messages": sent_messages,
+            "sent_messages_count": sent_messages_count,
+            "replied_messages_count": replied_messages_count,
+            "active_tab": active_tab,
         }
     )
 
@@ -1431,6 +1450,11 @@ def instructor_message_reply_view(request, message_id):
         return redirect("dashboard")
 
     msg = get_object_or_404(InstructorMessage, message_id=message_id, instructor=instructor)
+
+    # Automatically mark message as read when instructor opens this inquiry
+    if not msg.is_read:
+        msg.is_read = True
+        msg.save(update_fields=["is_read"])
 
     if request.method == "POST":
         form = InstructorReplyForm(request.POST)

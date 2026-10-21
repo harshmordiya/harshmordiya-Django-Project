@@ -84,6 +84,11 @@
                         <h3 style="font-size: 1.05rem; margin-bottom: 0.35rem;">My Shopping Cart</h3>
                         <p style="font-size: 0.85rem; margin: 0;">Review courses queued for enrollment.</p>
                     </a>
+                    <a href="?tab=messages" onclick="switchDashboardTab(event, 'messages'); const t = document.getElementById('student-dashboard-tabs'); if (t) t.scrollIntoView({behavior: 'smooth'});" class="feature-box" style="padding: 1.5rem; text-decoration: none; border-left: 4px solid var(--primary);">
+                        <div class="feature-box-icon" style="margin-bottom: 0.75rem;">💬</div>
+                        <h3 style="font-size: 1.05rem; margin-bottom: 0.35rem;">Instructor Inquiries</h3>
+                        <p style="font-size: 0.85rem; margin: 0;">{{ sent_messages_count }} {{ sent_messages_count|pluralize:"Inquiry,Inquiries" }} sent ({% if replied_messages_count > 0 %}{{ replied_messages_count }} replied{% else %}Pending{% endif %}).</p>
+                    </a>
                 {% endif %}
             </div>
         </div>
@@ -405,106 +410,334 @@
         </div>
 
         {% else %}
-        <!-- Student / General User Enrolled Courses Section -->
-        <div style="margin-top: 2.5rem; padding-top: 2rem; border-top: 1px solid var(--slate-100);">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 0.75rem;">
-                <div>
-                    <h2 style="font-size: 1.35rem; margin-bottom: 0.25rem; color: var(--slate-900);">My Courses</h2>
-                    <p style="color: var(--slate-500); font-size: 0.9rem; margin: 0;">
-                        Access syllabus, video lessons, and learning materials for all your enrolled courses.
-                    </p>
+        <!-- Student / General User Learning & Inquiry Portal -->
+        <div id="student-dashboard-tabs" style="margin-top: 2.5rem; padding-top: 2rem; border-top: 1px solid var(--slate-100);">
+            <!-- Tab Navigation Header -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.75rem; flex-wrap: wrap; gap: 1rem; border-bottom: 2px solid var(--slate-200); padding-bottom: 0.75rem;">
+                <div style="display: flex; gap: 0.65rem; flex-wrap: wrap;">
+                    <button type="button" class="dashboard-tab-btn {% if active_tab == 'courses' %}active{% endif %}" id="tab-btn-courses" onclick="switchDashboardTab(event, 'courses')">
+                        <span>📚 My Enrolled Courses</span>
+                        <span class="tab-badge">{{ total_enrolled }}</span>
+                    </button>
+                    <button type="button" class="dashboard-tab-btn {% if active_tab == 'messages' %}active{% endif %}" id="tab-btn-messages" onclick="switchDashboardTab(event, 'messages')">
+                        <span>💬 Sent Inquiries & Messages</span>
+                        <span class="tab-badge">{{ sent_messages_count }}</span>
+                        {% if replied_messages_count > 0 %}
+                            <span class="tab-subbadge" title="{{ replied_messages_count }} replied inquiry">{{ replied_messages_count }} Replied</span>
+                        {% endif %}
+                    </button>
                 </div>
+            </div>
+
+            <!-- Tab 1: Enrolled Courses Content -->
+            <div id="tab-content-courses" class="dashboard-tab-content {% if active_tab == 'courses' %}active{% endif %}" style="display: {% if active_tab == 'courses' %}block{% else %}none{% endif %};">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 0.75rem;">
+                    <div>
+                        <h2 style="font-size: 1.35rem; margin-bottom: 0.25rem; color: var(--slate-900);">My Enrolled Courses</h2>
+                        <p style="color: var(--slate-500); font-size: 0.9rem; margin: 0;">
+                            Access syllabus, video lessons, and learning materials for all your enrolled courses.
+                        </p>
+                    </div>
+                    {% if enrollments %}
+                        <span class="badge-category" style="background: var(--primary-light); color: var(--primary-dark); font-size: 0.8rem;">
+                            {{ total_enrolled }} {{ total_enrolled|pluralize:"Course,Courses" }} Enrolled
+                        </span>
+                    {% endif %}
+                </div>
+
                 {% if enrollments %}
-                    <span class="badge-category" style="background: var(--primary-light); color: var(--primary-dark); font-size: 0.8rem;">
-                        {{ total_enrolled }} {{ total_enrolled|pluralize:"Course,Courses" }} Enrolled
-                    </span>
+                    <div class="course-grid">
+                        {% for enrollment in enrollments %}
+                            <div class="course-card">
+                                <div class="course-card-top bg-{{ enrollment.course.category }}">
+                                    <span class="badge-category">{{ enrollment.course.get_category_display }}</span>
+                                    <span class="badge-status status-{{ enrollment.status }}">
+                                        {% if enrollment.status == 'active' %}
+                                            ● Active
+                                        {% elif enrollment.status == 'completed' %}
+                                            ✓ Completed
+                                        {% else %}
+                                            {{ enrollment.get_status_display }}
+                                        {% endif %}
+                                    </span>
+                                </div>
+
+                                <div class="course-card-body">
+                                    <h3 class="course-title">
+                                        <a href="{% url 'course_detail' enrollment.course.course_id %}">
+                                            {{ enrollment.course.title }}
+                                        </a>
+                                    </h3>
+
+                                    <p class="course-description">
+                                        {{ enrollment.course.description }}
+                                    </p>
+
+                                    <div style="display: flex; flex-direction: column; gap: 0.6rem; padding: 0.85rem 0; margin-top: auto; border-top: 1px solid var(--slate-100); font-size: 0.86rem;">
+                                        <div style="display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+                                            <div class="course-instructor">
+                                                <span>👨‍🏫</span>
+                                                <span>
+                                                    {% if enrollment.course.instructor %}
+                                                        {{ enrollment.course.instructor.first_name }} {{ enrollment.course.instructor.last_name }}
+                                                    {% else %}
+                                                        Staff Instructor
+                                                    {% endif %}
+                                                </span>
+                                            </div>
+                                            <div style="color: var(--slate-600); display: flex; align-items: center; gap: 0.35rem; font-size: 0.84rem;">
+                                                <span>⏱️</span>
+                                                <span>{{ enrollment.course.duration }}</span>
+                                            </div>
+                                        </div>
+
+                                        <div style="display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; flex-wrap: wrap; color: var(--slate-500); font-size: 0.82rem; padding-top: 0.25rem;">
+                                            <div>
+                                                <span>📅 Enrolled:</span>
+                                                <strong style="color: var(--slate-700);">{{ enrollment.enrollment_date|date:"d M Y" }}</strong>
+                                            </div>
+                                            <div>
+                                                <span>Status:</span>
+                                                <strong style="text-transform: capitalize; color: {% if enrollment.status == 'active' %}#059669{% else %}#4f46e5{% endif %};">
+                                                    {{ enrollment.get_status_display }}
+                                                </strong>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="course-card-footer" style="padding-top: 0.85rem; border-top: 1px solid var(--slate-100);">
+                                        <a href="{% url 'course_detail' enrollment.course.course_id %}" class="btn btn-primary btn-block" style="text-align: center; text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
+                                            <span>Continue Learning</span>
+                                            <span>→</span>
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="empty-state" style="margin: 1rem auto 0; max-width: 580px; padding: 3rem 2rem;">
+                        <div class="empty-state-icon">🎓</div>
+                        <h3 style="font-size: 1.35rem; color: var(--slate-900); margin-bottom: 0.5rem;">No Enrolled Courses Yet</h3>
+                        <p style="color: var(--slate-500); max-width: 440px; margin: 0 auto 1.5rem; font-size: 0.95rem; line-height: 1.6;">
+                            You have not enrolled in any courses yet. Browse our curated catalog of industry-focused courses and start learning today!
+                        </p>
+                        <a href="{% url 'course_list' %}" class="btn btn-primary">
+                            Explore Course Catalog
+                        </a>
+                    </div>
                 {% endif %}
             </div>
 
-            {% if enrollments %}
-                <div class="course-grid">
-                    {% for enrollment in enrollments %}
-                        <div class="course-card">
-                            <div class="course-card-top bg-{{ enrollment.course.category }}">
-                                <span class="badge-category">{{ enrollment.course.get_category_display }}</span>
-                                <span class="badge-status status-{{ enrollment.status }}">
-                                    {% if enrollment.status == 'active' %}
-                                        ● Active
-                                    {% elif enrollment.status == 'completed' %}
-                                        ✓ Completed
-                                    {% else %}
-                                        {{ enrollment.get_status_display }}
-                                    {% endif %}
+            <!-- Tab 2: Sent Messages Content -->
+            <div id="tab-content-messages" class="dashboard-tab-content {% if active_tab == 'messages' %}active{% endif %}" style="display: {% if active_tab == 'messages' %}block{% else %}none{% endif %};">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 0.75rem;">
+                    <div>
+                        <h2 style="font-size: 1.35rem; margin-bottom: 0.25rem; color: var(--slate-900);">My Sent Inquiries</h2>
+                        <p style="color: var(--slate-500); font-size: 0.9rem; margin: 0;">
+                            Track questions and inquiries you have sent to instructors, along with their responses.
+                        </p>
+                    </div>
+                    {% if sent_messages %}
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <span class="badge-category" style="background: var(--slate-100); color: var(--slate-700); font-size: 0.8rem;">
+                                {{ sent_messages_count }} {{ sent_messages_count|pluralize:"Message,Messages" }}
+                            </span>
+                            {% if replied_messages_count > 0 %}
+                                <span class="tab-subbadge" style="font-size: 0.8rem; padding: 0.25rem 0.65rem;">
+                                    ✓ {{ replied_messages_count }} Replied
                                 </span>
-                            </div>
-
-                            <div class="course-card-body">
-                                <h3 class="course-title">
-                                    <a href="{% url 'course_detail' enrollment.course.course_id %}">
-                                        {{ enrollment.course.title }}
-                                    </a>
-                                </h3>
-
-                                <p class="course-description">
-                                    {{ enrollment.course.description }}
-                                </p>
-
-                                <div style="display: flex; flex-direction: column; gap: 0.6rem; padding: 0.85rem 0; margin-top: auto; border-top: 1px solid var(--slate-100); font-size: 0.86rem;">
-                                    <div style="display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
-                                        <div class="course-instructor">
-                                            <span>👨‍🏫</span>
-                                            <span>
-                                                {% if enrollment.course.instructor %}
-                                                    {{ enrollment.course.instructor.first_name }} {{ enrollment.course.instructor.last_name }}
-                                                {% else %}
-                                                    Staff Instructor
-                                                {% endif %}
-                                            </span>
-                                        </div>
-                                        <div style="color: var(--slate-600); display: flex; align-items: center; gap: 0.35rem; font-size: 0.84rem;">
-                                            <span>⏱️</span>
-                                            <span>{{ enrollment.course.duration }}</span>
-                                        </div>
-                                    </div>
-
-                                    <div style="display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; flex-wrap: wrap; color: var(--slate-500); font-size: 0.82rem; padding-top: 0.25rem;">
-                                        <div>
-                                            <span>📅 Enrolled:</span>
-                                            <strong style="color: var(--slate-700);">{{ enrollment.enrollment_date|date:"d M Y" }}</strong>
-                                        </div>
-                                        <div>
-                                            <span>Status:</span>
-                                            <strong style="text-transform: capitalize; color: {% if enrollment.status == 'active' %}#059669{% else %}#4f46e5{% endif %};">
-                                                {{ enrollment.get_status_display }}
-                                            </strong>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="course-card-footer" style="padding-top: 0.85rem; border-top: 1px solid var(--slate-100);">
-                                    <a href="{% url 'course_detail' enrollment.course.course_id %}" class="btn btn-primary btn-block" style="text-align: center; text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
-                                        <span>Continue Learning</span>
-                                        <span>→</span>
-                                    </a>
-                                </div>
-                            </div>
+                            {% endif %}
                         </div>
-                    {% endfor %}
+                    {% endif %}
                 </div>
-            {% else %}
-                <div class="empty-state" style="margin: 1rem auto 0; max-width: 580px; padding: 3rem 2rem;">
-                    <div class="empty-state-icon">🎓</div>
-                    <h3 style="font-size: 1.35rem; color: var(--slate-900); margin-bottom: 0.5rem;">No Enrolled Courses Yet</h3>
-                    <p style="color: var(--slate-500); max-width: 440px; margin: 0 auto 1.5rem; font-size: 0.95rem; line-height: 1.6;">
-                        You have not enrolled in any courses yet. Browse our curated catalog of industry-focused courses and start learning today!
-                    </p>
-                    <a href="{% url 'course_list' %}" class="btn btn-primary">
-                        Explore Course Catalog
-                    </a>
-                </div>
-            {% endif %}
+
+                {% if sent_messages %}
+                    <div style="display: flex; flex-direction: column; gap: 1.25rem;">
+                        {% for msg in sent_messages %}
+                            <div style="background: #ffffff; border: 1px solid var(--slate-200); border-radius: 12px; padding: 1.35rem; box-shadow: 0 1px 3px rgba(0,0,0,0.04); transition: border-color 0.2s ease;">
+                                <!-- Message Header -->
+                                <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 0.75rem; flex-wrap: wrap; padding-bottom: 0.85rem; border-bottom: 1px solid var(--slate-100);">
+                                    <div style="display: flex; flex-direction: column; gap: 0.25rem;">
+                                        <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+                                            <span style="font-weight: 700; color: var(--slate-900); font-size: 0.98rem; display: flex; align-items: center; gap: 0.35rem;">
+                                                <span>👨‍🏫</span> To: {{ msg.instructor.full_name }}
+                                            </span>
+                                            {% if msg.course %}
+                                                <span class="badge-category" style="font-size: 0.75rem; padding: 0.15rem 0.55rem; background: #e0e7ff; color: #3730a3;">
+                                                    📚 {{ msg.course.title }}
+                                                </span>
+                                            {% else %}
+                                                <span class="badge-category" style="font-size: 0.75rem; padding: 0.15rem 0.55rem; background: var(--slate-100); color: var(--slate-600);">
+                                                    General Inquiry
+                                                </span>
+                                            {% endif %}
+                                        </div>
+                                        <div style="color: var(--slate-500); font-size: 0.82rem; display: flex; align-items: center; gap: 0.35rem;">
+                                            <span>📅 Sent on:</span>
+                                            <strong>{{ msg.created_at|date:"d M Y, h:i A" }}</strong>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        {% if msg.reply_text %}
+                                            <span style="background: #dcfce7; color: #166534; font-weight: 700; padding: 0.3rem 0.75rem; border-radius: 9999px; font-size: 0.8rem; display: inline-flex; align-items: center; gap: 0.35rem; border: 1px solid #86efac;">
+                                                <span>✓</span> Replied
+                                            </span>
+                                        {% elif msg.is_read %}
+                                            <span style="background: #e0f2fe; color: #0369a1; font-weight: 700; padding: 0.3rem 0.75rem; border-radius: 9999px; font-size: 0.8rem; display: inline-flex; align-items: center; gap: 0.35rem; border: 1px solid #bae6fd;">
+                                                <span>👁️</span> Read by Instructor
+                                            </span>
+                                        {% else %}
+                                            <span style="background: #fef3c7; color: #92400e; font-weight: 700; padding: 0.3rem 0.75rem; border-radius: 9999px; font-size: 0.8rem; display: inline-flex; align-items: center; gap: 0.35rem; border: 1px solid #fde68a;">
+                                                <span>⏳</span> Delivered (Unread)
+                                            </span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+
+                                <!-- Subject & Student's Question -->
+                                <div style="margin-top: 0.85rem;">
+                                    <h4 style="font-size: 1.05rem; font-weight: 700; color: var(--slate-800); margin: 0 0 0.45rem 0;">
+                                        {{ msg.subject }}
+                                    </h4>
+                                    <div style="background: #f8fafc; border: 1px solid var(--slate-200); border-radius: 8px; padding: 0.85rem 1rem; color: var(--slate-700); font-size: 0.9rem; line-height: 1.55; white-space: pre-line;">
+                                        {{ msg.message }}
+                                    </div>
+                                </div>
+
+                                <!-- Instructor Reply Block -->
+                                {% if msg.reply_text %}
+                                    <div style="margin-top: 1rem; background: #f0fdf4; border: 1px solid #bbf7d0; border-left: 4px solid #16a34a; border-radius: 8px; padding: 1rem 1.15rem;">
+                                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; flex-wrap: wrap; gap: 0.5rem;">
+                                            <div style="font-weight: 700; color: #166534; font-size: 0.92rem; display: flex; align-items: center; gap: 0.4rem;">
+                                                <span>👨‍🏫</span>
+                                                <span>Instructor Response:</span>
+                                            </div>
+                                            {% if msg.replied_at %}
+                                                <div style="color: #15803d; font-size: 0.8rem;">
+                                                    <span>🕒 {{ msg.replied_at|date:"d M Y, h:i A" }}</span>
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                        <div style="color: #14532d; font-size: 0.92rem; line-height: 1.6; white-space: pre-line;">
+                                            {{ msg.reply_text }}
+                                        </div>
+                                    </div>
+                                {% elif msg.is_read %}
+                                    <div style="margin-top: 0.85rem; padding: 0.65rem 0.85rem; background: #f0f9ff; border: 1px dashed #bae6fd; border-radius: 6px; color: #0369a1; font-size: 0.84rem; display: flex; align-items: center; gap: 0.4rem;">
+                                        <span>👁️</span>
+                                        <span>Instructor <strong>{{ msg.instructor.full_name }}</strong> has opened and read your message. They are preparing a response.</span>
+                                    </div>
+                                {% else %}
+                                    <div style="margin-top: 0.85rem; padding: 0.65rem 0.85rem; background: #fffbeb; border: 1px dashed #fde68a; border-radius: 6px; color: #92400e; font-size: 0.84rem; display: flex; align-items: center; gap: 0.4rem;">
+                                        <span>⏳</span>
+                                        <span>Delivered to Instructor <strong>{{ msg.instructor.full_name }}</strong>'s inbox. Waiting for instructor to open.</span>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="empty-state" style="margin: 1rem auto 0; max-width: 580px; padding: 3rem 2rem;">
+                        <div class="empty-state-icon">💬</div>
+                        <h3 style="font-size: 1.35rem; color: var(--slate-900); margin-bottom: 0.5rem;">No Sent Inquiries Yet</h3>
+                        <p style="color: var(--slate-500); max-width: 440px; margin: 0 auto 1.5rem; font-size: 0.95rem; line-height: 1.6;">
+                            Have a question regarding any course or syllabus? You can message instructors directly from their course pages.
+                        </p>
+                        <a href="{% url 'course_list' %}" class="btn btn-primary">
+                            Explore Courses
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
         </div>
         {% endif %}
+
+        <style>
+            .dashboard-tab-btn {
+                display: inline-flex;
+                align-items: center;
+                gap: 0.55rem;
+                padding: 0.65rem 1.25rem;
+                border-radius: 8px 8px 0 0;
+                font-weight: 600;
+                font-size: 0.94rem;
+                color: var(--slate-600);
+                text-decoration: none;
+                background: transparent;
+                border: 1px solid transparent;
+                border-bottom: none;
+                cursor: pointer;
+                transition: all 0.15s ease;
+                margin-bottom: -0.85rem;
+                font-family: inherit;
+            }
+            .dashboard-tab-btn:hover {
+                color: var(--primary);
+                background: var(--slate-50);
+            }
+            .dashboard-tab-btn.active {
+                color: var(--primary);
+                background: #ffffff;
+                border-color: var(--slate-200);
+                border-bottom: 2px solid #ffffff;
+                font-weight: 700;
+            }
+            .tab-badge {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                background: var(--slate-100);
+                color: var(--slate-700);
+                padding: 0.15rem 0.5rem;
+                border-radius: 9999px;
+                font-size: 0.78rem;
+                font-weight: 700;
+            }
+            .dashboard-tab-btn.active .tab-badge {
+                background: var(--primary-light);
+                color: var(--primary-dark);
+            }
+            .tab-subbadge {
+                display: inline-flex;
+                align-items: center;
+                background: #dcfce7;
+                color: #166534;
+                padding: 0.15rem 0.5rem;
+                border-radius: 9999px;
+                font-size: 0.72rem;
+                font-weight: 700;
+                border: 1px solid #bbf7d0;
+            }
+        </style>
+
+        <script>
+            function switchDashboardTab(event, tabName) {
+                if (event) {
+                    event.preventDefault();
+                }
+                document.querySelectorAll('.dashboard-tab-btn').forEach(btn => btn.classList.remove('active'));
+                const activeBtn = document.getElementById('tab-btn-' + tabName);
+                if (activeBtn) activeBtn.classList.add('active');
+
+                document.querySelectorAll('.dashboard-tab-content').forEach(content => {
+                    content.style.display = 'none';
+                    content.classList.remove('active');
+                });
+                const activeContent = document.getElementById('tab-content-' + tabName);
+                if (activeContent) {
+                    activeContent.style.display = 'block';
+                    activeContent.classList.add('active');
+                }
+
+                if (window.history && window.history.replaceState) {
+                    const url = new URL(window.location);
+                    url.searchParams.set('tab', tabName);
+                    window.history.replaceState({}, '', url);
+                }
+            }
+        </script>
     </div>
 </div>
 {% endblock %}

@@ -3,6 +3,7 @@ from django.test import TestCase, Client
 from django.contrib.auth.models import User
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core import mail
+from django.utils import timezone
 from django.urls import reverse
 from decimal import Decimal
 
@@ -1879,3 +1880,183 @@ class EmailNotificationTests(TestCase):
         self.assertEqual(len(mail.outbox), 1)
         self.assertEqual(mail.outbox[0].to, [self.student_user.email])
         self.assertIn("Password Reset Verification Code", mail.outbox[0].subject)
+
+
+
+class StudentDashboardSentMessagesTests(TestCase):
+    """
+    Tests for Displaying Sent Messages in Student Dashboard Tab:
+    - Verifies sent messages tab appears on dashboard for authenticated student.
+    - Verifies sent message details (instructor, course, subject, message body, date).
+    - Verifies reply details appear when instructor has replied.
+    - Verifies status badge ('Awaiting Reply' vs 'Replied').
+    - Verifies message isolation between different students.
+    - Verifies tab navigation query parameter (?tab=messages vs ?tab=courses).
+    """
+
+    def setUp(self):
+        self.client = Client()
+
+        # Student 1
+        self.student_user1 = User.objects.create_user(
+            username="student_dash1",
+            email="student1@edulearn.test",
+            password="testpassword123",
+            first_name="Alice",
+            last_name="Johnson"
+        )
+        UserProfile.objects.create(user=self.student_user1, role="student")
+        self.student1 = Student.objects.create(
+            first_name="Alice",
+            last_name="Johnson",
+            email="student1@edulearn.test"
+        )
+
+        # Student 2
+        self.student_user2 = User.objects.create_user(
+            username="student_dash2",
+            email="student2@edulearn.test",
+            password="testpassword123",
+            first_name="Bob",
+            last_name="Smith"
+        )
+        UserProfile.objects.create(user=self.student_user2, role="student")
+        self.student2 = Student.objects.create(
+            first_name="Bob",
+            last_name="Smith",
+            email="student2@edulearn.test"
+        )
+
+        # Instructor & Course
+        self.instructor = Instructor.objects.create(
+            first_name="Ada",
+            last_name="Lovelace",
+            email="ada@edulearn.test",
+            specialization="Computer Science"
+        )
+        self.course = Course.objects.create(
+            title="Algorithm Design & Analysis",
+            description="Foundational algorithmic concepts",
+            instructor=self.instructor,
+            category="development",
+            duration="8 Weeks",
+            price=Decimal("1500.00"),
+            is_active=True
+        )
+
+        # Inquiry 1 from Student 1 (Pending reply)
+        self.msg_pending = InstructorMessage.objects.create(
+            instructor=self.instructor,
+            course=self.course,
+            sender_user=self.student_user1,
+            sender_name="Alice Johnson",
+            sender_email="student1@edulearn.test",
+            subject="Question regarding Week 2 greedy algorithms",
+            message="Could you provide more context on the interval scheduling proof?",
+            reply_text=""
+        )
+
+        # Inquiry 2 from Student 1 (Replied)
+        self.msg_replied = InstructorMessage.objects.create(
+            instructor=self.instructor,
+            course=self.course,
+            sender_user=self.student_user1,
+            sender_name="Alice Johnson",
+            sender_email="student1@edulearn.test",
+            subject="Prerequisites for Advanced Dynamic Programming",
+            message="Is graph theory required before taking the dynamic programming module?",
+            reply_text="Basic graph traversal is sufficient! You can review BFS/DFS first.",
+            replied_at=timezone.now()
+        )
+
+        # Inquiry 3 from Student 2 (Should NOT be visible to Student 1)
+        self.msg_student2 = InstructorMessage.objects.create(
+            instructor=self.instructor,
+            course=self.course,
+            sender_user=self.student_user2,
+            sender_name="Bob Smith",
+            sender_email="student2@edulearn.test",
+            subject="Private Bob Question",
+            message="This is a private question from Bob.",
+            reply_text=""
+        )
+
+    def test_student_dashboard_displays_sent_messages_tab_and_counts(self):
+        self.client.login(username="student_dash1", password="testpassword123")
+        response = self.client.get(reverse("dashboard"))
+        self.assertEqual(response.status_code, 200)
+
+        # Context contains sent messages and counts
+        self.assertIn("sent_messages", response.context)
+        self.assertEqual(response.context["sent_messages_count"], 2)
+        self.assertEqual(response.context["replied_messages_count"], 1)
+
+        # Tab button rendered
+        self.assertContains(response, "Sent Inquiries")
+        self.assertContains(response, 'id="tab-btn-messages"')
+        self.assertContains(response, 'id="tab-content-messages"')
+
+    def test_student_dashboard_displays_message_details_and_reply(self):
+        self.client.login(username="student_dash1", password="testpassword123")
+        response = self.client.get(reverse("dashboard") + "?tab=messages")
+        self.assertEqual(response.status_code, 200)
+
+        # Student 1's messages appear
+        self.assertContains(response, "Question regarding Week 2 greedy algorithms")
+        self.assertContains(response, "Could you provide more context on the interval scheduling proof?")
+        self.assertContains(response, "Delivered (Unread)")
+
+        # Replied message and instructor reply appear
+        self.assertContains(response, "Prerequisites for Advanced Dynamic Programming")
+        self.assertContains(response, "Basic graph traversal is sufficient! You can review BFS/DFS first.")
+        self.assertContains(response, "Replied")
+        self.assertContains(response, "Ada Lovelace")
+
+    def test_student_does_not_see_other_students_messages(self):
+        self.client.login(username="student_dash1", password="testpassword123")
+        response = self.client.get(reverse("dashboard") + "?tab=messages")
+        self.assertEqual(response.status_code, 200)
+
+        # Bob's private message is not present in Alice's dashboard
+        self.assertNotContains(response, "Private Bob Question")
+        self.assertNotContains(response, "This is a private question from Bob.")
+
+    def test_student_empty_state_when_no_messages_sent(self):
+        # Create a new student with no messages
+        new_user = User.objects.create_user(
+            username="empty_student",
+            email="empty@edulearn.test",
+            password="testpassword123"
+        )
+        UserProfile.objects.create(user=new_user, role="student")
+        Student.objects.create(first_name="Empty", last_name="Student", email="empty@edulearn.test")
+
+        self.client.login(username="empty_student", password="testpassword123")
+        response = self.client.get(reverse("dashboard") + "?tab=messages")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context["sent_messages_count"], 0)
+        self.assertContains(response, "No Sent Inquiries Yet")
+
+    def test_student_dashboard_read_by_instructor_badge(self):
+        # Mark pending message as read by instructor without reply
+        self.msg_pending.is_read = True
+        self.msg_pending.save(update_fields=["is_read"])
+
+        self.client.login(username="student_dash1", password="testpassword123")
+        response = self.client.get(reverse("dashboard") + "?tab=messages")
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Read by Instructor")
+        self.assertContains(response, "has opened and read your message")
+
+    def test_instructor_opening_reply_view_marks_message_as_read(self):
+        self.assertFalse(self.msg_pending.is_read)
+        self.client.login(username="testinstructor", password="testpassword123")
+        # Instructor user Ada
+        self.instructor_user = User.objects.create_user(username="ada_user", email="ada@edulearn.test", password="adapassword")
+        UserProfile.objects.create(user=self.instructor_user, role="instructor")
+        self.client.login(username="ada_user", password="adapassword")
+
+        resp = self.client.get(reverse("instructor_message_reply", args=[self.msg_pending.message_id]))
+        self.assertEqual(resp.status_code, 200)
+        self.msg_pending.refresh_from_db()
+        self.assertTrue(self.msg_pending.is_read)
