@@ -2265,3 +2265,118 @@ class VisualAnalyticsChartTests(TestCase):
         self.assertContains(response, 'id="instructorCurriculumChart"')
         self.assertContains(response, "chart.umd.min.js")
 
+
+
+class RecentActivityAndStudentMessagesTests(TestCase):
+    def setUp(self):
+        self.client = Client()
+
+        self.admin_user = User.objects.create_superuser(
+            username="activity_admin",
+            email="act_admin@edulearn.test",
+            password="adminpassword123"
+        )
+        UserProfile.objects.create(user=self.admin_user, role="admin")
+
+        self.inst_user = User.objects.create_user(
+            username="activity_inst",
+            email="act_inst@edulearn.test",
+            password="password123"
+        )
+        UserProfile.objects.create(user=self.inst_user, role="instructor")
+        self.instructor = Instructor.objects.create(
+            first_name="Alan",
+            last_name="Turing",
+            email="act_inst@edulearn.test",
+            specialization="Cryptography"
+        )
+
+        self.student_user = User.objects.create_user(
+            username="activity_stud",
+            email="act_stud@edulearn.test",
+            password="password123",
+            first_name="Joan",
+            last_name="Clarke"
+        )
+        UserProfile.objects.create(user=self.student_user, role="student")
+        self.student = Student.objects.create(
+            first_name="Joan",
+            last_name="Clarke",
+            email="act_stud@edulearn.test"
+        )
+
+        self.course = Course.objects.create(
+            title="Enigma Codebreaking",
+            instructor=self.instructor,
+            category="programming",
+            price=Decimal("299.00"),
+            duration="8 weeks",
+            is_active=True
+        )
+
+        self.enrollment = Enrollment.objects.create(
+            student=self.student,
+            course=self.course,
+            status="active"
+        )
+
+        self.message = InstructorMessage.objects.create(
+            instructor=self.instructor,
+            sender_user=self.student_user,
+            sender_name="Joan Clarke",
+            sender_email="act_stud@edulearn.test",
+            subject="Question regarding lecture 3",
+            message="Could you explain rotor configuration details?",
+            course=self.course,
+            is_read=False
+        )
+
+    def test_instructor_dashboard_recent_activity_and_messages(self):
+        self.client.login(username="activity_inst", password="password123")
+        response = self.client.get(reverse("dashboard"))
+        self.assertEqual(response.status_code, 200)
+
+        self.assertIn("instructor_recent_activity", response.context)
+        self.assertIn("instructor_recent_messages", response.context)
+        self.assertEqual(len(response.context["instructor_recent_activity"]), 1)
+        self.assertEqual(len(response.context["instructor_recent_messages"]), 1)
+        self.assertContains(response, "Recent Student Activity")
+        self.assertContains(response, "Recent Messages from Students")
+        self.assertContains(response, "Joan Clarke")
+        self.assertContains(response, "Enigma Codebreaking")
+        self.assertContains(response, "Question regarding lecture 3")
+
+    def test_instructor_courses_recent_activity_and_messages(self):
+        self.client.login(username="activity_inst", password="password123")
+        response = self.client.get(reverse("instructor_courses"))
+        self.assertEqual(response.status_code, 200)
+
+        self.assertIn("recent_student_activity", response.context)
+        self.assertIn("recent_student_messages", response.context)
+        self.assertEqual(len(response.context["recent_student_activity"]), 1)
+        self.assertEqual(len(response.context["recent_student_messages"]), 1)
+        self.assertContains(response, "Recent Student Activity")
+        self.assertContains(response, "Recent Messages from Students")
+        self.assertContains(response, "Joan Clarke")
+        self.assertContains(response, "Enigma Codebreaking")
+
+    def test_admin_dashboard_recent_student_messages(self):
+        self.client.login(username="activity_admin", password="adminpassword123")
+        response = self.client.get(reverse("admin_dashboard"))
+        self.assertEqual(response.status_code, 200)
+
+        self.assertIn("recent_student_messages", response.context)
+        self.assertEqual(len(response.context["recent_student_messages"]), 1)
+        self.assertContains(response, "Recent Messages & Inquiries from Students")
+        self.assertContains(response, "Joan Clarke")
+        self.assertContains(response, "Alan Turing")
+        self.assertContains(response, "Question regarding lecture 3")
+
+    def test_student_dashboard_learning_activity(self):
+        self.client.login(username="activity_stud", password="password123")
+        response = self.client.get(reverse("dashboard"))
+        self.assertEqual(response.status_code, 200)
+
+        self.assertIn("student_recent_activity", response.context)
+        self.assertEqual(len(response.context["student_recent_activity"]), 1)
+        self.assertContains(response, "Enigma Codebreaking")

@@ -255,6 +255,28 @@ def dashboard_view(request):
     student_chart_cat_labels = [student_cats_map.get(sc["course__category"], sc["course__category"].replace("_", " ").title()) for sc in student_cat_counts]
     student_chart_cat_data = [sc["count"] for sc in student_cat_counts]
 
+    instructor_recent_messages = (
+        InstructorMessage.objects.filter(instructor=instructor)
+        .select_related("course", "sender_user")
+        .order_by("-created_at")[:6]
+    ) if (user_role == "instructor" and instructor) else InstructorMessage.objects.none()
+
+    instructor_recent_activity = (
+        Enrollment.objects.filter(course__instructor=instructor)
+        .select_related("student", "course")
+        .order_by("-enrollment_date")[:6]
+    ) if (user_role == "instructor" and instructor) else Enrollment.objects.none()
+
+    instructor_unread_messages_count = (
+        InstructorMessage.objects.filter(instructor=instructor, is_read=False).count()
+    ) if (user_role == "instructor" and instructor) else 0
+
+    student_recent_activity = (
+        Enrollment.objects.filter(student=student)
+        .select_related("course", "course__instructor")
+        .order_by("-enrollment_date")[:6]
+    ) if student else Enrollment.objects.none()
+
     active_tab = request.GET.get("tab", "courses").strip().lower()
     if active_tab not in ["courses", "messages"]:
         active_tab = "courses"
@@ -285,6 +307,10 @@ def dashboard_view(request):
             "chart_student_status_data": json.dumps(student_chart_status_data),
             "chart_student_cat_labels": json.dumps(student_chart_cat_labels),
             "chart_student_cat_data": json.dumps(student_chart_cat_data),
+            "instructor_recent_messages": instructor_recent_messages,
+            "instructor_recent_activity": instructor_recent_activity,
+            "instructor_unread_messages_count": instructor_unread_messages_count,
+            "student_recent_activity": student_recent_activity,
         }
     )
 
@@ -1332,7 +1358,20 @@ def instructor_courses_view(request):
     inst_quizzes = total_quizzes
     inst_assignments = CourseContent.objects.filter(course__instructor=instructor, content_type="assignment").count()
 
+    recent_student_activity = (
+        Enrollment.objects.filter(course__instructor=instructor)
+        .select_related("student", "course")
+        .order_by("-enrollment_date")[:6]
+    )
+    recent_student_messages = (
+        InstructorMessage.objects.filter(instructor=instructor)
+        .select_related("course", "sender_user")
+        .order_by("-created_at")[:6]
+    )
+
     context = {
+        "recent_student_activity": recent_student_activity,
+        "recent_student_messages": recent_student_messages,
         "instructor": instructor,
         "courses": courses,
         "total_courses": total_courses,
@@ -1885,6 +1924,11 @@ def admin_dashboard_view(request):
         .order_by("-student_id")[:6]
     )
 
+    recent_student_messages = (
+        InstructorMessage.objects.select_related("instructor", "course", "sender_user")
+        .order_by("-created_at")[:6]
+    )
+
     category_map = dict(Course.CATEGORY_CHOICES)
     categories_qs = Course.objects.values("category").annotate(count=Count("course_id")).order_by("-count")
     chart_cat_labels = [category_map.get(c["category"], c["category"].replace("_", " ").title()) for c in categories_qs]
@@ -1957,6 +2001,7 @@ def admin_dashboard_view(request):
         "chart_status_data": json.dumps(chart_status_data),
         "chart_top_courses_labels": json.dumps(chart_top_courses_labels),
         "chart_top_courses_data": json.dumps(chart_top_courses_data),
+        "recent_student_messages": recent_student_messages,
     }
     return render(request, "admin_dashboard.html", context)
 
