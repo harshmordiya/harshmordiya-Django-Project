@@ -3,6 +3,100 @@
 
 {% block title %}Dashboard - EduLearn{% endblock %}
 
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    Chart.defaults.font.family = "'Inter', system-ui, -apple-system, sans-serif";
+    Chart.defaults.color = "#64748b";
+
+    const ctxProgress = document.getElementById("studentProgressChart");
+    if (ctxProgress) {
+        const progressLabels = {{ chart_student_status_labels|default:"[]"|safe }};
+        const progressData = {{ chart_student_status_data|default:"[]"|safe }};
+
+        new Chart(ctxProgress, {
+            type: "doughnut",
+            data: {
+                labels: progressLabels,
+                datasets: [{
+                    data: progressData,
+                    backgroundColor: ["#3b82f6", "#10b981"],
+                    borderWidth: 2,
+                    borderColor: "#ffffff",
+                    hoverOffset: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: "65%",
+                plugins: {
+                    legend: {
+                        position: "bottom",
+                        labels: {
+                            usePointStyle: true,
+                            boxWidth: 8,
+                            font: { size: 11, weight: 600 }
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return context.label + ": " + context.raw + " courses";
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    const ctxCat = document.getElementById("studentCategoryChart");
+    if (ctxCat) {
+        const catLabels = {{ chart_student_cat_labels|default:"[]"|safe }};
+        const catData = {{ chart_student_cat_data|default:"[]"|safe }};
+
+        new Chart(ctxCat, {
+            type: "doughnut",
+            data: {
+                labels: catLabels,
+                datasets: [{
+                    data: catData,
+                    backgroundColor: ["#4f46e5", "#06b6d4", "#10b981", "#f59e0b", "#ec4899", "#8b5cf6"],
+                    borderWidth: 2,
+                    borderColor: "#ffffff",
+                    hoverOffset: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: "65%",
+                plugins: {
+                    legend: {
+                        position: "bottom",
+                        labels: {
+                            usePointStyle: true,
+                            boxWidth: 8,
+                            font: { size: 11, weight: 600 }
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return context.label + ": " + context.raw + " enrolled";
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+});
+</script>
+{% endblock %}
+
 {% block content %}
 <div class="container">
     <div class="dashboard-card-modern">
@@ -512,6 +606,26 @@
                 </div>
 
                 {% if enrollments %}
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.25rem; margin-bottom: 2rem;">
+                        <div style="background: white; border: 1px solid var(--slate-200); border-radius: var(--radius-md); padding: 1.25rem;">
+                            <div style="font-size: 0.95rem; font-weight: 700; color: var(--slate-900); margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.4rem;">
+                                <span>🎯</span> Learning Progress Ratio
+                            </div>
+                            <div style="position: relative; height: 190px; width: 100%;">
+                                <canvas id="studentProgressChart"></canvas>
+                            </div>
+                        </div>
+
+                        <div style="background: white; border: 1px solid var(--slate-200); border-radius: var(--radius-md); padding: 1.25rem;">
+                            <div style="font-size: 0.95rem; font-weight: 700; color: var(--slate-900); margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.4rem;">
+                                <span>📚</span> Studies by Discipline
+                            </div>
+                            <div style="position: relative; height: 190px; width: 100%;">
+                                <canvas id="studentCategoryChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="course-grid">
                         {% for enrollment in enrollments %}
                             <div class="course-card">

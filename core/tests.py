@@ -2192,3 +2192,76 @@ class InstructorProfileTests(TestCase):
         })
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "This email is already associated with another account")
+
+class VisualAnalyticsChartTests(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.admin_user = User.objects.create_superuser(
+            username="admin_chart_test",
+            email="admin_chart@edulearn.test",
+            password="adminpassword123"
+        )
+        UserProfile.objects.create(user=self.admin_user, role="admin")
+
+        self.inst_user = User.objects.create_user(
+            username="inst_chart_user",
+            email="inst_chart@edulearn.test",
+            password="testpassword123"
+        )
+        UserProfile.objects.create(user=self.inst_user, role="instructor")
+        self.instructor = Instructor.objects.create(
+            first_name="Chart",
+            last_name="Instructor",
+            email="inst_chart@edulearn.test",
+            specialization="Data Science"
+        )
+
+        self.course = Course.objects.create(
+            title="Data Visualization with Chart.js",
+            description="Interactive charting course",
+            instructor=self.instructor,
+            category="data_science",
+            price=Decimal("199.00"),
+            duration="4 Hours",
+            is_active=True
+        )
+
+        self.quiz = CourseContent.objects.create(
+            course=self.course,
+            title="Chart.js Basics Quiz",
+            content_type="quiz",
+            order=1
+        )
+
+    def test_admin_dashboard_charts_rendered(self):
+        self.client.login(username="admin_chart_test", password="adminpassword123")
+        response = self.client.get(reverse("admin_dashboard"))
+        self.assertEqual(response.status_code, 200)
+
+        # Context keys present
+        self.assertIn("chart_monthly_labels", response.context)
+        self.assertIn("chart_monthly_enrollments", response.context)
+        self.assertIn("chart_monthly_revenue", response.context)
+        self.assertIn("chart_cat_labels", response.context)
+        self.assertIn("chart_cat_data", response.context)
+        self.assertIn("chart_status_labels", response.context)
+        self.assertIn("chart_top_courses_labels", response.context)
+
+        # HTML canvas elements and Chart.js library present
+        self.assertContains(response, 'id="enrollmentRevenueChart"')
+        self.assertContains(response, 'id="categoryDistributionChart"')
+        self.assertContains(response, 'id="enrollmentStatusChart"')
+        self.assertContains(response, 'id="topCoursesChart"')
+        self.assertContains(response, "chart.umd.min.js")
+
+    def test_instructor_courses_charts_rendered(self):
+        self.client.login(username="inst_chart_user", password="testpassword123")
+        response = self.client.get(reverse("instructor_courses"))
+        self.assertEqual(response.status_code, 200)
+
+        self.assertIn("chart_course_labels", response.context)
+        self.assertIn("chart_curriculum_labels", response.context)
+        self.assertContains(response, 'id="instructorEnrollmentsChart"')
+        self.assertContains(response, 'id="instructorCurriculumChart"')
+        self.assertContains(response, "chart.umd.min.js")
+

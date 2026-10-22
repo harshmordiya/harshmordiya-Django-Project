@@ -3,6 +3,251 @@
 
 {% block title %}Overview - EduLearn Administrator Portal{% endblock %}
 
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    // Shared styling defaults
+    Chart.defaults.font.family = "'Inter', system-ui, -apple-system, sans-serif";
+    Chart.defaults.color = "#64748b";
+
+    // 1. Enrollment & Revenue Dual-Axis Chart
+    const ctxMonthly = document.getElementById("enrollmentRevenueChart");
+    if (ctxMonthly) {
+        const monthlyLabels = {{ chart_monthly_labels|safe }};
+        const enrollmentsData = {{ chart_monthly_enrollments|safe }};
+        const revenueData = {{ chart_monthly_revenue|safe }};
+
+        new Chart(ctxMonthly, {
+            type: "bar",
+            data: {
+                labels: monthlyLabels,
+                datasets: [
+                    {
+                        type: "line",
+                        label: "Revenue (₹)",
+                        data: revenueData,
+                        borderColor: "#10b981",
+                        backgroundColor: "rgba(16, 185, 129, 0.08)",
+                        borderWidth: 2.5,
+                        fill: true,
+                        tension: 0.35,
+                        pointBackgroundColor: "#10b981",
+                        pointRadius: 4,
+                        pointHoverRadius: 6,
+                        yAxisID: "yRevenue"
+                    },
+                    {
+                        type: "bar",
+                        label: "Enrollments",
+                        data: enrollmentsData,
+                        backgroundColor: "rgba(79, 70, 229, 0.85)",
+                        hoverBackgroundColor: "#4338ca",
+                        borderRadius: 6,
+                        barPercentage: 0.55,
+                        yAxisID: "yEnrollments"
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: {
+                    mode: "index",
+                    intersect: false
+                },
+                plugins: {
+                    legend: {
+                        position: "top",
+                        labels: {
+                            usePointStyle: true,
+                            boxWidth: 8,
+                            font: { weight: 600, size: 12 }
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                if (context.dataset.yAxisID === "yRevenue") {
+                                    return "Revenue: ₹" + Number(context.raw).toLocaleString("en-IN", { minimumFractionDigits: 2 });
+                                }
+                                return "Enrollments: " + context.raw;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: { display: false }
+                    },
+                    yEnrollments: {
+                        type: "linear",
+                        display: true,
+                        position: "left",
+                        beginAtZero: true,
+                        title: { display: true, text: "Enrollments", font: { weight: 600 } },
+                        ticks: { precision: 0 },
+                        grid: { color: "#f1f5f9" }
+                    },
+                    yRevenue: {
+                        type: "linear",
+                        display: true,
+                        position: "right",
+                        beginAtZero: true,
+                        title: { display: true, text: "Revenue (₹)", font: { weight: 600 } },
+                        grid: { drawOnChartArea: false },
+                        ticks: {
+                            callback: function(val) {
+                                return "₹" + Number(val).toLocaleString("en-IN");
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // 2. Courses by Category Doughnut Chart
+    const ctxCat = document.getElementById("categoryDistributionChart");
+    if (ctxCat) {
+        const catLabels = {{ chart_cat_labels|safe }};
+        const catData = {{ chart_cat_data|safe }};
+        const catColors = [
+            "#4f46e5", "#06b6d4", "#10b981", "#f59e0b", "#ec4899", "#8b5cf6", "#64748b"
+        ];
+
+        new Chart(ctxCat, {
+            type: "doughnut",
+            data: {
+                labels: catLabels,
+                datasets: [{
+                    data: catData,
+                    backgroundColor: catColors.slice(0, catLabels.length),
+                    borderWidth: 2,
+                    borderColor: "#ffffff",
+                    hoverOffset: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: "66%",
+                plugins: {
+                    legend: {
+                        position: "bottom",
+                        labels: {
+                            usePointStyle: true,
+                            boxWidth: 8,
+                            font: { size: 11, weight: 500 },
+                            padding: 12
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return context.label + ": " + context.raw + " courses";
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // 3. Enrollment Status Doughnut Chart
+    const ctxStatus = document.getElementById("enrollmentStatusChart");
+    if (ctxStatus) {
+        const statusLabels = {{ chart_status_labels|safe }};
+        const statusData = {{ chart_status_data|safe }};
+
+        new Chart(ctxStatus, {
+            type: "doughnut",
+            data: {
+                labels: statusLabels,
+                datasets: [{
+                    data: statusData,
+                    backgroundColor: ["#10b981", "#4f46e5", "#ef4444"],
+                    borderWidth: 2,
+                    borderColor: "#ffffff",
+                    hoverOffset: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: "64%",
+                plugins: {
+                    legend: {
+                        position: "bottom",
+                        labels: {
+                            usePointStyle: true,
+                            boxWidth: 8,
+                            font: { size: 11, weight: 500 },
+                            padding: 12
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return context.label + ": " + context.raw + " students";
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // 4. Top Courses Horizontal Bar Chart
+    const ctxTopCourses = document.getElementById("topCoursesChart");
+    if (ctxTopCourses) {
+        const topLabels = {{ chart_top_courses_labels|safe }};
+        const topData = {{ chart_top_courses_data|safe }};
+
+        new Chart(ctxTopCourses, {
+            type: "bar",
+            data: {
+                labels: topLabels,
+                datasets: [{
+                    label: "Enrolled Learners",
+                    data: topData,
+                    backgroundColor: "rgba(99, 102, 241, 0.85)",
+                    hoverBackgroundColor: "#4f46e5",
+                    borderRadius: 6,
+                    barPercentage: 0.6
+                }]
+            },
+            options: {
+                indexAxis: "y",
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return "Enrolled: " + context.raw + " students";
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        beginAtZero: true,
+                        ticks: { precision: 0 },
+                        grid: { color: "#f1f5f9" }
+                    },
+                    y: {
+                        grid: { display: false }
+                    }
+                }
+            }
+        });
+    }
+});
+</script>
+{% endblock %}
+
 {% block admin_content %}
 <div class="mb-4">
     <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
@@ -18,6 +263,78 @@
             <a href="{% url 'admin_courses' %}" class="btn btn-outline-secondary btn-sm rounded-pill px-3 py-1.5">
                 <i class="bi bi-journal-text me-1"></i> View Catalog
             </a>
+        </div>
+    </div>
+
+    <!-- Visual Analytics Hub (Chart.js) -->
+    <div class="row g-3 mb-4">
+        <div class="col-lg-8">
+            <div class="admin-card h-100 p-3.5">
+                <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 pb-2 border-bottom gap-2">
+                    <div>
+                        <h5 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+                            <i class="bi bi-graph-up text-primary"></i> Monthly Enrollment & Revenue Growth
+                        </h5>
+                        <div class="text-muted small">Dual-axis trajectory over the past 6 billing cycles</div>
+                    </div>
+                    <span class="badge bg-primary-subtle text-primary rounded-pill px-2.5 py-1 fw-semibold">
+                        Live Metrics
+                    </span>
+                </div>
+                <div style="position: relative; height: 310px; width: 100%;">
+                    <canvas id="enrollmentRevenueChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="admin-card h-100 p-3.5">
+                <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
+                    <div>
+                        <h5 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+                            <i class="bi bi-pie-chart-fill text-info-emphasis"></i> Courses by Category
+                        </h5>
+                        <div class="text-muted small">Catalog distribution across subjects</div>
+                    </div>
+                </div>
+                <div style="position: relative; height: 310px; width: 100%;">
+                    <canvas id="categoryDistributionChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-lg-6">
+            <div class="admin-card h-100 p-3.5">
+                <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
+                    <div>
+                        <h5 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+                            <i class="bi bi-pie-chart text-success"></i> Enrollment Status Ratio
+                        </h5>
+                        <div class="text-muted small">Active, completed & cancelled student registrations</div>
+                    </div>
+                </div>
+                <div style="position: relative; height: 260px; width: 100%;">
+                    <canvas id="enrollmentStatusChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6">
+            <div class="admin-card h-100 p-3.5">
+                <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
+                    <div>
+                        <h5 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+                            <i class="bi bi-bar-chart-fill text-warning"></i> Top Courses by Enrollment
+                        </h5>
+                        <div class="text-muted small">Top academic courses with highest demand</div>
+                    </div>
+                </div>
+                <div style="position: relative; height: 260px; width: 100%;">
+                    <canvas id="topCoursesChart"></canvas>
+                </div>
+            </div>
         </div>
     </div>
 

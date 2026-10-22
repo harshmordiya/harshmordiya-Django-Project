@@ -1,3 +1,5 @@
+import datetime
+import json
 import random 
 import razorpay
 
@@ -240,6 +242,19 @@ def dashboard_view(request):
     instructor_quizzes_count = CourseContent.objects.filter(course_id__in=authored_course_ids, content_type="quiz").count()
     instructor_students_count = Enrollment.objects.filter(course_id__in=authored_course_ids, status__in=["active", "completed"]).values("student").distinct().count()
 
+    active_enrollments_count = enrollments.filter(status="active").count()
+    student_chart_status_labels = ["In Progress", "Completed"]
+    student_chart_status_data = [active_enrollments_count, completed_courses_count]
+
+    student_cats_map = dict(Course.CATEGORY_CHOICES)
+    student_cat_counts = (
+        enrollments.values("course__category")
+        .annotate(count=Count("course_id"))
+        .order_by("-count")
+    )
+    student_chart_cat_labels = [student_cats_map.get(sc["course__category"], sc["course__category"].replace("_", " ").title()) for sc in student_cat_counts]
+    student_chart_cat_data = [sc["count"] for sc in student_cat_counts]
+
     active_tab = request.GET.get("tab", "courses").strip().lower()
     if active_tab not in ["courses", "messages"]:
         active_tab = "courses"
@@ -254,6 +269,7 @@ def dashboard_view(request):
             "student": student,
             "enrollments": enrollments,
             "total_enrolled": total_enrolled,
+            "active_enrollments_count": active_enrollments_count,
             "completed_courses_count": completed_courses_count,
             "total_student_quizzes": total_student_quizzes,
             "instructor": instructor,
@@ -265,6 +281,10 @@ def dashboard_view(request):
             "sent_messages_count": sent_messages_count,
             "replied_messages_count": replied_messages_count,
             "active_tab": active_tab,
+            "chart_student_status_labels": json.dumps(student_chart_status_labels),
+            "chart_student_status_data": json.dumps(student_chart_status_data),
+            "chart_student_cat_labels": json.dumps(student_chart_cat_labels),
+            "chart_student_cat_data": json.dumps(student_chart_cat_data),
         }
     )
 
@@ -1304,6 +1324,14 @@ def instructor_courses_view(request):
         is_read=False
     ).count()
 
+    inst_course_labels = [c.title[:20] + ("..." if len(c.title) > 20 else "") for c in courses]
+    inst_course_enrollments = [c.active_enrollments for c in courses]
+
+    inst_videos = CourseContent.objects.filter(course__instructor=instructor, content_type="video").count()
+    inst_docs = CourseContent.objects.filter(course__instructor=instructor, content_type__in=["document", "article"]).count()
+    inst_quizzes = total_quizzes
+    inst_assignments = CourseContent.objects.filter(course__instructor=instructor, content_type="assignment").count()
+
     context = {
         "instructor": instructor,
         "courses": courses,
@@ -1314,6 +1342,10 @@ def instructor_courses_view(request):
         "unique_students": unique_students,
         "total_quizzes": total_quizzes,
         "unread_messages_count": unread_messages_count,
+        "chart_course_labels": json.dumps(inst_course_labels),
+        "chart_course_enrollments": json.dumps(inst_course_enrollments),
+        "chart_curriculum_labels": json.dumps(["Video Lessons", "Documents & Notes", "Quizzes & Tests", "Assignments"]),
+        "chart_curriculum_data": json.dumps([inst_videos, inst_docs, inst_quizzes, inst_assignments]),
     }
 
     return render(request, "instructor_courses.html", context)
@@ -1853,6 +1885,50 @@ def admin_dashboard_view(request):
         .order_by("-student_id")[:6]
     )
 
+    category_map = dict(Course.CATEGORY_CHOICES)
+    categories_qs = Course.objects.values("category").annotate(count=Count("course_id")).order_by("-count")
+    chart_cat_labels = [category_map.get(c["category"], c["category"].replace("_", " ").title()) for c in categories_qs]
+    chart_cat_data = [c["count"] for c in categories_qs]
+
+    chart_status_labels = ["Active", "Completed", "Cancelled"]
+    chart_status_data = [active_enrollments, completed_enrollments, cancelled_enrollments]
+
+    top_courses_qs = (
+        Course.objects.filter(is_active=True)
+        .annotate(enrolled_num=Count("enrollments", filter=Q(enrollments__status__in=["active", "completed"])))
+        .order_by("-enrolled_num", "course_id")[:5]
+    )
+    chart_top_courses_labels = [c.title[:22] + ("..." if len(c.title) > 22 else "") for c in top_courses_qs]
+    chart_top_courses_data = [c.enrolled_num for c in top_courses_qs]
+
+    now = timezone.now()
+    chart_monthly_labels = []
+    chart_monthly_enrollments = []
+    chart_monthly_revenue = []
+
+    for i in range(5, -1, -1):
+        y = now.year
+        m = now.month - i
+        while m <= 0:
+            m += 12
+            y -= 1
+
+        start = timezone.make_aware(datetime.datetime(y, m, 1))
+        if m == 12:
+            end = timezone.make_aware(datetime.datetime(y + 1, 1, 1))
+        else:
+            end = timezone.make_aware(datetime.datetime(y, m + 1, 1))
+
+        chart_monthly_labels.append(start.strftime("%b %Y"))
+        enr_count = Enrollment.objects.filter(enrollment_date__gte=start, enrollment_date__lt=end).count()
+        chart_monthly_enrollments.append(enr_count)
+        rev = Payment.objects.filter(
+            status__in=["paid", "verified", "captured", "success", "completed"],
+            created_at__gte=start,
+            created_at__lt=end
+        ).aggregate(s=Sum("amount"))["s"] or Decimal("0.00")
+        chart_monthly_revenue.append(float(rev))
+
     context = {
         "total_students": total_students,
         "total_instructors": total_instructors,
@@ -1872,6 +1948,15 @@ def admin_dashboard_view(request):
         "recent_courses": recent_courses,
         "recent_students": recent_students,
         "active_tab": "dashboard",
+        "chart_monthly_labels": json.dumps(chart_monthly_labels),
+        "chart_monthly_enrollments": json.dumps(chart_monthly_enrollments),
+        "chart_monthly_revenue": json.dumps(chart_monthly_revenue),
+        "chart_cat_labels": json.dumps(chart_cat_labels),
+        "chart_cat_data": json.dumps(chart_cat_data),
+        "chart_status_labels": json.dumps(chart_status_labels),
+        "chart_status_data": json.dumps(chart_status_data),
+        "chart_top_courses_labels": json.dumps(chart_top_courses_labels),
+        "chart_top_courses_data": json.dumps(chart_top_courses_data),
     }
     return render(request, "admin_dashboard.html", context)
 

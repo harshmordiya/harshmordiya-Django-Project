@@ -3,6 +3,106 @@
 
 {% block title %}Instructor Dashboard - EduLearn{% endblock %}
 
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    Chart.defaults.font.family = "'Inter', system-ui, -apple-system, sans-serif";
+    Chart.defaults.color = "#64748b";
+
+    // 1. Instructor Course Enrollments Bar Chart
+    const ctxEnr = document.getElementById("instructorEnrollmentsChart");
+    if (ctxEnr) {
+        const courseLabels = {{ chart_course_labels|safe }};
+        const courseData = {{ chart_course_enrollments|safe }};
+
+        new Chart(ctxEnr, {
+            type: "bar",
+            data: {
+                labels: courseLabels,
+                datasets: [{
+                    label: "Active Students",
+                    data: courseData,
+                    backgroundColor: "rgba(79, 70, 229, 0.85)",
+                    hoverBackgroundColor: "#4338ca",
+                    borderRadius: 6,
+                    barPercentage: 0.55
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return "Enrolled: " + context.raw + " students";
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: { precision: 0 },
+                        grid: { color: "#f1f5f9" }
+                    },
+                    x: {
+                        grid: { display: false }
+                    }
+                }
+            }
+        });
+    }
+
+    // 2. Instructor Curriculum Types Doughnut Chart
+    const ctxCurriculum = document.getElementById("instructorCurriculumChart");
+    if (ctxCurriculum) {
+        const curLabels = {{ chart_curriculum_labels|safe }};
+        const curData = {{ chart_curriculum_data|safe }};
+
+        new Chart(ctxCurriculum, {
+            type: "doughnut",
+            data: {
+                labels: curLabels,
+                datasets: [{
+                    data: curData,
+                    backgroundColor: ["#4f46e5", "#06b6d4", "#f59e0b", "#10b981"],
+                    borderWidth: 2,
+                    borderColor: "#ffffff",
+                    hoverOffset: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: "65%",
+                plugins: {
+                    legend: {
+                        position: "bottom",
+                        labels: {
+                            usePointStyle: true,
+                            boxWidth: 8,
+                            font: { size: 11, weight: 500 },
+                            padding: 12
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return context.label + ": " + context.raw + " items";
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+});
+</script>
+{% endblock %}
+
 {% block content %}
 <div class="container">
 
@@ -121,6 +221,38 @@
             </div>
         </div>
     </div>
+
+    {% if courses %}
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 1.5rem; margin-bottom: 2.5rem;">
+        <div class="feature-box" style="padding: 1.5rem; background: var(--white);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; padding-bottom: 0.75rem; border-bottom: 1px solid var(--slate-100);">
+                <div>
+                    <h3 style="font-size: 1.1rem; font-weight: 700; color: var(--slate-900); margin: 0; display: flex; align-items: center; gap: 0.5rem;">
+                        <span>📊</span> Student Enrollments per Course
+                    </h3>
+                    <div style="font-size: 0.82rem; color: var(--slate-500); margin-top: 0.2rem;">Enrolled learners across your syllabus</div>
+                </div>
+            </div>
+            <div style="position: relative; height: 260px; width: 100%;">
+                <canvas id="instructorEnrollmentsChart"></canvas>
+            </div>
+        </div>
+
+        <div class="feature-box" style="padding: 1.5rem; background: var(--white);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; padding-bottom: 0.75rem; border-bottom: 1px solid var(--slate-100);">
+                <div>
+                    <h3 style="font-size: 1.1rem; font-weight: 700; color: var(--slate-900); margin: 0; display: flex; align-items: center; gap: 0.5rem;">
+                        <span>🧩</span> Curriculum Lesson Breakdown
+                    </h3>
+                    <div style="font-size: 0.82rem; color: var(--slate-500); margin-top: 0.2rem;">Videos, documents, quizzes and assignments</div>
+                </div>
+            </div>
+            <div style="position: relative; height: 260px; width: 100%;">
+                <canvas id="instructorCurriculumChart"></canvas>
+            </div>
+        </div>
+    </div>
+    {% endif %}
 
     <div style="margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
         <div>
