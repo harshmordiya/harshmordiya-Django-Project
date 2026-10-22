@@ -71,7 +71,6 @@
 {% block content %}
 <div class="container" style="max-width: 820px; margin-top: 1.75rem; margin-bottom: 4rem;">
 
-    <!-- Breadcrumb Navigation -->
     <div style="margin-bottom: 1.25rem; font-size: 0.88rem; color: var(--slate-500);">
         <a href="{% url 'instructor_courses' %}" style="color: var(--slate-500); text-decoration: none;">Instructor Portal</a>
         <span style="margin: 0 0.4rem;">/</span>
@@ -93,7 +92,6 @@
             </p>
         </div>
 
-        <!-- Original Student Message Summary Box -->
         <div class="inquiry-summary-box">
             <div class="inquiry-header-row">
                 <div class="inquiry-sender-title">
@@ -121,7 +119,6 @@
             </div>
         </div>
 
-        <!-- Existing Reply (if already replied) -->
         {% if msg.reply_text %}
             <div class="previous-reply-box">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; flex-wrap: wrap;">
@@ -135,7 +132,6 @@
             </div>
         {% endif %}
 
-        <!-- Reply Form -->
         <form method="post" novalidate>
             {% csrf_token %}
 
@@ -162,7 +158,6 @@
                 {% endif %}
             </div>
 
-            <!-- Action Buttons -->
             <div style="display: flex; align-items: center; gap: 1rem; padding-top: 1.5rem; border-top: 1px solid var(--slate-100); flex-wrap: wrap;">
                 <button type="submit" class="btn btn-primary" style="padding: 0.75rem 2rem; font-weight: 700; border-radius: var(--radius-md);">
                     🚀 Send Reply

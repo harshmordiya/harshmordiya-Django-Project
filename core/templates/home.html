@@ -4,7 +4,6 @@
 {% block title %}EduLearn - Learn In-Demand Skills Today{% endblock %}
 
 {% block content %}
-<!-- Hero Section -->
 <section class="hero">
     <div class="hero-content">
         <div class="hero-pill">
@@ -20,7 +19,6 @@
             Unlock your full potential with interactive, project-based courses taught by industry veterans. Learn at your own pace and earn career-defining certificates.
         </p>
 
-        <!-- Hero Instant Course Search -->
         <form action="{% url 'course_list' %}" method="get" class="hero-search-box">
             <span style="font-size: 1.25rem; color: var(--slate-400);">🔍</span>
             <input 
@@ -32,32 +30,29 @@
             <button type="submit" class="btn btn-primary">Find Courses</button>
         </form>
 
-        <!-- Stats Bar -->
         <div class="hero-stats">
             <div class="stat-item">
-                <div class="stat-number">{{ total_courses|default:"4" }}+</div>
+                <div class="stat-number">{{ total_courses|default:"5" }}+</div>
                 <div class="stat-label">Active Courses</div>
             </div>
             <div class="stat-item">
-                <div class="stat-number">{{ total_students|default:"100" }}+</div>
+                <div class="stat-number">{{ total_quizzes|default:"5" }}+</div>
+                <div class="stat-label">Interactive Quizzes</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number">{{ total_enrolled_students|default:"10" }}+</div>
                 <div class="stat-label">Enrolled Students</div>
             </div>
             <div class="stat-item">
-                <div class="stat-number">100%</div>
-                <div class="stat-label">Verified Certifications</div>
-            </div>
-            <div class="stat-item">
-                <div class="stat-number">24/7</div>
-                <div class="stat-label">Lifetime Course Access</div>
+                <div class="stat-number">{{ total_instructors|default:"3" }}+</div>
+                <div class="stat-label">Expert Instructors</div>
             </div>
         </div>
     </div>
 </section>
 
-<!-- Main Container -->
 <div class="container">
 
-    <!-- Categories Section -->
     <div class="section-header">
         <span class="section-tag">Explore Topics</span>
         <h2 class="section-title">Popular Categories</h2>
@@ -87,7 +82,6 @@
         </a>
     </div>
 
-    <!-- Featured Courses Section -->
     <div class="courses-section">
         <div class="section-header">
             <span class="section-tag">Top Picks</span>
@@ -163,7 +157,6 @@
         {% endif %}
     </div>
 
-    <!-- Features / Value Proposition Section -->
     <div style="margin-top: 5rem;">
         <div class="section-header">
             <span class="section-tag">Why Us</span>
@@ -173,32 +166,27 @@
 
         <div class="features-grid">
             <div class="feature-box">
-                <div class="feature-box-icon">🚀</div>
                 <h3>Hands-On Projects</h3>
                 <p>Learn by doing with practical assignments and portfolio-ready exercises that demonstrate real skills.</p>
             </div>
 
             <div class="feature-box">
-                <div class="feature-box-icon">🛡️</div>
                 <h3>Secure Instant Checkout</h3>
                 <p>Instant, hassle-free enrollments backed by industry-standard 256-bit Razorpay encryption.</p>
             </div>
 
             <div class="feature-box">
-                <div class="feature-box-icon">⏱️</div>
                 <h3>Learn on Your Schedule</h3>
                 <p>Lifetime access with no deadlines or rush. Revisit lectures and notes anytime, anywhere.</p>
             </div>
 
             <div class="feature-box">
-                <div class="feature-box-icon">📜</div>
                 <h3>Recognized Certificates</h3>
                 <p>Earn certificates of completion upon finishing courses to showcase on your resume and LinkedIn.</p>
             </div>
         </div>
     </div>
 
-    <!-- Call to Action Banner -->
     <div class="cta-banner">
         <div class="cta-banner-content">
             <h2>Ready to Start Your Learning Journey?</h2>

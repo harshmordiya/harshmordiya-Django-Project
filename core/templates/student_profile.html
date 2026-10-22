@@ -136,7 +136,6 @@
 {% block content %}
 <div class="container" style="max-width: 1140px; margin-top: 1.5rem; margin-bottom: 3.5rem;">
 
-    <!-- Profile Hero Banner -->
     <div class="profile-hero">
         <div class="profile-hero-content">
             <div style="display: flex; align-items: center; gap: 1.5rem; flex-wrap: wrap;">
@@ -166,7 +165,6 @@
                 </div>
             </div>
 
-            <!-- Profile Action Buttons -->
             <div style="display: flex; align-items: center; gap: 0.75rem;">
                 {% if is_own_profile or is_admin %}
                     <a href="{% url 'student_profile_edit' %}" class="btn" style="background: white; color: #065f46; font-weight: 700; border-radius: 9999px; padding: 0.65rem 1.4rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
@@ -180,12 +178,9 @@
         </div>
     </div>
 
-    <!-- Main Content Layout (2 Columns) -->
     <div style="display: grid; grid-template-columns: 360px 1fr; gap: 2rem; align-items: start;">
 
-        <!-- Left Column: Personal Information & Bio -->
         <div>
-            <!-- Personal Bio Card -->
             <div class="profile-card">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; padding-bottom: 0.75rem; border-bottom: 1px solid var(--slate-100);">
                     <h3 style="font-size: 1.15rem; font-weight: 700; color: var(--slate-900); margin: 0;">
@@ -212,7 +207,6 @@
                 {% endif %}
             </div>
 
-            <!-- Detailed Contact Info Card -->
             <div class="profile-card">
                 <h3 style="font-size: 1.15rem; font-weight: 700; color: var(--slate-900); margin: 0 0 1rem 0; padding-bottom: 0.75rem; border-bottom: 1px solid var(--slate-100);">
                     Contact & Details
@@ -258,7 +252,6 @@
                 </div>
             </div>
 
-            <!-- Quick Links Card -->
             <div class="profile-card">
                 <h3 style="font-size: 1.15rem; font-weight: 700; color: var(--slate-900); margin: 0 0 1rem 0; padding-bottom: 0.75rem; border-bottom: 1px solid var(--slate-100);">
                     Quick Navigation
@@ -279,9 +272,7 @@
             </div>
         </div>
 
-        <!-- Right Column: Learning Analytics, Enrolled Courses & Receipts -->
         <div>
-            <!-- Stats Grid -->
             <div class="profile-stat-grid">
                 <div class="profile-stat-box">
                     <div class="profile-stat-val" style="color: #059669;">{{ total_enrolled }}</div>
@@ -301,7 +292,6 @@
                 </div>
             </div>
 
-            <!-- Enrolled Courses Card -->
             <div class="profile-card">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; padding-bottom: 0.75rem; border-bottom: 1px solid var(--slate-100); flex-wrap: wrap; gap: 0.5rem;">
                     <div>
@@ -368,7 +358,6 @@
                 {% endif %}
             </div>
 
-            <!-- Recent Payment Receipts Card -->
             <div class="profile-card">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; padding-bottom: 0.75rem; border-bottom: 1px solid var(--slate-100);">
                     <div>

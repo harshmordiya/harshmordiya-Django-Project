@@ -156,14 +156,12 @@
 {% block content %}
 <div class="container">
 
-    <!-- Header Section -->
     <div class="section-header" style="margin-bottom: 2.25rem;">
         <span class="section-tag">Faculty & Mentors</span>
         <h1 class="section-title">Meet Our Academic Instructors</h1>
         <p class="section-desc">Learn directly from experienced practitioners, technical researchers, and industry specialists.</p>
     </div>
 
-    <!-- Navigation Tab Switcher -->
     <div class="tab-pills" style="justify-content: center;">
         <a href="{% url 'instructor_list' %}" class="tab-pill active">
             👨‍🏫 Instructors ({{ total_instructors }})
@@ -176,7 +174,6 @@
         </a>
     </div>
 
-    <!-- Search & Filter Bar -->
     <div class="filter-bar">
         <form method="get" class="search-form">
             <div class="search-input-wrap">
@@ -210,19 +207,16 @@
         </form>
     </div>
 
-    <!-- Instructors Cards Grid -->
     {% if instructors %}
         <div class="member-grid">
             {% for inst in instructors %}
                 <div class="member-card">
-                    <!-- Top Gradient Header -->
                     <div class="member-card-header">
                         <div class="member-avatar">
                             {{ inst.first_name|first|upper }}{{ inst.last_name|first|upper }}
                         </div>
                     </div>
 
-                    <!-- Card Body -->
                     <div class="member-card-body">
                         <h2 class="member-name">{{ inst.full_name }}</h2>
                         <span class="member-badge">
@@ -242,7 +236,6 @@
                             {% endif %}
                         </div>
 
-                        <!-- Statistics Row -->
                         <div class="member-stats-row">
                             <div class="member-stat-box">
                                 <div class="member-stat-val">{{ inst.courses_count }}</div>
@@ -254,7 +247,6 @@
                             </div>
                         </div>
 
-                        <!-- Action Buttons -->
                         <div style="display: flex; gap: 0.5rem; margin-top: 0.75rem;">
                             <a href="{% url 'course_list' %}?q={{ inst.first_name }}" class="btn btn-outline btn-sm" style="flex: 1; text-align: center;">
                                 📚 Courses
@@ -268,7 +260,6 @@
             {% endfor %}
         </div>
 
-        <!-- Pagination -->
         {% if page_obj.has_other_pages %}
             <div class="pagination">
                 {% if page_obj.has_previous %}

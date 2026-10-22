@@ -116,7 +116,6 @@
 {% block content %}
 <div class="container" style="max-width: 1040px; margin-top: 2rem; margin-bottom: 4rem;">
 
-    <!-- Navigation / Header -->
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
         <div>
             <h1 style="font-size: 1.85rem; font-weight: 800; color: var(--slate-900); margin: 0 0 0.25rem 0;">
@@ -133,7 +132,6 @@
         </div>
     </div>
 
-    <!-- Filter Pills -->
     <div class="inbox-pill-filters">
         <a href="{% url 'instructor_messages' %}" class="inbox-pill {% if filter_status == 'all' or not filter_status %}active{% endif %}">
             All Messages ({{ total_messages }})
@@ -149,12 +147,10 @@
         </a>
     </div>
 
-    <!-- Message List -->
     {% if instructor_messages %}
         {% for msg in instructor_messages %}
             <div class="message-item {% if msg.is_replied %}replied{% elif not msg.is_read %}unread{% endif %}">
                 
-                <!-- Card Header Row -->
                 <div class="message-top-row">
                     <div style="display: flex; align-items: center; gap: 0.65rem; flex-wrap: wrap;">
                         <span class="msg-sender">{{ msg.sender_name }}</span>
@@ -186,11 +182,9 @@
                     </div>
                 </div>
 
-                <!-- Subject & Student Question -->
                 <div class="msg-subject">{{ msg.subject }}</div>
                 <div class="msg-content">{{ msg.message }}</div>
 
-                <!-- Existing Instructor Reply Box (if replied) -->
                 {% if msg.reply_text %}
                     <div class="reply-display-box">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem; flex-wrap: wrap;">
@@ -204,21 +198,17 @@
                     </div>
                 {% endif %}
 
-                <!-- Action Buttons: Option 1 (In-Page Quick Reply) + Option 2 (Full Reply Page) -->
                 <div class="msg-actions">
-                    <!-- Option 1: Quick Reply Toggle -->
                     <button type="button" 
                             class="btn btn-primary btn-sm" 
                             onclick="toggleReplyDrawer('drawer-{{ msg.message_id }}');">
                         💬 {% if msg.reply_text %}Update Reply{% else %}Quick Reply{% endif %}
                     </button>
 
-                    <!-- Option 2: Dedicated Full Reply Screen -->
                     <a href="{% url 'instructor_message_reply' msg.message_id %}" class="btn btn-secondary btn-sm">
                         📄 Full Reply Page
                     </a>
 
-                    <!-- Mark as Read / Status -->
                     {% if not msg.is_read %}
                         <form method="post" style="display: inline;">
                             {% csrf_token %}
@@ -230,7 +220,6 @@
                     {% endif %}
                 </div>
 
-                <!-- Option 1: In-Page Quick Reply Drawer Form -->
                 <div class="quick-reply-drawer" id="drawer-{{ msg.message_id }}">
                     <form method="post">
                         {% csrf_token %}
@@ -264,7 +253,6 @@
             </div>
         {% endfor %}
 
-        <!-- Pagination -->
         {% if page_obj.has_other_pages %}
             <div class="pagination" style="margin-top: 2rem;">
                 {% if page_obj.has_previous %}
@@ -294,7 +282,6 @@
 
 </div>
 
-<!-- In-Page Drawer Toggle JavaScript -->
 <script>
 function toggleReplyDrawer(drawerId) {
     const drawer = document.getElementById(drawerId);

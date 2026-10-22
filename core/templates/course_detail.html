@@ -12,7 +12,6 @@
     </div>
 
     <div class="detail-layout">
-        <!-- Main Content -->
         <div class="detail-main">
             <span class="badge-category" style="margin-bottom: 1rem; display: inline-block;">
                 {{ course.get_category_display }}
@@ -20,8 +19,10 @@
 
             <h1 class="detail-title">{{ course.title }}</h1>
 
-            <div class="course-meta" style="margin-bottom: 2rem; border-top: none; padding-top: 0;">
+            <div class="course-meta" style="margin-bottom: 2rem; border-top: none; padding-top: 0; display: flex; flex-wrap: wrap; gap: 1.25rem;">
                 <div>⏱️ <strong>Duration:</strong> {{ course.duration }}</div>
+                <div>👥 <strong>Enrolled:</strong> {{ enrolled_students_count }} student{{ enrolled_students_count|pluralize }}</div>
+                <div>❓ <strong>Quizzes:</strong> {{ quizzes_count }} quiz{{ quizzes_count|pluralize:"zes" }}</div>
                 <div>📅 <strong>Published:</strong> {{ course.created_at|date:"d M Y" }}</div>
                 <div>🔄 <strong>Updated:</strong> {{ course.updated_at|date:"d M Y" }}</div>
             </div>
@@ -33,7 +34,6 @@
                 </div>
             </div>
 
-            <!-- Course Curriculum / Content Section -->
             <div style="margin-bottom: 2.5rem;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
                     <h2 style="font-size: 1.4rem; margin: 0; color: var(--slate-900);">
@@ -145,7 +145,6 @@
                 {% endif %}
             </div>
 
-            <!-- Instructor Profile Box -->
             <div style="background: var(--slate-50); border: 1px solid var(--slate-200); border-radius: var(--radius-lg); padding: 1.75rem; margin-top: 2rem;">
                 <h3 style="font-size: 1.15rem; margin-bottom: 0.85rem; color: var(--slate-900);">About the Instructor</h3>
                 {% if course.instructor %}
@@ -170,7 +169,6 @@
             </div>
         </div>
 
-        <!-- Sticky Enrollment Sidebar -->
         <div class="detail-sidebar">
             <div class="detail-price-box">
                 <div class="detail-price-label">Course Tuition</div>
@@ -181,6 +179,18 @@
                 <li class="feature-item">
                     <span>⏱️</span>
                     <span><strong>Duration:</strong> {{ course.duration }}</span>
+                </li>
+                <li class="feature-item">
+                    <span>👥</span>
+                    <span><strong>Enrolled Students:</strong> {{ enrolled_students_count }}</span>
+                </li>
+                <li class="feature-item">
+                    <span>❓</span>
+                    <span><strong>Quizzes & Tests:</strong> {{ quizzes_count }}</span>
+                </li>
+                <li class="feature-item">
+                    <span>📚</span>
+                    <span><strong>Lessons:</strong> {{ contents|length }}</span>
                 </li>
                 <li class="feature-item">
                     <span>🌐</span>

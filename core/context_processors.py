@@ -1,17 +1,25 @@
-from .models import Cart, Student, UserProfile
+from .models import Cart, Course, CourseContent, Enrollment, Student, UserProfile
 
 def site_context(request):
-    """
-    Context processor to supply global context for the navigation bar
-    and layout, including cart count and user role.
-    """
+    total_courses = Course.objects.filter(is_active=True).count()
+    total_quizzes = CourseContent.objects.filter(content_type="quiz").count()
+    total_enrolled = (
+        Enrollment.objects
+        .filter(status__in=["active", "completed"])
+        .values("student")
+        .distinct()
+        .count()
+    )
+
     context = {
         "nav_cart_count": 0,
         "nav_user_role": None,
+        "site_total_courses": total_courses,
+        "site_total_quizzes": total_quizzes,
+        "site_total_enrolled_students": total_enrolled,
     }
     
     if request.user.is_authenticated:
-        # Determine user role accurately
         if request.user.is_superuser or request.user.is_staff:
             role = "admin"
             profile = UserProfile.objects.filter(user=request.user).first()
@@ -31,7 +39,6 @@ def site_context(request):
 
         context["nav_user_role"] = role
 
-        # Calculate cart items for students
         student = Student.objects.filter(email=request.user.email).first()
         if student:
             context["nav_cart_count"] = Cart.objects.filter(student=student).count()

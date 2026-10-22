@@ -26,7 +26,6 @@ from .email_utils import (
     send_course_completion_email,
 )
 
-
 def get_user_role(user):
    
     if not user or not user.is_authenticated:
@@ -40,7 +39,6 @@ def get_user_role(user):
         return "instructor"
     return "student"
 
-
 def is_admin_user(user):
     if not user or not user.is_authenticated:
         return False
@@ -48,7 +46,6 @@ def is_admin_user(user):
         return True
     profile = UserProfile.objects.filter(user=user).first()
     return bool(profile and profile.role == "admin")
-
 
 def ensure_user_profile(user):
    
@@ -67,7 +64,6 @@ def ensure_user_profile(user):
     )
     return profile
 
-
 def admin_required(view_func):
    
     @wraps(view_func)
@@ -79,7 +75,6 @@ def admin_required(view_func):
             return redirect("dashboard")
         return view_func(request, *args, **kwargs)
     return _wrapped_view
-
 
 razorpay_client = razorpay.Client(
     auth=(
@@ -94,6 +89,9 @@ def home_view(request):
     total_courses = Course.objects.filter(is_active=True).count()
     total_students = Student.objects.count()
     total_instructors = Instructor.objects.count()
+    total_quizzes = CourseContent.objects.filter(content_type="quiz").count()
+    total_enrolled_students = Enrollment.objects.filter(status__in=["active", "completed"]).values("student").distinct().count()
+    total_enrollments = Enrollment.objects.filter(status__in=["active", "completed"]).count()
 
     return render(
         request,
@@ -104,6 +102,9 @@ def home_view(request):
             "total_courses": total_courses,
             "total_students": total_students,
             "total_instructors": total_instructors,
+            "total_quizzes": total_quizzes,
+            "total_enrolled_students": total_enrolled_students,
+            "total_enrollments": total_enrollments,
         }
     )
 
@@ -126,7 +127,6 @@ def register_view(request):
 
     return render(request, "register.html", {"form": form})
 
-
 def login_view(request):
     if request.user.is_authenticated:
         return redirect("dashboard")
@@ -141,7 +141,6 @@ def login_view(request):
             password=password
         )
 
-        # Allow logging in with email address as well
         if user is None and "@" in username_input:
             user_by_email = User.objects.filter(email__iexact=username_input).first()
             if user_by_email:
@@ -167,7 +166,6 @@ def login_view(request):
                 return redirect("instructor_courses")
             return redirect("dashboard")
 
-        # Check if the user exists with valid password but has been deactivated
         candidate = User.objects.filter(username__iexact=username_input).first()
         if not candidate and "@" in username_input:
             candidate = User.objects.filter(email__iexact=username_input).first()
@@ -186,14 +184,12 @@ def login_view(request):
 
     return render(request, "login.html")
 
-
 @login_required
 def dashboard_view(request):
     profile = ensure_user_profile(request.user)
     user_role = get_user_role(request.user)
     is_admin = is_admin_user(request.user)
 
-    # Safely query student profile associated with user without creating duplicates
     student = get_student_for_user(request.user)
 
     if student:
@@ -210,7 +206,6 @@ def dashboard_view(request):
 
     total_enrolled = enrollments.count()
 
-    # For instructors, also fetch courses they have authored/created
     instructor = None
     authored_courses = Course.objects.none()
     if user_role == "instructor":
@@ -227,7 +222,6 @@ def dashboard_view(request):
                 .order_by("-created_at")
             )
 
-    # Sent instructor inquiries by this user/student
     sent_messages = (
         InstructorMessage.objects.filter(
             Q(sender_user=request.user) | Q(sender_email__iexact=request.user.email)
@@ -237,6 +231,14 @@ def dashboard_view(request):
     )
     sent_messages_count = sent_messages.count()
     replied_messages_count = sent_messages.exclude(reply_text="").count()
+
+    completed_courses_count = enrollments.filter(status="completed").count()
+    enrolled_course_ids = enrollments.values_list("course_id", flat=True)
+    total_student_quizzes = CourseContent.objects.filter(course_id__in=enrolled_course_ids, content_type="quiz").count()
+
+    authored_course_ids = authored_courses.values_list("course_id", flat=True)
+    instructor_quizzes_count = CourseContent.objects.filter(course_id__in=authored_course_ids, content_type="quiz").count()
+    instructor_students_count = Enrollment.objects.filter(course_id__in=authored_course_ids, status__in=["active", "completed"]).values("student").distinct().count()
 
     active_tab = request.GET.get("tab", "courses").strip().lower()
     if active_tab not in ["courses", "messages"]:
@@ -252,9 +254,13 @@ def dashboard_view(request):
             "student": student,
             "enrollments": enrollments,
             "total_enrolled": total_enrolled,
+            "completed_courses_count": completed_courses_count,
+            "total_student_quizzes": total_student_quizzes,
             "instructor": instructor,
             "authored_courses": authored_courses,
             "total_authored": authored_courses.count(),
+            "instructor_quizzes_count": instructor_quizzes_count,
+            "instructor_students_count": instructor_students_count,
             "sent_messages": sent_messages,
             "sent_messages_count": sent_messages_count,
             "replied_messages_count": replied_messages_count,
@@ -262,13 +268,9 @@ def dashboard_view(request):
         }
     )
 
-
 @login_required
 def student_profile_view(request):
-    """
-    Displays the authenticated student's profile information, enrolled courses,
-    learning statistics, and payment history.
-    """
+  
     student = get_student_for_user(request.user)
     if not student:
         messages.error(request, "Student profile could not be found for your account.")
@@ -302,13 +304,9 @@ def student_profile_view(request):
     }
     return render(request, "student_profile.html", context)
 
-
 @login_required
 def student_profile_edit_view(request):
-    """
-    Allows a student to edit their profile details (name, email, phone, date of birth,
-    address, bio) with live synchronization back to their Django user account.
-    """
+   
     student = get_student_for_user(request.user)
     if not student:
         messages.error(request, "Student profile not found.")
@@ -334,26 +332,15 @@ def student_profile_edit_view(request):
         }
     )
 
-
 @login_required
 def user_profile_dispatcher_view(request):
-    """
-    Intelligent profile dispatcher for /profile/ URL:
-    - If user is an instructor -> redirects to instructor_profile
-    - Otherwise -> student_profile
-    """
     role = get_user_role(request.user)
     if role == "instructor":
         return redirect("instructor_profile")
     return redirect("student_profile")
 
-
 @login_required
 def instructor_profile_view(request):
-    """
-    Displays the authenticated instructor's professional profile, statistics,
-    and authored course catalog.
-    """
     instructor = get_instructor_for_user(request.user)
     if not instructor:
         messages.error(request, "Instructor profile could not be found for your account.")
@@ -365,12 +352,17 @@ def instructor_profile_view(request):
 
     total_inquiries = InstructorMessage.objects.filter(instructor=instructor).count()
     replied_inquiries = InstructorMessage.objects.filter(instructor=instructor).exclude(reply_text="").count()
+    total_quizzes = CourseContent.objects.filter(course__instructor=instructor, content_type="quiz").count()
+    enrolled_students = Enrollment.objects.filter(course__instructor=instructor, status__in=["active", "completed"]).values("student_id").distinct().count()
 
     context = {
         "instructor": instructor,
         "authored_courses": authored_courses,
         "total_authored": authored_courses.count(),
+        "total_courses": authored_courses.count(),
         "total_students": instructor.students_count,
+        "enrolled_students": enrolled_students,
+        "total_quizzes": total_quizzes,
         "total_inquiries": total_inquiries,
         "replied_inquiries": replied_inquiries,
         "is_own_profile": True,
@@ -378,14 +370,9 @@ def instructor_profile_view(request):
     }
     return render(request, "instructor_profile.html", context)
 
-
 @login_required
 def instructor_profile_edit_view(request):
-    """
-    Allows an instructor to edit their personal & faculty profile details
-    (name, email, phone, specialization, bio, profile picture) with live synchronization
-    back to their Django auth.User account.
-    """
+
     instructor = get_instructor_for_user(request.user)
     if not instructor:
         messages.error(request, "Instructor profile could not be found for your account.")
@@ -409,13 +396,8 @@ def instructor_profile_edit_view(request):
     }
     return render(request, "instructor_profile_edit.html", context)
 
-
 @login_required
 def student_profile_detail_view(request, student_id):
-    """
-    Displays an individual student's profile.
-    Accessible to administrators, or to the student themselves.
-    """
     target_student = get_object_or_404(Student, student_id=student_id)
     is_admin = is_admin_user(request.user)
     is_owner = bool(request.user.email and target_student.email.lower() == request.user.email.lower())
@@ -452,7 +434,6 @@ def student_profile_detail_view(request, student_id):
     }
     return render(request, "student_profile.html", context)
 
-
 def logout_view(request):
     if request.user.is_authenticated:
         username = request.user.first_name or request.user.username
@@ -462,7 +443,6 @@ def logout_view(request):
         logout(request)
         messages.info(request, "You have been logged out.")
     return redirect("login")
-
 
 def forgot_password_view(request):
     if request.method == "POST":
@@ -516,7 +496,6 @@ def forgot_password_view(request):
 
     return render(request, "forgot_password.html")
 
-
 def verify_otp_view(request):
     email = request.session.get("reset_email")
 
@@ -524,7 +503,6 @@ def verify_otp_view(request):
         messages.warning(request, "Please request a password reset code first.")
         return redirect("forgot_password")
 
-    # Helper for local development testing when Console email backend is active
     dev_otp = None
     if settings.EMAIL_BACKEND == 'django.core.mail.backends.console.EmailBackend':
         user = User.objects.filter(email=email).first()
@@ -552,7 +530,6 @@ def verify_otp_view(request):
                 {"error": "Invalid OTP.", "dev_otp": dev_otp}
             )
 
-        # OTP expires after 5 minutes
         elapsed_time = timezone.now() - otp_record.created_at
 
         if elapsed_time.total_seconds() > 300:
@@ -572,7 +549,6 @@ def verify_otp_view(request):
         return redirect("reset_password")
 
     return render(request, "verify_otp.html", {"dev_otp": dev_otp})
-
 
 def reset_password_view(request):
     email = request.session.get("reset_email")
@@ -617,11 +593,21 @@ def reset_password_view(request):
 
 from django.db.models import Q
 
-
 def course_list_view(request):
 
     courses = Course.objects.filter(
         is_active=True
+    ).select_related("instructor").annotate(
+        enrolled_students_count=Count(
+            "enrollments",
+            filter=Q(enrollments__status__in=["active", "completed"]),
+            distinct=True
+        ),
+        quizzes_count=Count(
+            "contents",
+            filter=Q(contents__content_type="quiz"),
+            distinct=True
+        )
     )
 
     search_query = request.GET.get("q", "").strip()
@@ -630,9 +616,6 @@ def course_list_view(request):
         "category",
         ""
     ).strip()
-
-
-    # Search by title or category
 
     if search_query:
 
@@ -651,24 +634,15 @@ def course_list_view(request):
 
         )
 
-
-    # Category filter
-
     if category_filter:
 
         courses = courses.filter(
             category=category_filter
         )
 
-
-    # Latest courses first
-
     courses = courses.order_by(
         "-created_at"
     )
-
-
-    # Pagination - 6 courses per page
 
     paginator = Paginator(
         courses,
@@ -682,7 +656,6 @@ def course_list_view(request):
     page_obj = paginator.get_page(
         page_number
     )
-
 
     return render(
         request,
@@ -699,7 +672,6 @@ def course_list_view(request):
 def course_detail_view(request, course_id):
     course = get_object_or_404(Course, course_id=course_id)
 
-    # Check if the authenticated user is authorized to manage this course
     is_course_manager = False
     is_enrolled = False
     if request.user.is_authenticated:
@@ -718,11 +690,13 @@ def course_detail_view(request, course_id):
         if student:
             is_enrolled = Enrollment.objects.filter(student=student, course=course, status__in=["active", "completed"]).exists()
 
-    # If the course is inactive, only allow course managers to view it
     if not course.is_active and not is_course_manager:
         raise Http404("Course not found or currently unavailable.")
 
     contents = course.contents.all().order_by("order", "content_id")
+    quizzes_count = contents.filter(content_type="quiz").count()
+    enrolled_students_count = course.enrollments.filter(status__in=["active", "completed"]).count()
+    contents_count = contents.count()
 
     return render(
         request,
@@ -732,15 +706,13 @@ def course_detail_view(request, course_id):
             "contents": contents,
             "is_enrolled": is_enrolled,
             "is_course_manager": is_course_manager,
+            "quizzes_count": quizzes_count,
+            "enrolled_students_count": enrolled_students_count,
+            "contents_count": contents_count,
         }
     )
 
-
 def instructor_list_view(request):
-    """
-    Public / platform view listing all registered instructors and faculty members.
-    Displays faculty profiles, specializations, authored courses, and student reach.
-    """
     q = request.GET.get("q", "").strip()
     specialization_filter = request.GET.get("specialization", "").strip()
 
@@ -764,7 +736,6 @@ def instructor_list_view(request):
     if specialization_filter:
         instructors_qs = instructors_qs.filter(specialization__iexact=specialization_filter)
 
-    # Distinct specializations for filter pills
     specializations = (
         Instructor.objects.exclude(specialization="")
         .values_list("specialization", flat=True)
@@ -787,15 +758,9 @@ def instructor_list_view(request):
     }
     return render(request, "instructor_list.html", context)
 
-
 def contact_instructor_view(request, instructor_id):
-    """
-    Form view allowing students, registered users, and site visitors to contact
-    an instructor with questions or direct inquiries about their courses.
-    """
     instructor = get_object_or_404(Instructor, instructor_id=instructor_id)
 
-    # Optional initial course from query param or POST
     course_id = request.GET.get("course_id") or request.POST.get("course_id")
     initial_course = None
     if course_id:
@@ -818,7 +783,6 @@ def contact_instructor_view(request, instructor_id):
                 msg.sender_user = request.user
             msg.save()
 
-            # Optional email dispatch to instructor
             try:
                 subject_line = f"[EduLearn] New Inquiry from {msg.sender_name}: {msg.subject}"
                 course_label = msg.course.title if msg.course else "General Inquiry"
@@ -847,7 +811,6 @@ def contact_instructor_view(request, instructor_id):
                 f"Your message has been delivered to Instructor {instructor.full_name}! They will get back to you at {msg.sender_email}."
             )
 
-            # Redirect back to the course if contacted from a course, otherwise instructor list
             if msg.course:
                 return redirect("course_detail", course_id=msg.course.course_id)
             return redirect("instructor_list")
@@ -867,12 +830,7 @@ def contact_instructor_view(request, instructor_id):
     }
     return render(request, "contact_instructor.html", context)
 
-
 def student_list_view(request):
-    """
-    Platform view listing all registered students in the EduLearn community.
-    Displays student profiles, joined dates, and active learning enrollments.
-    """
     q = request.GET.get("q", "").strip()
 
     students_qs = Student.objects.annotate(
@@ -905,12 +863,7 @@ def student_list_view(request):
     }
     return render(request, "student_list.html", context)
 
-
 def directory_view(request):
-    """
-    Unified directory view listing all registered students and instructors.
-    Provides tabbed navigation, live platform counts, and search across members.
-    """
     q = request.GET.get("q", "").strip()
     active_tab = request.GET.get("tab", "all").strip().lower()
     if active_tab not in ["all", "instructors", "students"]:
@@ -974,7 +927,6 @@ def add_to_cart(request, course_id):
         course_id=course_id
     )
 
-    # Check if student is already enrolled in this course
     is_already_enrolled = Enrollment.objects.filter(
         student=student,
         course=course,
@@ -1041,43 +993,7 @@ def remove_from_cart(request, cart_id):
 
     return redirect("cart")
 
-# @login_required
-# def cart_view(request):
-
-#     print("========== CART VIEW ==========")
-#     print("LOGGED USER:", request.user.username)
-#     print("USER EMAIL:", repr(request.user.email))
-#     print("AUTHENTICATED:", request.user.is_authenticated)
-
-#     student = Student.objects.filter(
-#         email=request.user.email
-#     ).first()
-
-#     print("FOUND STUDENT:", student)
-
-#     if not student:
-#         print("NO STUDENT - REDIRECTING TO COURSES")
-
-#         messages.error(
-#             request,
-#             "No student profile found for this account."
-#         )
-
-#         return redirect("course_list")
-
-#     cart_items = Cart.objects.filter(
-#         student=student
-#     ).select_related("course")
-
-#     print("CART ITEMS:", list(cart_items))
-
-#     return render(
-#         request,
-#         "cart.html",
-#         {
-#             "cart_items": cart_items
-#         }
-#     )
+    print("NO STUDENT - REDIRECTING TO COURSES")
 
 @login_required
 def cart_view(request):
@@ -1139,7 +1055,6 @@ def checkout_view(request):
         )
     )
 
-    # Create Razorpay order
     order = client.order.create(
         data={
             "amount": amount_paise,
@@ -1148,7 +1063,6 @@ def checkout_view(request):
         }
     )
 
-    # Save Razorpay order in our database BEFORE payment
     Payment.objects.create(
         student=student,
         razorpay_order_id=order["id"],
@@ -1215,13 +1129,11 @@ def payment_callback(request):
             "razorpay_signature": signature,
         })
 
-        # Payment verified successfully
         payment.razorpay_payment_id = payment_id
         payment.razorpay_signature = signature
         payment.status = "verified"
         payment.save()
 
-        # Capture cart items and course references BEFORE clearing the cart
         cart_items = Cart.objects.filter(
             student=payment.student
         ).select_related("course")
@@ -1241,7 +1153,6 @@ def payment_callback(request):
 
         student = payment.student
         if student:
-            # Heal student email from user if student email is blank and user is authenticated
             if not student.email and request.user.is_authenticated and request.user.email:
                 student.email = request.user.email
                 student.save(update_fields=["email"])
@@ -1250,20 +1161,17 @@ def payment_callback(request):
             student.save(update_fields=["enrollment_date"])
             Cart.objects.filter(student=student).delete()
 
-            # Fallback for course list if cart was already empty
             if not courses_to_enroll:
                 recent_enrollments = Enrollment.objects.filter(student=student).select_related("course").order_by("-enrollment_date")[:5]
                 courses_to_enroll = [enr.course for enr in recent_enrollments]
 
             first_course = courses_to_enroll[0] if courses_to_enroll else None
 
-            # 1. Payment confirmation email (after successful signature verification)
             try:
                 send_payment_confirmation_email(student, payment, course=first_course)
             except Exception as mail_err:
                 print(f"[PAYMENT CALLBACK] Warning: Payment confirmation email dispatch failed: {mail_err}")
 
-            # 2. Course enrollment email (for each enrolled course)
             for course in courses_to_enroll:
                 try:
                     send_enrollment_confirmation_email(student, course)
@@ -1290,16 +1198,8 @@ def payment_callback(request):
         return redirect("cart")
     
     
-# ==============================================================================
-# Instructor Portal Helpers, Decorators, and Views
-# ==============================================================================
 
 def get_student_for_user(user):
-    """
-    Safely retrieves the Student profile for an authenticated user.
-    If the user has role 'student' in UserProfile but lacks a Student record,
-    it safely auto-heals and creates one using the user's details without creating duplicates.
-    """
     if not user or not user.is_authenticated:
         return None
 
@@ -1319,22 +1219,14 @@ def get_student_for_user(user):
             )
     return student
 
-
 def get_instructor_for_user(user):
-    """
-    Safely retrieves the Instructor profile for an authenticated user.
-    If the user has role 'instructor' in UserProfile but lacks an Instructor record,
-    it safely auto-heals and creates one using the user's details without creating duplicates.
-    """
     if not user.is_authenticated:
         return None
 
-    # Check case-insensitively by email
     instructor = Instructor.objects.filter(email__iexact=user.email).first()
     if not instructor:
         profile = UserProfile.objects.filter(user=user).first()
         if profile and profile.role == "instructor":
-            # Auto-heal profile
             instructor, _ = Instructor.objects.get_or_create(
                 email=user.email,
                 defaults={
@@ -1346,12 +1238,7 @@ def get_instructor_for_user(user):
             )
     return instructor
 
-
 def instructor_required(view_func):
-    """
-    Decorator to ensure the logged-in user is authenticated, has the instructor role,
-    and has a valid Instructor profile.
-    """
     @wraps(view_func)
     def _wrapped_view(request, *args, **kwargs):
         if not request.user.is_authenticated:
@@ -1371,17 +1258,10 @@ def instructor_required(view_func):
         return view_func(request, *args, **kwargs)
     return _wrapped_view
 
-
 @instructor_required
 def instructor_courses_view(request):
-    """
-    Instructor Dashboard & Course Hub.
-    Displays instructor metrics (total courses, active courses, student enrollments)
-    and lists all courses authored by this instructor with management controls.
-    """
     instructor = get_instructor_for_user(request.user)
 
-    # Fetch instructor's courses with active and total enrollment counts
     courses = Course.objects.filter(
         instructor=instructor
     ).annotate(
@@ -1392,6 +1272,11 @@ def instructor_courses_view(request):
         total_enrollments_count=Count(
             "enrollments",
             filter=Q(enrollments__status__in=["active", "completed"])
+        ),
+        quizzes_count=Count(
+            "contents",
+            filter=Q(contents__content_type="quiz"),
+            distinct=True
         )
     ).order_by("-created_at")
 
@@ -1399,7 +1284,6 @@ def instructor_courses_view(request):
     active_courses = courses.filter(is_active=True).count()
     inactive_courses = total_courses - active_courses
 
-    # Real enrollment metrics across all courses by this instructor
     total_enrollments = Enrollment.objects.filter(
         course__instructor=instructor,
         status__in=["active", "completed"]
@@ -1409,6 +1293,11 @@ def instructor_courses_view(request):
         course__instructor=instructor,
         status__in=["active", "completed"]
     ).values("student").distinct().count()
+
+    total_quizzes = CourseContent.objects.filter(
+        course__instructor=instructor,
+        content_type="quiz"
+    ).count()
 
     unread_messages_count = InstructorMessage.objects.filter(
         instructor=instructor,
@@ -1423,31 +1312,26 @@ def instructor_courses_view(request):
         "inactive_courses": inactive_courses,
         "total_enrollments": total_enrollments,
         "unique_students": unique_students,
+        "total_quizzes": total_quizzes,
         "unread_messages_count": unread_messages_count,
     }
 
     return render(request, "instructor_courses.html", context)
 
-
 @instructor_required
 def instructor_messages_view(request):
-    """
-    Instructor Inbox: View student and visitor inquiries sent to this instructor.
-    Supports in-page quick replies, marking inquiries as read, and status filtering.
-    """
+   
     instructor = get_instructor_for_user(request.user)
     if not instructor:
         messages.error(request, "Instructor profile not found.")
         return redirect("dashboard")
 
-    # In-page action: mark as read
     mark_read_id = request.POST.get("mark_read")
     if request.method == "POST" and mark_read_id:
         InstructorMessage.objects.filter(message_id=mark_read_id, instructor=instructor).update(is_read=True)
         messages.success(request, "Message marked as read.")
         return redirect("instructor_messages")
 
-    # Option 1: In-page quick reply submission
     if request.method == "POST" and request.POST.get("action") == "send_reply":
         message_id = request.POST.get("message_id")
         reply_text = request.POST.get("reply_text", "").strip()
@@ -1462,7 +1346,6 @@ def instructor_messages_view(request):
             msg.is_read = True
             msg.save()
 
-            # Email the reply to the student
             try:
                 subject_line = f"[EduLearn] Instructor {instructor.full_name} replied to: {msg.subject}"
                 body = (
@@ -1512,13 +1395,8 @@ def instructor_messages_view(request):
     }
     return render(request, "instructor_messages.html", context)
 
-
 @instructor_required
 def instructor_message_reply_view(request, message_id):
-    """
-    Option 2: Dedicated reply screen where the instructor can view the student inquiry
-    and compose a detailed response.
-    """
     instructor = get_instructor_for_user(request.user)
     if not instructor:
         messages.error(request, "Instructor profile not found.")
@@ -1526,7 +1404,6 @@ def instructor_message_reply_view(request, message_id):
 
     msg = get_object_or_404(InstructorMessage, message_id=message_id, instructor=instructor)
 
-    # Automatically mark message as read when instructor opens this inquiry
     if not msg.is_read:
         msg.is_read = True
         msg.save(update_fields=["is_read"])
@@ -1540,7 +1417,6 @@ def instructor_message_reply_view(request, message_id):
             msg.is_read = True
             msg.save()
 
-            # Email notification to student
             try:
                 subject_line = f"[EduLearn] Instructor {instructor.full_name} replied to: {msg.subject}"
                 body = (
@@ -1575,13 +1451,8 @@ def instructor_message_reply_view(request, message_id):
     }
     return render(request, "instructor_message_reply.html", context)
 
-
 @instructor_required
 def instructor_course_create_view(request):
-    """
-    Allows instructors to create and publish a new course.
-    The course is automatically associated with the authenticated instructor.
-    """
     instructor = get_instructor_for_user(request.user)
 
     if request.method == "POST":
@@ -1609,13 +1480,7 @@ def instructor_course_create_view(request):
         }
     )
 
-
 def can_manage_course(user, course):
-    """
-    Determines if a user has permission to manage (edit or delete) a course.
-    - Superusers, staff, and admin role users can manage any course.
-    - Instructors can only manage courses that they authored.
-    """
     if not user.is_authenticated:
         return False, None
     if user.is_staff or user.is_superuser:
@@ -1629,13 +1494,9 @@ def can_manage_course(user, course):
             return True, instructor
     return False, None
 
-
 @login_required
 def instructor_course_edit_view(request, course_id):
-    """
-    Allows an instructor or admin to edit details of an existing course.
-    Strictly verifies ownership or administrative privileges.
-    """
+
     course = get_object_or_404(Course, course_id=course_id)
 
     allowed, instructor = can_manage_course(request.user, course)
@@ -1674,13 +1535,9 @@ def instructor_course_edit_view(request, course_id):
         }
     )
 
-
 @login_required
 def instructor_course_delete_view(request, course_id):
-    """
-    Allows an instructor or admin to delete a course with confirmation.
-    Strictly verifies ownership or administrative privileges. Requires a POST request to perform deletion.
-    """
+
     course = get_object_or_404(Course, course_id=course_id)
 
     allowed, instructor = can_manage_course(request.user, course)
@@ -1710,22 +1567,14 @@ def instructor_course_delete_view(request, course_id):
         }
     )
 
-
-# Course CRUD view aliases for flexible imports and routing
 course_create_view = instructor_course_create_view
 course_add_view = instructor_course_create_view
 course_update_view = instructor_course_edit_view
 course_edit_view = instructor_course_edit_view
 course_delete_view = instructor_course_delete_view
 
-
 @login_required
 def course_manage_all_view(request):
-    """
-    Standalone comprehensive course management view displaying all courses with direct
-    Edit, Delete, Lessons, and View actions.
-    Accessible to instructors, staff members, and administrators.
-    """
     role = get_user_role(request.user)
     is_admin = is_admin_user(request.user)
     instructor = get_instructor_for_user(request.user)
@@ -1768,7 +1617,6 @@ def course_manage_all_view(request):
     if scope_filter == "mine" and instructor:
         courses_qs = courses_qs.filter(instructor=instructor)
 
-    # Attach permission flag for each course item
     courses_list = list(courses_qs)
     for c in courses_list:
         if is_admin:
@@ -1800,18 +1648,9 @@ def course_manage_all_view(request):
     }
     return render(request, "course_manage_all.html", context)
 
-
-
-# ---------------------------------------------------------
-# Course Content Management Views
-# ---------------------------------------------------------
-
 @login_required
 def course_content_manage_view(request, course_id):
-    """
-    Manage curriculum and lessons for a specific course.
-    Instructors can only manage contents for their own courses.
-    """
+
     course = get_object_or_404(Course, course_id=course_id)
     allowed, instructor = can_manage_course(request.user, course)
     if not allowed:
@@ -1843,12 +1682,9 @@ def course_content_manage_view(request, course_id):
         }
     )
 
-
 @login_required
 def course_content_add_view(request, course_id):
-    """
-    Add a new lesson, video, document, or exercise to a course.
-    """
+   
     course = get_object_or_404(Course, course_id=course_id)
     allowed, instructor = can_manage_course(request.user, course)
     if not allowed:
@@ -1881,12 +1717,9 @@ def course_content_add_view(request, course_id):
         }
     )
 
-
 @login_required
 def course_content_edit_view(request, content_id):
-    """
-    Edit details of an existing lesson or content module.
-    """
+
     content = get_object_or_404(CourseContent, content_id=content_id)
     course = content.course
     allowed, instructor = can_manage_course(request.user, course)
@@ -1918,12 +1751,9 @@ def course_content_edit_view(request, content_id):
         }
     )
 
-
 @login_required
 def course_content_delete_view(request, content_id):
-    """
-    Delete a specific lesson or content module with safe confirmation.
-    """
+    
     content = get_object_or_404(CourseContent, content_id=content_id)
     course = content.course
     allowed, instructor = can_manage_course(request.user, course)
@@ -1947,12 +1777,9 @@ def course_content_delete_view(request, content_id):
         }
     )
 
-
 @login_required
 def course_content_reorder_view(request, content_id, direction):
-    """
-    Reorder lesson sequence up or down within a course syllabus.
-    """
+  
     content = get_object_or_404(CourseContent, content_id=content_id)
     course = content.course
     allowed, instructor = can_manage_course(request.user, course)
@@ -1986,22 +1813,12 @@ def course_content_reorder_view(request, content_id, direction):
 
     return redirect("course_content_manage", course_id=course.course_id)
 
-
-# Upload notes & video URL view aliases
 course_upload_notes_view = course_content_add_view
 course_upload_material_view = course_content_add_view
 
-
-# ---------------------------------------------------------
-# Custom EduLearn Administrator Portal Views
-# ---------------------------------------------------------
-
 @admin_required
 def admin_dashboard_view(request):
-    """
-    Main EduLearn Custom Admin Dashboard overview with live KPI metrics,
-    recent enrollments, recent payments, and system health statistics.
-    """
+ 
     total_students = Student.objects.count()
     total_instructors = Instructor.objects.count()
     total_courses = Course.objects.count()
@@ -2058,14 +1875,9 @@ def admin_dashboard_view(request):
     }
     return render(request, "admin_dashboard.html", context)
 
-
 @admin_required
 def admin_students_view(request):
-    """
-    Administrator student management page.
-    Lists all registered students with live course enrollments, payment statistics, account status,
-    search query filtering, status filtering, and multi-field sorting.
-    """
+   
     q = request.GET.get("q", "").strip()
     status_filter = request.GET.get("status", "all").strip().lower()
     sort_by = request.GET.get("sort", "recent").strip().lower()
@@ -2090,7 +1902,6 @@ def admin_students_view(request):
             Q(phone__icontains=q)
         )
 
-    # Attach linked User and status
     students_list = list(students_qs)
     all_users = list(User.objects.all())
     user_email_map = {u.email.strip().lower(): u for u in all_users if u.email}
@@ -2110,7 +1921,6 @@ def admin_students_view(request):
     elif status_filter == "inactive":
         students_list = [s for s in students_list if not s.is_active]
 
-    # Sorting
     if sort_by == "name_asc":
         students_list.sort(key=lambda s: (s.first_name.lower(), s.last_name.lower()))
     elif sort_by == "name_desc":
@@ -2134,14 +1944,9 @@ def admin_students_view(request):
     }
     return render(request, "admin_students.html", context)
 
-
 @admin_required
 def admin_instructors_view(request):
-    """
-    Administrator instructor management page.
-    Lists all registered instructors with courses taught, student reach, account status,
-    live search query filtering, status filtering, and sorting.
-    """
+  
     q = request.GET.get("q", "").strip()
     status_filter = request.GET.get("status", "all").strip().lower()
     sort_by = request.GET.get("sort", "recent").strip().lower()
@@ -2160,7 +1965,6 @@ def admin_instructors_view(request):
             Q(specialization__icontains=q)
         )
 
-    # Attach linked User and status
     instructors_list = list(instructors_qs)
     all_users = list(User.objects.all())
     user_email_map = {u.email.strip().lower(): u for u in all_users if u.email}
@@ -2180,7 +1984,6 @@ def admin_instructors_view(request):
     elif status_filter == "inactive":
         instructors_list = [i for i in instructors_list if not i.is_active]
 
-    # Sorting
     if sort_by == "name_asc":
         instructors_list.sort(key=lambda i: (i.first_name.lower(), i.last_name.lower()))
     elif sort_by == "name_desc":
@@ -2204,7 +2007,6 @@ def admin_instructors_view(request):
     }
     return render(request, "admin_instructors.html", context)
 
-
 @admin_required
 def admin_user_toggle_status_view(request, user_id):
     """
@@ -2213,7 +2015,6 @@ def admin_user_toggle_status_view(request, user_id):
     """
     target_user = get_object_or_404(User, id=user_id)
 
-    # Security safeguard: Prevent admin from deactivating their own account
     if target_user.id == request.user.id:
         messages.error(request, "Security safeguard: You cannot deactivate your own administrative account.")
         referer = request.META.get("HTTP_REFERER")
@@ -2231,25 +2032,19 @@ def admin_user_toggle_status_view(request, user_id):
     referer = request.META.get("HTTP_REFERER")
     return redirect(referer if referer else "admin_dashboard")
 
-
 @admin_required
 def admin_student_delete_view(request, student_id):
-    """
-    Permanently deletes a student record from the platform, including their
-    associated cart items, enrollments, and linked auth.User account (if not an admin/superuser).
-    """
+
     student = get_object_or_404(Student, student_id=student_id)
     student_name = f"{student.first_name} {student.last_name}".strip()
     student_email = student.email.strip() if student.email else ""
 
-    # Locate linked user account
     linked_user = None
     if student_email:
         linked_user = User.objects.filter(email__iexact=student_email).first()
     if not linked_user and student.first_name:
         linked_user = User.objects.filter(username__iexact=student.first_name).first()
 
-    # Safety checks
     if linked_user:
         if linked_user.is_superuser or linked_user == request.user:
             messages.error(request, "Security safeguard: You cannot delete a superuser or your own administrative account.")
@@ -2259,10 +2054,8 @@ def admin_student_delete_view(request, student_id):
             messages.error(request, "Security safeguard: You cannot delete an administrator account through the student directory.")
             return redirect("admin_students")
 
-    # Delete Student record
     student.delete()
 
-    # Delete linked user account if exists
     if linked_user:
         linked_user.delete()
 
@@ -2272,25 +2065,19 @@ def admin_student_delete_view(request, student_id):
     )
     return redirect("admin_students")
 
-
 @admin_required
 def admin_instructor_delete_view(request, instructor_id):
-    """
-    Permanently deletes an instructor record from the platform.
-    Courses assigned to this instructor are preserved (instructor set to null).
-    """
+ 
     instructor = get_object_or_404(Instructor, instructor_id=instructor_id)
     instructor_name = instructor.full_name
     instructor_email = instructor.email.strip() if instructor.email else ""
 
-    # Locate linked user account
     linked_user = None
     if instructor_email:
         linked_user = User.objects.filter(email__iexact=instructor_email).first()
     if not linked_user and instructor.first_name:
         linked_user = User.objects.filter(username__iexact=instructor.first_name).first()
 
-    # Safety checks
     if linked_user:
         if linked_user.is_superuser or linked_user == request.user:
             messages.error(request, "Security safeguard: You cannot delete a superuser or your own administrative account.")
@@ -2300,10 +2087,8 @@ def admin_instructor_delete_view(request, instructor_id):
             messages.error(request, "Security safeguard: You cannot delete an administrator account through the instructor directory.")
             return redirect("admin_instructors")
 
-    # Delete Instructor record (Course.instructor is set to null automatically)
     instructor.delete()
 
-    # Delete linked user account if exists
     if linked_user:
         linked_user.delete()
 
@@ -2313,15 +2098,9 @@ def admin_instructor_delete_view(request, instructor_id):
     )
     return redirect("admin_instructors")
 
-
-
 @admin_required
 def admin_courses_view(request):
-    """
-    Administrator course catalog management page.
-    Displays all courses, pricing, instructor details, enrollment counts, status controls,
-    category filters, search query, and flexible sorting.
-    """
+ 
     q = request.GET.get("q", "").strip()
     status_filter = request.GET.get("status", "all").strip().lower()
     category_filter = request.GET.get("category", "all").strip()
@@ -2349,7 +2128,6 @@ def admin_courses_view(request):
             Q(instructor__last_name__icontains=q)
         )
 
-    # Sorting
     if sort_by == "title_asc":
         courses_qs = courses_qs.order_by("title")
     elif sort_by == "price_asc":
@@ -2377,12 +2155,9 @@ def admin_courses_view(request):
     }
     return render(request, "admin_courses.html", context)
 
-
 @admin_required
 def admin_course_toggle_status_view(request, course_id):
-    """
-    Toggles course visibility status between Active and Draft/Inactive.
-    """
+  
     course = get_object_or_404(Course, course_id=course_id)
     course.is_active = not course.is_active
     course.save(update_fields=["is_active"])
@@ -2390,13 +2165,9 @@ def admin_course_toggle_status_view(request, course_id):
     messages.success(request, f'Course "{course.title}" status changed to {status_label}.')
     return redirect("admin_courses")
 
-
 @admin_required
 def admin_enrollments_view(request):
-    """
-    Administrator enrollment tracking page.
-    Shows all student enrollments, course affiliations, dates, and status management.
-    """
+  
     q = request.GET.get("q", "").strip()
     status_filter = request.GET.get("status", "all")
 
@@ -2427,12 +2198,9 @@ def admin_enrollments_view(request):
     }
     return render(request, "admin_enrollments.html", context)
 
-
 @admin_required
 def admin_enrollment_update_status_view(request, enrollment_id, new_status):
-    """
-    Updates the status of an enrollment record (active, completed, cancelled).
-    """
+   
     enrollment = get_object_or_404(Enrollment, enrollment_id=enrollment_id)
     if new_status in ["active", "completed", "cancelled"]:
         old_status = enrollment.status
@@ -2440,7 +2208,6 @@ def admin_enrollment_update_status_view(request, enrollment_id, new_status):
         enrollment.save(update_fields=["status"])
         messages.success(request, f'Enrollment #{enrollment.enrollment_id} updated to {new_status.title()}.')
 
-        # Trigger completion email if transitioning to completed
         if new_status == "completed" and old_status != "completed":
             try:
                 send_course_completion_email(enrollment.student, enrollment.course)
@@ -2450,13 +2217,9 @@ def admin_enrollment_update_status_view(request, enrollment_id, new_status):
         messages.error(request, f'Invalid status choice: {new_status}')
     return redirect("admin_enrollments")
 
-
 @admin_required
 def admin_payments_view(request):
-    """
-    Administrator payment and revenue reconciliation page.
-    Tracks all transaction orders, payment IDs, amounts, and statuses.
-    """
+ 
     q = request.GET.get("q", "").strip()
     status_filter = request.GET.get("status", "all")
 
@@ -2495,3 +2258,12 @@ def admin_payments_view(request):
         "active_tab": "payments",
     }
     return render(request, "admin_payments.html", context)
+
+def help_center_view(request):
+    return render(request, "help_center.html")
+
+def privacy_policy_view(request):
+    return render(request, "privacy_policy.html")
+
+def terms_of_service_view(request):
+    return render(request, "terms_of_service.html")

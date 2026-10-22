@@ -62,20 +62,6 @@ class Student(models.Model):
         return User.objects.filter(email__iexact=self.email).first()
 
     @property
-    def profile_picture_url(self):
-        if self.profile_picture:
-            try:
-                return self.profile_picture.url
-            except Exception:
-                return None
-        return None
-
-    @property
-    def user(self):
-        from django.contrib.auth.models import User
-        return User.objects.filter(email__iexact=self.email).first()
-
-    @property
     def enrolled_courses_count(self):
         if "enrolled_courses_count" in self.__dict__:
             return self.__dict__["enrolled_courses_count"]
@@ -270,6 +256,46 @@ class Course(models.Model):
 
     def __str__(self):
         return self.title
+
+    @property
+    def enrolled_students_count(self):
+        if "enrolled_students_count" in self.__dict__:
+            return self.__dict__["enrolled_students_count"]
+        return self.enrollments.filter(status__in=["active", "completed"]).count()
+
+    @enrolled_students_count.setter
+    def enrolled_students_count(self, value):
+        self.__dict__["enrolled_students_count"] = value
+
+    @property
+    def enrolled_count(self):
+        if "enrolled_count" in self.__dict__:
+            return self.__dict__["enrolled_count"]
+        return self.enrolled_students_count
+
+    @enrolled_count.setter
+    def enrolled_count(self, value):
+        self.__dict__["enrolled_count"] = value
+
+    @property
+    def quizzes_count(self):
+        if "quizzes_count" in self.__dict__:
+            return self.__dict__["quizzes_count"]
+        return self.contents.filter(content_type="quiz").count()
+
+    @quizzes_count.setter
+    def quizzes_count(self, value):
+        self.__dict__["quizzes_count"] = value
+
+    @property
+    def contents_count(self):
+        if "contents_count" in self.__dict__:
+            return self.__dict__["contents_count"]
+        return self.contents.count()
+
+    @contents_count.setter
+    def contents_count(self, value):
+        self.__dict__["contents_count"] = value
 
 
 class Enrollment(models.Model):

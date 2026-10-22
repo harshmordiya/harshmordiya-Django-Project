@@ -50,7 +50,6 @@ class RegistrationForm(forms.Form):
         })
     )
 
-    # Student details
     first_name = forms.CharField(
         max_length=100,
         widget=forms.TextInput(attrs={
@@ -153,13 +152,11 @@ class RegistrationForm(forms.Form):
 
         role = self.cleaned_data["role"]
 
-        # Create UserProfile
         UserProfile.objects.create(
             user=user,
             role=role
         )
 
-        # Create Student profile automatically
         if role == "student":
             Student.objects.get_or_create(
                 email=self.cleaned_data["email"],
@@ -172,7 +169,6 @@ class RegistrationForm(forms.Form):
                 }
             )
 
-        # Create Instructor profile automatically
         elif role == "instructor":
             specialization = self.cleaned_data.get("specialization", "").strip() or "General"
             Instructor.objects.get_or_create(
@@ -316,7 +312,6 @@ class CourseContentForm(forms.ModelForm):
         return file
 
 
-# Aliases for explicit notes/video upload forms
 CourseNotesAndVideoForm = CourseContentForm
 CourseMaterialUploadForm = CourseContentForm
 
@@ -406,7 +401,6 @@ class StudentProfileForm(forms.ModelForm):
         if not email:
             raise forms.ValidationError("Email address is required.")
 
-        # Ensure no collision with other users
         user_qs = User.objects.filter(email__iexact=email)
         if self.user:
             user_qs = user_qs.exclude(id=self.user.id)
@@ -452,7 +446,6 @@ class StudentProfileForm(forms.ModelForm):
     def save(self, commit=True):
         student = super().save(commit=False)
 
-        # Handle removing profile picture if requested
         if self.cleaned_data.get("clear_profile_picture"):
             if student.profile_picture:
                 try:
@@ -465,7 +458,6 @@ class StudentProfileForm(forms.ModelForm):
             student.save()
             self.save_m2m()
 
-        # Synchronize first_name, last_name, and email to auth.User
         if self.user:
             self.user.first_name = self.cleaned_data.get("first_name", "").strip()
             self.user.last_name = self.cleaned_data.get("last_name", "").strip()
@@ -673,7 +665,6 @@ class ContactInstructorForm(forms.ModelForm):
         self.instructor = instructor
         self.user = user
 
-        # Filter the course dropdown to courses taught by this instructor
         if instructor:
             self.fields["course"].queryset = Course.objects.filter(instructor=instructor).order_by("title")
             self.fields["course"].empty_label = "-- General Inquiry (No specific course) --"
@@ -684,7 +675,6 @@ class ContactInstructorForm(forms.ModelForm):
         if initial_course:
             self.fields["course"].initial = initial_course
 
-        # Auto-fill from authenticated user session
         if user and user.is_authenticated:
             full_name = f"{user.first_name} {user.last_name}".strip() or user.username
             if not self.initial.get("sender_name"):

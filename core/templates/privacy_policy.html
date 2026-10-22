@@ -1,0 +1,86 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Privacy Policy - EduLearn{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 960px; margin: 2rem auto; padding: 0 1.25rem;">
+
+    <div style="margin-bottom: 2rem;">
+        <a href="{% url 'home' %}"  style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.6rem 1.35rem; font-weight: 600; border-radius: 8px; text-decoration: none;">
+        </a>
+    </div>
+
+    <div style="margin-bottom: 2.5rem; padding-bottom: 1.5rem; border-bottom: 1px solid #e2e8f0;">
+        <div style="display: inline-flex; align-items: center; gap: 0.5rem; color: #4f46e5; font-size: 0.88rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem;">
+            <i class="bi bi-shield-check"></i> Legal & Compliance
+        </div>
+        <h1 style="font-size: 2.25rem; font-weight: 800; color: #0f172a; margin-bottom: 0.5rem;">Privacy Policy</h1>
+        <p style="font-size: 0.95rem; color: #64748b; margin: 0;">Last updated: October 2026 &bull; Effective Date: October 2026</p>
+    </div>
+
+    <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 2.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.04); margin-bottom: 3.5rem; line-height: 1.7; color: #334155;">
+
+        <section style="margin-bottom: 2rem;">
+            <h2 style="font-size: 1.35rem; font-weight: 700; color: #0f172a; margin-bottom: 0.75rem;">1. Introduction</h2>
+            <p style="font-size: 0.95rem;">
+                Welcome to <strong>EduLearn</strong>. We respect your privacy and are committed to protecting personal data collected from students, instructors, and visitors. This Privacy Policy outlines how we collect, store, utilize, and protect your information when utilizing our web platform and educational services.
+            </p>
+        </section>
+
+        <section style="margin-bottom: 2rem;">
+            <h2 style="font-size: 1.35rem; font-weight: 700; color: #0f172a; margin-bottom: 0.75rem;">2. Information We Collect</h2>
+            <p style="font-size: 0.95rem;">We only collect data necessary to provide effective learning experiences, including:</p>
+            <ul style="padding-left: 1.5rem; font-size: 0.95rem; margin-bottom: 0.75rem;">
+                <li><strong>Account Information:</strong> First name, last name, username, and verified email address upon registration.</li>
+                <li><strong>Profile Details:</strong> Optional biography, profile picture, phone number, and specialization (for instructors).</li>
+                <li><strong>Academic & Enrollment Data:</strong> Courses enrolled in, course progress, completed lessons, and inquiry messages sent to instructors.</li>
+                <li><strong>Payment & Order References:</strong> Razorpay order ID, payment transaction ID, and timestamp.</li>
+            </ul>
+        </section>
+
+        <section style="margin-bottom: 2rem;">
+            <h2 style="font-size: 1.35rem; font-weight: 700; color: #0f172a; margin-bottom: 0.75rem;">3. Payment Protection & Razorpay Integration</h2>
+            <div style="background: #f0fdf4; border-left: 4px solid #10b981; padding: 1.25rem; border-radius: 0 8px 8px 0; margin-bottom: 1rem;">
+                <p style="font-size: 0.93rem; color: #166534; margin: 0; font-weight: 500;">
+                    <i class="bi bi-shield-lock-fill" style="color: #10b981; margin-right: 0.35rem;"></i>
+                    <strong>Bank-Grade Payment Security:</strong> EduLearn does not store, process, or view credit/debit card numbers, CVVs, or UPI PINs. All payment transactions are handled directly through <strong>Razorpay</strong> with 256-bit SSL encryption.
+                </p>
+            </div>
+            <p style="font-size: 0.95rem;">
+                Payment details are transmitted securely to payment gateways under strict compliance with RBI standards and PCI-DSS requirements.
+            </p>
+        </section>
+
+        <section style="margin-bottom: 2rem;">
+            <h2 style="font-size: 1.35rem; font-weight: 700; color: #0f172a; margin-bottom: 0.75rem;">4. How We Use Your Data</h2>
+            <p style="font-size: 0.95rem;">We use collected information strictly to:</p>
+            <ul style="padding-left: 1.5rem; font-size: 0.95rem;">
+                <li>Provide authenticated access to course content and lecture materials.</li>
+                <li>Dispatch enrollment confirmations and payment receipts via email.</li>
+                <li>Facilitate direct communication between enrolled students and course instructors.</li>
+                <li>Ensure account security via 6-digit one-time password (OTP) verification.</li>
+            </ul>
+        </section>
+
+        <section style="margin-bottom: 2rem;">
+            <h2 style="font-size: 1.35rem; font-weight: 700; color: #0f172a; margin-bottom: 0.75rem;">5. Data Retention & Sharing</h2>
+            <p style="font-size: 0.95rem;">
+                We <strong>never sell or lease personal information</strong> to third parties or advertisers. Data is stored on secured servers and retained only as long as your account remains active or as required by statutory regulations.
+            </p>
+        </section>
+
+        <section>
+            <h2 style="font-size: 1.35rem; font-weight: 700; color: #0f172a; margin-bottom: 0.75rem;">6. Contact Us</h2>
+            <p style="font-size: 0.95rem; margin-bottom: 1.25rem;">
+                If you have questions regarding this Privacy Policy or wish to request data updates, please contact our support team.
+            </p>
+            <a href="{% url 'home' %}" class="btn btn-primary" style="display: inline-flex; align-items: center; gap: 0.5rem; font-weight: 600; padding: 0.6rem 1.35rem; text-decoration: none;">
+                <i class="bi bi-house-door-fill"></i> Return to Home
+            </a>
+        </section>
+
+    </div>
+
+</div>
+{% endblock %}

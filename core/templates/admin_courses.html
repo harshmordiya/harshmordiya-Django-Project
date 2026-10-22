@@ -6,7 +6,6 @@
 {% block admin_content %}
 <div class="mb-4">
 
-    <!-- Page Heading & Top Action -->
     <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
         <div>
             <h1 class="h3 fw-bold text-dark mb-1">
@@ -18,10 +17,8 @@
         </div>
     </div>
 
-    <!-- Search & Filters Toolbar Card -->
     <div class="admin-toolbar-box">
         <form method="get" class="d-flex align-items-center justify-content-between flex-wrap gap-3">
-            <!-- Left: Search Input -->
             <div class="input-group" style="flex: 1 1 260px; max-width: 380px;">
                 <span class="input-group-text bg-white border-end-0 text-muted ps-3">
                     <i class="bi bi-search"></i>
@@ -29,9 +26,7 @@
                 <input type="text" name="q" value="{{ search_query }}" class="form-control border-start-0 ps-1" placeholder="Search title, category, instructor..." aria-label="Search courses">
             </div>
 
-            <!-- Right: Dropdown Filters & Actions -->
             <div class="d-flex align-items-center gap-2 flex-wrap">
-                <!-- Status Filter Dropdown -->
                 <div class="d-flex align-items-center gap-1.5">
                     <label class="text-muted small fw-semibold text-nowrap d-none d-xl-inline">
                         <i class="bi bi-funnel me-1"></i>Status:
@@ -43,7 +38,6 @@
                     </select>
                 </div>
 
-                <!-- Category Filter Dropdown -->
                 <div class="d-flex align-items-center gap-1.5">
                     <label class="text-muted small fw-semibold text-nowrap d-none d-xl-inline">
                         <i class="bi bi-tag me-1"></i>Category:
@@ -56,7 +50,6 @@
                     </select>
                 </div>
 
-                <!-- Sort Order Dropdown -->
                 <div class="d-flex align-items-center gap-1.5">
                     <label class="text-muted small fw-semibold text-nowrap d-none d-xl-inline">
                         <i class="bi bi-arrow-down-up me-1"></i>Sort:
@@ -71,7 +64,6 @@
                     </select>
                 </div>
 
-                <!-- Submit / Reset Buttons -->
                 <button type="submit" class="btn btn-primary btn-sm rounded-pill px-3 fw-semibold">
                     Search
                 </button>
@@ -84,7 +76,6 @@
         </form>
     </div>
 
-    <!-- Courses Table Card -->
     <div class="admin-card">
         <div class="card-header bg-white py-3 px-4 border-bottom d-flex justify-content-between align-items-center flex-wrap gap-2">
             <div class="fw-bold text-dark d-flex align-items-center gap-2">
@@ -130,14 +121,12 @@
                 <tbody>
                     {% for course in courses %}
                         <tr>
-                            <!-- Course ID -->
                             <td>
                                 <span class="badge bg-light text-secondary border rounded-pill px-2 py-1">
                                     #{{ course.course_id }}
                                 </span>
                             </td>
 
-                            <!-- Course Title & Category -->
                             <td>
                                 <div class="fw-bold text-dark fs-6 mb-0.5">{{ course.title }}</div>
                                 <div class="d-flex align-items-center gap-1.5 flex-wrap">
@@ -152,7 +141,6 @@
                                 </div>
                             </td>
 
-                            <!-- Instructor -->
                             <td>
                                 {% if course.instructor %}
                                     <div class="fw-semibold text-dark">{{ course.instructor.first_name }} {{ course.instructor.last_name }}</div>
@@ -164,26 +152,22 @@
                                 {% endif %}
                             </td>
 
-                            <!-- Price -->
                             <td>
                                 <span class="fw-bold text-dark fs-6">₹{{ course.price }}</span>
                             </td>
 
-                            <!-- Curriculum / Lessons -->
                             <td>
                                 <a href="{% url 'course_content_manage' course.course_id %}" class="btn btn-outline-primary btn-sm rounded-pill px-2.5 py-1 text-decoration-none" title="Manage Lessons and Materials">
                                     <i class="bi bi-collection-play me-1"></i>{{ course.lessons_count }} Lessons
                                 </a>
                             </td>
 
-                            <!-- Active Enrollments -->
                             <td>
                                 <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-2.5 py-1 fw-bold">
                                     {{ course.active_enrollments }} Enrolled
                                 </span>
                             </td>
 
-                            <!-- Status Badge -->
                             <td>
                                 {% if course.is_active %}
                                     <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2.5 py-1 fw-semibold">
@@ -196,25 +180,20 @@
                                 {% endif %}
                             </td>
 
-                            <!-- Compact Consistent Actions -->
                             <td class="text-end">
                                 <div class="btn-group btn-group-sm" role="group">
-                                    <!-- Public Preview -->
                                     <a href="{% url 'course_detail' course.course_id %}" target="_blank" class="btn btn-outline-secondary" title="View Public Course Page">
                                         <i class="bi bi-eye"></i>
                                     </a>
 
-                                    <!-- Edit Details -->
                                     <a href="{% url 'course_edit' course.course_id %}" class="btn btn-outline-primary" title="Edit Course Details">
                                         <i class="bi bi-pencil"></i>
                                     </a>
 
-                                    <!-- Manage Curriculum Lessons -->
                                     <a href="{% url 'course_content_manage' course.course_id %}" class="btn btn-outline-secondary" title="Manage Lessons & Uploads">
                                         <i class="bi bi-list-check"></i>
                                     </a>
 
-                                    <!-- Activate / Deactivate Toggle -->
                                     <a href="{% url 'admin_course_toggle_status' course.course_id %}" 
                                        class="btn {% if course.is_active %}btn-outline-warning text-dark{% else %}btn-outline-success{% endif %}" 
                                        title="{% if course.is_active %}Unpublish to Draft{% else %}Publish Course Active{% endif %}">
@@ -225,7 +204,6 @@
                                         {% endif %}
                                     </a>
 
-                                    <!-- Delete Action with Modal Confirmation Trigger -->
                                     <button type="button" 
                                             class="btn btn-outline-danger" 
                                             data-bs-toggle="modal" 
@@ -235,7 +213,6 @@
                                     </button>
                                 </div>
 
-                                <!-- Delete Confirmation Modal -->
                                 <div class="modal fade text-start" id="deleteCourseModal{{ course.course_id }}" tabindex="-1" aria-labelledby="deleteModalLabel{{ course.course_id }}" aria-hidden="true">
                                     <div class="modal-dialog modal-dialog-centered">
                                         <div class="modal-content rounded-4 border-0 shadow">

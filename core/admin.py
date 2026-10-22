@@ -16,10 +16,6 @@ from .models import (
     InstructorMessage,
 )
 
-# -----------------------------------------------------------------------------
-# Custom List Filters for Django Admin
-# -----------------------------------------------------------------------------
-
 class StudentAccountStatusFilter(admin.SimpleListFilter):
     title = "Account Status"
     parameter_name = "account_status"
@@ -127,10 +123,6 @@ class PaymentAmountTierFilter(admin.SimpleListFilter):
         return queryset
 
 
-# -----------------------------------------------------------------------------
-# Admin Actions
-# -----------------------------------------------------------------------------
-
 @admin.action(description="Activate selected user accounts")
 def activate_selected_users(modeladmin, request, queryset):
     emails = [obj.email.lower() for obj in queryset if obj.email]
@@ -144,10 +136,6 @@ def deactivate_selected_users(modeladmin, request, queryset):
     updated = User.objects.filter(email__in=emails).exclude(id=request.user.id).update(is_active=False)
     modeladmin.message_user(request, f"{updated} user account(s) deactivated successfully.")
 
-
-# -----------------------------------------------------------------------------
-# ModelAdmin Registrations
-# -----------------------------------------------------------------------------
 
 @admin.register(Admin)
 class AdminAdmin(admin.ModelAdmin):

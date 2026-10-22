@@ -6,7 +6,6 @@
 {% block admin_content %}
 <div class="mb-4">
 
-    <!-- Page Heading & Top Information -->
     <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
         <div>
             <h1 class="h3 fw-bold text-dark mb-1">
@@ -23,7 +22,6 @@
         </div>
     </div>
 
-    <!-- Revenue KPI Cards Grid (4 Balanced Metric Cards) -->
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 1.25rem; margin-bottom: 1.75rem;">
         <div class="admin-stat-card">
             <div class="admin-stat-top">
@@ -90,10 +88,8 @@
         </div>
     </div>
 
-    <!-- Search & Filters Toolbar Card -->
     <div class="admin-toolbar-box">
         <form method="get" class="d-flex align-items-center justify-content-between flex-wrap gap-3">
-            <!-- Left: Search Input -->
             <div class="input-group" style="flex: 1 1 320px; max-width: 480px;">
                 <span class="input-group-text bg-white border-end-0 text-muted ps-3">
                     <i class="bi bi-search"></i>
@@ -101,9 +97,7 @@
                 <input type="text" name="q" value="{{ search_query }}" class="form-control border-start-0 ps-1" placeholder="Search order ID, payment ID, or email..." aria-label="Search payments">
             </div>
 
-            <!-- Right: Dropdown Filter & Actions -->
             <div class="d-flex align-items-center gap-2.5 flex-wrap">
-                <!-- Status Filter Dropdown -->
                 <div class="d-flex align-items-center gap-1.5">
                     <label class="text-muted small fw-semibold text-nowrap d-none d-sm-inline">
                         <i class="bi bi-funnel me-1"></i>Status:
@@ -115,7 +109,6 @@
                     </select>
                 </div>
 
-                <!-- Submit / Reset Buttons -->
                 <button type="submit" class="btn btn-primary btn-sm rounded-pill px-3 fw-semibold">
                     Search
                 </button>
@@ -128,7 +121,6 @@
         </form>
     </div>
 
-    <!-- Payments Table Card -->
     <div class="admin-card">
         <div class="card-header bg-white py-3 px-4 border-bottom d-flex justify-content-between align-items-center flex-wrap gap-2">
             <div class="fw-bold text-dark d-flex align-items-center gap-2">
@@ -158,14 +150,12 @@
                 <tbody>
                     {% for pay in payments %}
                         <tr>
-                            <!-- Payment ID -->
                             <td>
                                 <span class="badge bg-light text-secondary border rounded-pill px-2 py-1">
                                     #{{ pay.payment_id }}
                                 </span>
                             </td>
 
-                            <!-- Student Info -->
                             <td>
                                 <div class="d-flex align-items-center gap-2.5">
                                     <div class="rounded-circle d-inline-flex align-items-center justify-content-center text-white fw-bold shadow-sm" style="width: 34px; height: 34px; background: linear-gradient(135deg, #10b981, #059669); font-size: 0.8rem; flex-shrink: 0;">
@@ -180,12 +170,10 @@
                                 </div>
                             </td>
 
-                            <!-- Order ID -->
                             <td>
                                 <code class="text-dark bg-light px-2 py-1 rounded small border">{{ pay.razorpay_order_id }}</code>
                             </td>
 
-                            <!-- Payment ID -->
                             <td>
                                 {% if pay.razorpay_payment_id %}
                                     <code class="text-success bg-success-subtle px-2 py-1 rounded small border border-success-subtle">{{ pay.razorpay_payment_id }}</code>
@@ -194,14 +182,12 @@
                                 {% endif %}
                             </td>
 
-                            <!-- Amount -->
                             <td>
                                 <span class="fw-bold fs-6 text-dark">
                                     ₹{{ pay.amount }}
                                 </span>
                             </td>
 
-                            <!-- Status Badge -->
                             <td>
                                 {% if pay.status == 'paid' or pay.status == 'verified' or pay.status == 'captured' or pay.status == 'success' %}
                                     <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2.5 py-1 fw-semibold">
@@ -218,13 +204,11 @@
                                 {% endif %}
                             </td>
 
-                            <!-- Timestamp -->
                             <td class="text-nowrap">
                                 <div class="fw-medium text-dark small">{{ pay.created_at|date:"d M, Y" }}</div>
                                 <div class="text-muted" style="font-size: 0.75rem;">{{ pay.created_at|date:"H:i" }}</div>
                             </td>
 
-                            <!-- Action -->
                             <td class="text-end text-nowrap">
                                 <a href="{% url 'admin_enrollments' %}?q={{ pay.student.email }}" class="btn btn-outline-primary btn-sm rounded-pill px-2.5 py-1 text-nowrap" title="View Associated Enrollments">
                                     <i class="bi bi-clipboard-check me-1"></i> Enrollments

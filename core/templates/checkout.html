@@ -13,7 +13,6 @@
 
     {% if cart_items %}
         <div class="cart-layout">
-            <!-- Courses List -->
             <div class="cart-card">
                 <h3 style="font-size: 1.15rem; margin-bottom: 1.25rem; color: var(--slate-900);">
                     Enrolling In ({{ cart_items|length }} {% if cart_items|length == 1 %}Course{% else %}Courses{% endif %})
@@ -41,7 +40,6 @@
                 </div>
             </div>
 
-            <!-- Payment Summary Card -->
             <div class="cart-summary-card">
                 <h3 style="font-size: 1.25rem; margin-bottom: 1.25rem; color: var(--slate-900);">Payment Due</h3>
 
@@ -84,7 +82,6 @@
 {% endblock %}
 
 {% block extra_js %}
-<!-- Razorpay Checkout Integration -->
 <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 <script>
     var options = {

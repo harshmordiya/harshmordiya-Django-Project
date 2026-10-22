@@ -246,7 +246,6 @@
 <div class="container" style="max-width: 760px; margin-top: 2rem; margin-bottom: 4rem;">
 
     <div class="form-card">
-        <!-- Header -->
         <div class="form-header">
             <div class="form-avatar" id="headerAvatar">
                 {% if student.profile_picture %}
@@ -279,17 +278,14 @@
                 </div>
             {% endif %}
 
-            <!-- Hidden Inputs for Clear Picture -->
             {{ form.clear_profile_picture }}
 
-            <!-- Profile Picture Upload with Instant Live Preview -->
             <div class="picture-upload-section" id="pictureDropzone">
                 <label class="form-label" style="font-size: 0.95rem; font-weight: 700; color: var(--slate-800); margin-bottom: 0.75rem;">
                     📷 Profile Picture
                 </label>
 
                 <div class="picture-preview-row">
-                    <!-- Live Preview Circular Container -->
                     <div class="preview-container" id="previewContainer">
                         <img id="previewImg" 
                              class="preview-img" 
@@ -306,9 +302,7 @@
                         </div>
                     </div>
 
-                    <!-- Upload Controls & Feedback -->
                     <div class="upload-controls">
-                        <!-- Hidden native file input rendered by Django form -->
                         <div style="display: none;">
                             {{ form.profile_picture }}
                         </div>
@@ -327,13 +321,11 @@
                             </button>
                         </div>
 
-                        <!-- Live File Info Feedback -->
                         <div id="fileInfoBadge" class="file-info-badge" style="display: none;">
                             <i class="bi bi-check-circle-fill"></i>
                             <span>Selected: <strong id="fileNameSpan"></strong> (<span id="fileSizeSpan"></span>) - Unsaved Preview</span>
                         </div>
 
-                        <!-- Removal Notification Feedback -->
                         <div id="photoRemovedBadge" class="remove-notice-badge" style="display: none;">
                             <i class="bi bi-exclamation-triangle-fill"></i>
                             <span>Photo marked for removal on save.</span>
@@ -356,7 +348,6 @@
                 </div>
             </div>
 
-            <!-- Name Fields (2 Columns) -->
             <div class="form-grid-2">
                 <div class="form-group">
                     <label class="form-label form-label-required" for="{{ form.first_name.id_for_label }}">
@@ -383,7 +374,6 @@
                 </div>
             </div>
 
-            <!-- Email & Phone (2 Columns) -->
             <div class="form-grid-2">
                 <div class="form-group">
                     <label class="form-label form-label-required" for="{{ form.email.id_for_label }}">
@@ -411,7 +401,6 @@
                 </div>
             </div>
 
-            <!-- Date of Birth -->
             <div class="form-group">
                 <label class="form-label" for="{{ form.date_of_birth.id_for_label }}">
                     Date of Birth
@@ -425,7 +414,6 @@
                 {% endif %}
             </div>
 
-            <!-- Address / City -->
             <div class="form-group">
                 <label class="form-label" for="{{ form.address.id_for_label }}">
                     Address / Location
@@ -438,7 +426,6 @@
                 {% endif %}
             </div>
 
-            <!-- About / Bio -->
             <div class="form-group">
                 <label class="form-label" for="{{ form.bio.id_for_label }}">
                     About Me & Learning Goals
@@ -452,7 +439,6 @@
                 {% endif %}
             </div>
 
-            <!-- Actions Row -->
             <div style="display: flex; align-items: center; gap: 1rem; margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid var(--slate-100); flex-wrap: wrap;">
                 <button type="submit" class="btn btn-primary" style="padding: 0.75rem 2rem; font-weight: 700; border-radius: var(--radius-md);">
                     💾 Save Changes
@@ -466,7 +452,6 @@
 
 </div>
 
-<!-- Real-time Live Preview JavaScript -->
 <script>
 (function() {
     const fileInput = document.getElementById('id_profile_picture');

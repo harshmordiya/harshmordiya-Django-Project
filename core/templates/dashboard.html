@@ -45,7 +45,76 @@
             </div>
         </div>
 
-        <!-- Quick Access Actions -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.25rem; margin-bottom: 2rem;">
+            {% if is_admin or user_role == 'admin' or profile.role == 'admin' %}
+                <div style="background: white; border: 1px solid var(--slate-200); border-radius: var(--radius-md); padding: 1.25rem; display: flex; align-items: center; gap: 1rem;">
+                    <div style="width: 48px; height: 48px; border-radius: 12px; background: #e0e7ff; color: var(--primary); display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">📚</div>
+                    <div>
+                        <div style="font-size: 1.5rem; font-weight: 800; color: var(--slate-900); line-height: 1.1;">{{ site_total_courses }}</div>
+                        <div style="font-size: 0.85rem; color: var(--slate-500); font-weight: 500;">Academy Courses</div>
+                    </div>
+                </div>
+                <div style="background: white; border: 1px solid var(--slate-200); border-radius: var(--radius-md); padding: 1.25rem; display: flex; align-items: center; gap: 1rem;">
+                    <div style="width: 48px; height: 48px; border-radius: 12px; background: #fef3c7; color: #d97706; display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">❓</div>
+                    <div>
+                        <div style="font-size: 1.5rem; font-weight: 800; color: var(--slate-900); line-height: 1.1;">{{ site_total_quizzes }}</div>
+                        <div style="font-size: 0.85rem; color: var(--slate-500); font-weight: 500;">Live Quizzes</div>
+                    </div>
+                </div>
+                <div style="background: white; border: 1px solid var(--slate-200); border-radius: var(--radius-md); padding: 1.25rem; display: flex; align-items: center; gap: 1rem;">
+                    <div style="width: 48px; height: 48px; border-radius: 12px; background: #dcfce7; color: #16a34a; display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">👥</div>
+                    <div>
+                        <div style="font-size: 1.5rem; font-weight: 800; color: var(--slate-900); line-height: 1.1;">{{ site_total_enrolled_students }}</div>
+                        <div style="font-size: 0.85rem; color: var(--slate-500); font-weight: 500;">Enrolled Students</div>
+                    </div>
+                </div>
+            {% elif user_role == 'instructor' or profile.role == 'instructor' %}
+                <div style="background: white; border: 1px solid var(--slate-200); border-radius: var(--radius-md); padding: 1.25rem; display: flex; align-items: center; gap: 1rem;">
+                    <div style="width: 48px; height: 48px; border-radius: 12px; background: #e0e7ff; color: var(--primary); display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">📚</div>
+                    <div>
+                        <div style="font-size: 1.5rem; font-weight: 800; color: var(--slate-900); line-height: 1.1;">{{ total_authored }}</div>
+                        <div style="font-size: 0.85rem; color: var(--slate-500); font-weight: 500;">Courses Taught</div>
+                    </div>
+                </div>
+                <div style="background: white; border: 1px solid var(--slate-200); border-radius: var(--radius-md); padding: 1.25rem; display: flex; align-items: center; gap: 1rem;">
+                    <div style="width: 48px; height: 48px; border-radius: 12px; background: #fef3c7; color: #d97706; display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">❓</div>
+                    <div>
+                        <div style="font-size: 1.5rem; font-weight: 800; color: var(--slate-900); line-height: 1.1;">{{ instructor_quizzes_count }}</div>
+                        <div style="font-size: 0.85rem; color: var(--slate-500); font-weight: 500;">Quizzes Created</div>
+                    </div>
+                </div>
+                <div style="background: white; border: 1px solid var(--slate-200); border-radius: var(--radius-md); padding: 1.25rem; display: flex; align-items: center; gap: 1rem;">
+                    <div style="width: 48px; height: 48px; border-radius: 12px; background: #dcfce7; color: #16a34a; display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">👥</div>
+                    <div>
+                        <div style="font-size: 1.5rem; font-weight: 800; color: var(--slate-900); line-height: 1.1;">{{ instructor_students_count }}</div>
+                        <div style="font-size: 0.85rem; color: var(--slate-500); font-weight: 500;">Enrolled Students</div>
+                    </div>
+                </div>
+            {% else %}
+                <div style="background: white; border: 1px solid var(--slate-200); border-radius: var(--radius-md); padding: 1.25rem; display: flex; align-items: center; gap: 1rem;">
+                    <div style="width: 48px; height: 48px; border-radius: 12px; background: #e0e7ff; color: var(--primary); display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">📚</div>
+                    <div>
+                        <div style="font-size: 1.5rem; font-weight: 800; color: var(--slate-900); line-height: 1.1;">{{ total_enrolled }}</div>
+                        <div style="font-size: 0.85rem; color: var(--slate-500); font-weight: 500;">Courses Enrolled</div>
+                    </div>
+                </div>
+                <div style="background: white; border: 1px solid var(--slate-200); border-radius: var(--radius-md); padding: 1.25rem; display: flex; align-items: center; gap: 1rem;">
+                    <div style="width: 48px; height: 48px; border-radius: 12px; background: #fef3c7; color: #d97706; display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">❓</div>
+                    <div>
+                        <div style="font-size: 1.5rem; font-weight: 800; color: var(--slate-900); line-height: 1.1;">{{ total_student_quizzes }}</div>
+                        <div style="font-size: 0.85rem; color: var(--slate-500); font-weight: 500;">Available Quizzes</div>
+                    </div>
+                </div>
+                <div style="background: white; border: 1px solid var(--slate-200); border-radius: var(--radius-md); padding: 1.25rem; display: flex; align-items: center; gap: 1rem;">
+                    <div style="width: 48px; height: 48px; border-radius: 12px; background: #dcfce7; color: #16a34a; display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">🎓</div>
+                    <div>
+                        <div style="font-size: 1.5rem; font-weight: 800; color: var(--slate-900); line-height: 1.1;">{{ completed_courses_count }}</div>
+                        <div style="font-size: 0.85rem; color: var(--slate-500); font-weight: 500;">Completed Courses</div>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+
         <div>
             <h2 style="font-size: 1.25rem; margin-bottom: 1.25rem; color: var(--slate-900);">Quick Actions</h2>
 
@@ -99,7 +168,6 @@
         </div>
 
         {% if profile.role == 'instructor' %}
-        <!-- Instructor Authored Courses Section -->
         <div style="margin-top: 2.5rem; padding-top: 2rem; border-top: 1px solid var(--slate-100);">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 0.75rem;">
                 <div>
@@ -201,7 +269,6 @@
         </div>
 
         {% if enrollments %}
-        <!-- Enrolled Courses for Instructor (if any) -->
         <div style="margin-top: 2.5rem; padding-top: 2rem; border-top: 1px solid var(--slate-100);">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 0.75rem;">
                 <div>
@@ -289,7 +356,6 @@
         {% endif %}
 
         {% elif is_admin or user_role == 'admin' or profile.role == 'admin' %}
-        <!-- Administrator Course Management Hub -->
         <div style="margin-top: 2.5rem; padding-top: 2rem; border-top: 1px solid var(--slate-100);">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 0.75rem;">
                 <div>
@@ -307,7 +373,6 @@
                 </div>
             </div>
 
-            <!-- Admin Course Quick Operation Cards -->
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.25rem; margin-bottom: 2rem;">
                 <div style="background: #f8fafc; border: 1px solid var(--slate-200); border-radius: 12px; padding: 1.25rem; display: flex; flex-direction: column; justify-content: space-between;">
                     <div>
@@ -362,7 +427,6 @@
                 </div>
             </div>
 
-            <!-- Optional Learner Mode for Admin -->
             {% if enrollments %}
                 <div style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px dashed var(--slate-200);">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
@@ -415,9 +479,7 @@
         </div>
 
         {% else %}
-        <!-- Student / General User Learning & Inquiry Portal -->
         <div id="student-dashboard-tabs" style="margin-top: 2.5rem; padding-top: 2rem; border-top: 1px solid var(--slate-100);">
-            <!-- Tab Navigation Header -->
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.75rem; flex-wrap: wrap; gap: 1rem; border-bottom: 2px solid var(--slate-200); padding-bottom: 0.75rem;">
                 <div style="display: flex; gap: 0.65rem; flex-wrap: wrap;">
                     <button type="button" class="dashboard-tab-btn {% if active_tab == 'courses' %}active{% endif %}" id="tab-btn-courses" onclick="switchDashboardTab(event, 'courses')">
@@ -434,7 +496,6 @@
                 </div>
             </div>
 
-            <!-- Tab 1: Enrolled Courses Content -->
             <div id="tab-content-courses" class="dashboard-tab-content {% if active_tab == 'courses' %}active{% endif %}" style="display: {% if active_tab == 'courses' %}block{% else %}none{% endif %};">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 0.75rem;">
                     <div>
@@ -534,7 +595,6 @@
                 {% endif %}
             </div>
 
-            <!-- Tab 2: Sent Messages Content -->
             <div id="tab-content-messages" class="dashboard-tab-content {% if active_tab == 'messages' %}active{% endif %}" style="display: {% if active_tab == 'messages' %}block{% else %}none{% endif %};">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 0.75rem;">
                     <div>
@@ -561,7 +621,6 @@
                     <div style="display: flex; flex-direction: column; gap: 1.25rem;">
                         {% for msg in sent_messages %}
                             <div style="background: #ffffff; border: 1px solid var(--slate-200); border-radius: 12px; padding: 1.35rem; box-shadow: 0 1px 3px rgba(0,0,0,0.04); transition: border-color 0.2s ease;">
-                                <!-- Message Header -->
                                 <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 0.75rem; flex-wrap: wrap; padding-bottom: 0.85rem; border-bottom: 1px solid var(--slate-100);">
                                     <div style="display: flex; flex-direction: column; gap: 0.25rem;">
                                         <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
@@ -601,7 +660,6 @@
                                     </div>
                                 </div>
 
-                                <!-- Subject & Student's Question -->
                                 <div style="margin-top: 0.85rem;">
                                     <h4 style="font-size: 1.05rem; font-weight: 700; color: var(--slate-800); margin: 0 0 0.45rem 0;">
                                         {{ msg.subject }}
@@ -611,7 +669,6 @@
                                     </div>
                                 </div>
 
-                                <!-- Instructor Reply Block -->
                                 {% if msg.reply_text %}
                                     <div style="margin-top: 1rem; background: #f0fdf4; border: 1px solid #bbf7d0; border-left: 4px solid #16a34a; border-radius: 8px; padding: 1rem 1.15rem;">
                                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; flex-wrap: wrap; gap: 0.5rem;">

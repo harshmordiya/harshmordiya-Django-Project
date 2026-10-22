@@ -1,0 +1,133 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Help Center & FAQs - EduLearn{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 1100px; margin: 2rem auto; padding: 0 1.25rem;">
+
+    <div style="margin-bottom: 2rem;">
+        <a href="{% url 'home' %}"  style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.6rem 1.35rem; font-weight: 600; border-radius: 8px; text-decoration: none;">
+        </a>
+    </div>
+
+    <div style="text-align: center; margin-bottom: 3rem; padding: 2.5rem 1.5rem; background: linear-gradient(135deg, #eff6ff 0%, #e0e7ff 100%); border-radius: 16px; border: 1px solid #c7d2fe;">
+        <span style="display: inline-flex; align-items: center; justify-content: center; width: 60px; height: 60px; border-radius: 14px; background: #4f46e5; color: #ffffff; font-size: 2rem; margin-bottom: 1rem; box-shadow: 0 4px 14px rgba(79, 70, 229, 0.3);">
+            <i class="bi bi-question-circle-fill"></i>
+        </span>
+        <h1 style="font-size: 2.25rem; font-weight: 800; color: #1e1b4b; margin-bottom: 0.75rem;">EduLearn Help Center</h1>
+        <p style="font-size: 1.05rem; color: #4338ca; max-width: 620px; margin: 0 auto; line-height: 1.6;">
+            Have questions or need assistance? Find quick answers below regarding courses, enrollments, payments, and instructor interactions.
+        </p>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.5rem; margin-bottom: 3.5rem;">
+        
+        <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.75rem; box-shadow: 0 2px 6px rgba(0,0,0,0.04); transition: transform 0.2s ease;">
+            <div style="width: 44px; height: 44px; border-radius: 10px; background: #e0f2fe; color: #0284c7; display: flex; align-items: center; justify-content: center; font-size: 1.35rem; margin-bottom: 1rem;">
+                <i class="bi bi-mortarboard-fill"></i>
+            </div>
+            <h3 style="font-size: 1.15rem; font-weight: 700; color: #0f172a; margin-bottom: 0.5rem;">For Students</h3>
+            <p style="font-size: 0.92rem; color: #64748b; line-height: 1.5; margin-bottom: 1rem;">
+                Learn how to enroll in courses, access lecture materials, track progress, and view enrolled classes.
+            </p>
+            <a href="{% url 'course_list' %}" style="color: #4f46e5; font-weight: 600; font-size: 0.9rem; text-decoration: none;">Explore Courses &rarr;</a>
+        </div>
+
+        <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.75rem; box-shadow: 0 2px 6px rgba(0,0,0,0.04);">
+            <div style="width: 44px; height: 44px; border-radius: 10px; background: #ecfdf5; color: #059669; display: flex; align-items: center; justify-content: center; font-size: 1.35rem; margin-bottom: 1rem;">
+                <i class="bi bi-credit-card-fill"></i>
+            </div>
+            <h3 style="font-size: 1.15rem; font-weight: 700; color: #0f172a; margin-bottom: 0.5rem;">Payments & Billing</h3>
+            <p style="font-size: 0.92rem; color: #64748b; line-height: 1.5; margin-bottom: 1rem;">
+                All transactions are securely handled via Razorpay with instant verification and confirmation emails.
+            </p>
+            <a href="{% url 'cart' %}" style="color: #4f46e5; font-weight: 600; font-size: 0.9rem; text-decoration: none;">View Cart &rarr;</a>
+        </div>
+
+        <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.75rem; box-shadow: 0 2px 6px rgba(0,0,0,0.04);">
+            <div style="width: 44px; height: 44px; border-radius: 10px; background: #fef3c7; color: #d97706; display: flex; align-items: center; justify-content: center; font-size: 1.35rem; margin-bottom: 1rem;">
+                <i class="bi bi-person-video3"></i>
+            </div>
+            <h3 style="font-size: 1.15rem; font-weight: 700; color: #0f172a; margin-bottom: 0.5rem;">For Instructors</h3>
+            <p style="font-size: 0.92rem; color: #64748b; line-height: 1.5; margin-bottom: 1rem;">
+                Discover how to publish courses, organize lecture modules, upload study notes, and reply to student inquiries.
+            </p>
+            <a href="{% url 'instructor_list' %}" style="color: #4f46e5; font-weight: 600; font-size: 0.9rem; text-decoration: none;">Faculty Directory &rarr;</a>
+        </div>
+
+        <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.75rem; box-shadow: 0 2px 6px rgba(0,0,0,0.04);">
+            <div style="width: 44px; height: 44px; border-radius: 10px; background: #ede9fe; color: #7c3aed; display: flex; align-items: center; justify-content: center; font-size: 1.35rem; margin-bottom: 1rem;">
+                <i class="bi bi-shield-lock-fill"></i>
+            </div>
+            <h3 style="font-size: 1.15rem; font-weight: 700; color: #0f172a; margin-bottom: 0.5rem;">Account & Security</h3>
+            <p style="font-size: 0.92rem; color: #64748b; line-height: 1.5; margin-bottom: 1rem;">
+                Manage your credentials, reset passwords using secure email OTPs, or edit your learning profile.
+            </p>
+            <a href="{% url 'forgot_password' %}" style="color: #4f46e5; font-weight: 600; font-size: 0.9rem; text-decoration: none;">Reset Password &rarr;</a>
+        </div>
+    </div>
+
+    <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 2.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.04); margin-bottom: 3.5rem;">
+        <h2 style="font-size: 1.5rem; font-weight: 800; color: #0f172a; margin-bottom: 1.75rem; display: flex; align-items: center; gap: 0.65rem;">
+            <i class="bi bi-chat-left-text-fill" style="color: #4f46e5;"></i>
+            Frequently Asked Questions
+        </h2>
+
+        <div style="display: flex; flex-direction: column; gap: 1.25rem;">
+            
+            <div style="padding: 1.25rem; background: #f8fafc; border-radius: 10px; border: 1px solid #e2e8f0;">
+                <h4 style="font-size: 1.05rem; font-weight: 700; color: #1e293b; margin-bottom: 0.4rem;">
+                    1. How do I purchase and access a course?
+                </h4>
+                <p style="font-size: 0.92rem; color: #475569; line-height: 1.6; margin: 0;">
+                    Browse our course catalog, click <strong>Add to Cart</strong> or <strong>Enroll Now</strong>, and proceed to checkout. Payments are processed securely via Razorpay. Once verified, your course immediately appears in your <strong>Dashboard</strong>, and you receive an email confirmation.
+                </p>
+            </div>
+
+            <div style="padding: 1.25rem; background: #f8fafc; border-radius: 10px; border: 1px solid #e2e8f0;">
+                <h4 style="font-size: 1.05rem; font-weight: 700; color: #1e293b; margin-bottom: 0.4rem;">
+                    2. How can I contact an instructor if I have questions?
+                </h4>
+                <p style="font-size: 0.92rem; color: #475569; line-height: 1.6; margin: 0;">
+                    Visit the <a href="{% url 'instructor_list' %}" style="color: #4f46e5; font-weight: 600;">Instructors Page</a>, choose your instructor, and click <strong>Contact Instructor</strong>. You can send questions directly, and view delivery and read receipts in your <strong>Dashboard &rarr; Sent Messages</strong> tab.
+                </p>
+            </div>
+
+            <div style="padding: 1.25rem; background: #f8fafc; border-radius: 10px; border: 1px solid #e2e8f0;">
+                <h4 style="font-size: 1.05rem; font-weight: 700; color: #1e293b; margin-bottom: 0.4rem;">
+                    3. What should I do if I forgot my password?
+                </h4>
+                <p style="font-size: 0.92rem; color: #475569; line-height: 1.6; margin: 0;">
+                    Go to the <a href="{% url 'forgot_password' %}" style="color: #4f46e5; font-weight: 600;">Forgot Password</a> page, enter your registered email address, and you will receive a 6-digit verification OTP to securely set a new password.
+                </p>
+            </div>
+
+            <div style="padding: 1.25rem; background: #f8fafc; border-radius: 10px; border: 1px solid #e2e8f0;">
+                <h4 style="font-size: 1.05rem; font-weight: 700; color: #1e293b; margin-bottom: 0.4rem;">
+                    4. Are courses self-paced?
+                </h4>
+                <p style="font-size: 0.92rem; color: #475569; line-height: 1.6; margin: 0;">
+                    Yes! All enrolled courses on EduLearn provide lifetime access to videos, lecture notes, and downloadable materials so you can learn at your own pace anytime, anywhere.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div style="text-align: center; padding: 2.5rem; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; margin-bottom: 3.5rem;">
+        <h3 style="font-size: 1.25rem; font-weight: 700; color: #0f172a; margin-bottom: 0.5rem;">Still need help?</h3>
+        <p style="font-size: 0.95rem; color: #64748b; margin-bottom: 1.5rem;">
+            Our support team and instructors are always here to help you succeed in your educational journey.
+        </p>
+        <div style="display: flex; justify-content: center; gap: 1rem; flex-wrap: wrap;">
+            <a href="{% url 'home' %}" class="btn btn-primary" style="display: inline-flex; align-items: center; gap: 0.5rem; font-weight: 600; padding: 0.65rem 1.5rem; text-decoration: none;">
+                <i class="bi bi-house-door-fill"></i> Return to Homepage
+            </a>
+            <a href="{% url 'directory' %}" class="btn btn-secondary" style="display: inline-flex; align-items: center; gap: 0.5rem; font-weight: 600; padding: 0.65rem 1.5rem; text-decoration: none;">
+                <i class="bi bi-people-fill"></i> View Directory
+            </a>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

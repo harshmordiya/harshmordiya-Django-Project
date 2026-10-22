@@ -1,8 +1,57 @@
+# Python artifacts
 __pycache__/
 *.py[cod]
-*.sqlite3
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv/
+
+# Environment files
 .env
 .env.*
+!.env.example
+
+# Database
+*.sqlite3
+db.sqlite3
+
+# Media uploads (keep directory, exclude uploaded user files in git)
+media/profile_pics/*
+media/course_notes/*
+!media/.gitkeep
+
+# Static collected
+staticfiles/
+
+# IDE & Editor settings
 .vscode/
 .idea/
-venv/
+*.sublime-project
+*.sublime-workspace
+.DS_Store
+Thumbs.db
+
+# Testing & Coverage
+.coverage
+htmlcov/
+.pytest_cache/

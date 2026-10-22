@@ -6,7 +6,6 @@
 {% block admin_content %}
 <div class="mb-4">
 
-    <!-- Page Heading & Top Information -->
     <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
         <div>
             <h1 class="h3 fw-bold text-dark mb-1">
@@ -23,10 +22,8 @@
         </div>
     </div>
 
-    <!-- Search & Filters Toolbar Card -->
     <div class="admin-toolbar-box">
         <form method="get" class="d-flex align-items-center justify-content-between flex-wrap gap-3">
-            <!-- Left: Search Input -->
             <div class="input-group" style="flex: 1 1 300px; max-width: 440px;">
                 <span class="input-group-text bg-white border-end-0 text-muted ps-3">
                     <i class="bi bi-search"></i>
@@ -34,9 +31,7 @@
                 <input type="text" name="q" value="{{ search_query }}" class="form-control border-start-0 ps-1" placeholder="Search by name, email, or specialization..." aria-label="Search instructors">
             </div>
 
-            <!-- Right: Dropdown Filters & Actions -->
             <div class="d-flex align-items-center gap-2 flex-wrap">
-                <!-- Status Filter Dropdown -->
                 <div class="d-flex align-items-center gap-1.5">
                     <label class="text-muted small fw-semibold text-nowrap d-none d-sm-inline">
                         <i class="bi bi-funnel me-1"></i>Status:
@@ -48,7 +43,6 @@
                     </select>
                 </div>
 
-                <!-- Sort Order Dropdown (with dedicated spacing from Status) -->
                 <div class="d-flex align-items-center gap-1.5 ms-sm-2 ms-md-3">
                     <label class="text-muted small fw-semibold text-nowrap d-none d-sm-inline">
                         <i class="bi bi-arrow-down-up me-1"></i>Sort:
@@ -63,7 +57,6 @@
                     </select>
                 </div>
 
-                <!-- Submit / Reset Buttons -->
                 <button type="submit" class="btn btn-primary btn-sm rounded-pill px-3 fw-semibold ms-sm-1">
                     Search
                 </button>
@@ -76,7 +69,6 @@
         </form>
     </div>
 
-    <!-- Instructors Table Card -->
     <div class="admin-card">
         <div class="card-header bg-white py-3 px-4 border-bottom d-flex justify-content-between align-items-center flex-wrap gap-2">
             <div class="fw-bold text-dark d-flex align-items-center gap-2">
@@ -121,14 +113,12 @@
                 <tbody>
                     {% for instructor in instructors %}
                         <tr>
-                            <!-- Instructor ID -->
                             <td>
                                 <span class="badge bg-light text-secondary border rounded-pill px-2 py-1">
                                     #{{ instructor.instructor_id }}
                                 </span>
                             </td>
 
-                            <!-- Instructor Avatar & Name -->
                             <td>
                                 <div class="d-flex align-items-center gap-2.5">
                                     <div class="rounded-circle d-inline-flex align-items-center justify-content-center text-white fw-bold shadow-sm" style="width: 38px; height: 38px; background: linear-gradient(135deg, #0284c7, #4f46e5); font-size: 0.85rem; flex-shrink: 0;">
@@ -154,7 +144,6 @@
                                 </div>
                             </td>
 
-                            <!-- Email & Phone -->
                             <td>
                                 <div class="d-flex align-items-center gap-1.5 text-dark fw-medium" style="font-size: 0.88rem;">
                                     <i class="bi bi-envelope text-muted"></i>
@@ -167,38 +156,32 @@
                                 {% endif %}
                             </td>
 
-                            <!-- Specialization -->
                             <td>
                                 <span class="badge bg-light text-dark border rounded-pill px-2.5 py-1">
                                     {{ instructor.specialization|default:"General Instruction" }}
                                 </span>
                             </td>
 
-                            <!-- Courses Published -->
                             <td>
                                 <a href="{% url 'admin_courses' %}?q={{ instructor.first_name }}" class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill text-decoration-none px-2.5 py-1.5 fw-bold" title="View courses taught by this instructor">
                                     <i class="bi bi-journal-bookmark me-1"></i>{{ instructor.courses_count }} {{ instructor.courses_count|pluralize:"Course,Courses" }}
                                 </a>
                             </td>
 
-                            <!-- Students Reached -->
                             <td>
                                 <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2.5 py-1 fw-semibold">
                                     <i class="bi bi-people me-1"></i>{{ instructor.students_count }} {{ instructor.students_count|pluralize:"Learner,Learners" }}
                                 </span>
                             </td>
 
-                            <!-- Actions (Courses, Activate/Deactivate Toggle, Delete) -->
                             <td class="text-end text-nowrap">
                                 <div class="d-inline-flex align-items-center gap-2">
-                                    <!-- Courses Button -->
                                     <a href="{% url 'admin_courses' %}?q={{ instructor.first_name }}" 
                                        class="btn btn-outline-primary btn-sm rounded-pill px-2.5 py-1 text-nowrap fw-medium" 
                                        title="View Assigned Courses">
                                         <i class="bi bi-journal-text me-1"></i> Courses
                                     </a>
 
-                                    <!-- Status Toggle Button -->
                                     {% if instructor.linked_user %}
                                         {% if instructor.is_active %}
                                             <a href="{% url 'admin_user_toggle_status' instructor.linked_user.id %}" 
@@ -217,7 +200,6 @@
                                         {% endif %}
                                     {% endif %}
 
-                                    <!-- Delete Instructor Button -->
                                     <a href="{% url 'admin_instructor_delete' instructor.instructor_id %}" 
                                        class="btn btn-outline-danger btn-sm rounded-pill px-2.5 py-1 text-nowrap fw-medium shadow-sm" 
                                        title="Permanently Delete Instructor" 

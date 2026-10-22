@@ -147,7 +147,6 @@
 {% block content %}
 <div class="container">
 
-    <!-- Hero Header -->
     <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1.25rem; margin-bottom: 2rem;">
         <div>
             <span class="section-tag">Platform Course Directory</span>
@@ -168,7 +167,6 @@
         </div>
     </div>
 
-    <!-- Quick Metric Summary Strip -->
     <div class="summary-strip">
         <div class="summary-card">
             <div>
@@ -211,7 +209,6 @@
         </div>
     </div>
 
-    <!-- Tab Filter Switcher -->
     <div class="tab-pills">
         <a href="{% url 'course_manage_all' %}?status=all{% if search_query %}&q={{ search_query|urlencode }}{% endif %}{% if category_filter %}&category={{ category_filter|urlencode }}{% endif %}" 
            class="tab-pill {% if status_filter == 'all' and scope_filter != 'mine' %}active{% endif %}">
@@ -236,7 +233,6 @@
         {% endif %}
     </div>
 
-    <!-- Search & Filter Controls -->
     <div class="filter-bar" style="margin-bottom: 2rem;">
         <form method="get" class="search-form">
             {% if status_filter != 'all' %}
@@ -275,7 +271,6 @@
         </form>
     </div>
 
-    <!-- Courses Management Table -->
     {% if courses %}
         <div class="table-card">
             <div class="table-card-header">
@@ -308,14 +303,12 @@
                     <tbody>
                         {% for course in courses %}
                             <tr>
-                                <!-- Course ID -->
                                 <td>
                                     <span style="font-weight: 700; font-size: 0.82rem; color: var(--slate-500); background: var(--slate-100); padding: 0.2rem 0.5rem; border-radius: var(--radius-sm);">
                                         #{{ course.course_id }}
                                     </span>
                                 </td>
 
-                                <!-- Title, Category & Date -->
                                 <td>
                                     <div style="font-weight: 700; color: var(--slate-900); font-size: 1.02rem; margin-bottom: 0.25rem;">
                                         <a href="{% url 'course_detail' course.course_id %}" style="color: inherit;">
@@ -332,7 +325,6 @@
                                     </div>
                                 </td>
 
-                                <!-- Faculty Instructor -->
                                 <td>
                                     {% if course.instructor %}
                                         <div style="font-weight: 600; color: var(--slate-800); font-size: 0.92rem;">
@@ -348,28 +340,24 @@
                                     {% endif %}
                                 </td>
 
-                                <!-- Price -->
                                 <td>
                                     <span style="font-weight: 800; font-family: var(--font-heading); color: var(--slate-900); font-size: 1.05rem;">
                                         ₹{{ course.price }}
                                     </span>
                                 </td>
 
-                                <!-- Curriculum -->
                                 <td>
                                     <a href="{% url 'course_content_manage' course.course_id %}" class="btn btn-secondary btn-sm" style="padding: 0.3rem 0.65rem;" title="Manage syllabus and notes">
                                         📚 {{ course.lessons_count }} Lessons
                                     </a>
                                 </td>
 
-                                <!-- Enrolled Students Count -->
                                 <td style="text-align: center;">
                                     <span style="display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.25rem 0.65rem; border-radius: var(--radius-full); font-size: 0.82rem; font-weight: 700; background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0;">
                                         👨‍🎓 {{ course.active_enrollments }}
                                     </span>
                                 </td>
 
-                                <!-- Status Badge -->
                                 <td>
                                     {% if course.is_active %}
                                         <span style="display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.25rem 0.65rem; border-radius: var(--radius-full); font-size: 0.78rem; font-weight: 700; background: var(--success-light); color: var(--success);">
@@ -382,25 +370,20 @@
                                     {% endif %}
                                 </td>
 
-                                <!-- Management Action Buttons: View, Lessons, Edit, Delete -->
                                 <td style="text-align: right;">
                                     <div class="action-group">
-                                        <!-- View Public Page -->
                                         <a href="{% url 'course_detail' course.course_id %}" class="btn btn-secondary btn-sm" title="View Public Course Page">
                                             👁️ View
                                         </a>
 
-                                        <!-- Manage Lessons -->
                                         <a href="{% url 'course_content_manage' course.course_id %}" class="btn btn-secondary btn-sm" title="Manage Lessons & Notes Uploads">
                                             📚 Lessons
                                         </a>
 
-                                        <!-- Edit Course Details -->
                                         {% if course.user_can_manage %}
                                             <a href="{% url 'course_edit' course.course_id %}" class="btn btn-primary btn-sm" title="Edit Course Details">
                                                 ✏️ Edit
                                             </a>
-                                            <!-- Delete Course -->
                                             <a href="{% url 'course_delete' course.course_id %}" class="btn btn-danger btn-sm" title="Delete Course Permanently">
                                                 🗑️ Delete
                                             </a>
@@ -418,7 +401,6 @@
             </div>
         </div>
 
-        <!-- Pagination -->
         {% if page_obj.has_other_pages %}
             <div class="pagination">
                 {% if page_obj.has_previous %}

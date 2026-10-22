@@ -1,0 +1,89 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Terms of Service - EduLearn{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 960px; margin: 2rem auto; padding: 0 1.25rem;">
+
+    <div style="margin-bottom: 2rem;">
+        <a href="{% url 'home' %}" style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.6rem 1.35rem; font-weight: 600; border-radius: 8px; text-decoration: none;">
+        </a>
+    </div>
+
+    <div style="margin-bottom: 2.5rem; padding-bottom: 1.5rem; border-bottom: 1px solid #e2e8f0;">
+        <div style="display: inline-flex; align-items: center; gap: 0.5rem; color: #4f46e5; font-size: 0.88rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem;">
+            <i class="bi bi-file-earmark-text-fill"></i> User Agreement
+        </div>
+        <h1 style="font-size: 2.25rem; font-weight: 800; color: #0f172a; margin-bottom: 0.5rem;">Terms of Service</h1>
+        <p style="font-size: 0.95rem; color: #64748b; margin: 0;">Last updated: October 2026 &bull; Effective Date: October 2026</p>
+    </div>
+
+    <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 2.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.04); margin-bottom: 3.5rem; line-height: 1.7; color: #334155;">
+
+        <section style="margin-bottom: 2rem;">
+            <h2 style="font-size: 1.35rem; font-weight: 700; color: #0f172a; margin-bottom: 0.75rem;">1. Acceptance of Terms</h2>
+            <p style="font-size: 0.95rem;">
+                By registering, accessing, or enrolling in courses on <strong>EduLearn</strong>, you agree to comply with and be bound by these Terms of Service. If you do not agree with any part of these terms, please discontinue platform use.
+            </p>
+        </section>
+
+        <section style="margin-bottom: 2rem;">
+            <h2 style="font-size: 1.35rem; font-weight: 700; color: #0f172a; margin-bottom: 0.75rem;">2. User Accounts & Responsibilities</h2>
+            <p style="font-size: 0.95rem;">
+                Users must register with a genuine email address and maintain confidentiality over their login credentials. Any activity conducted under your account remains your responsibility. EduLearn provides 6-digit OTP password reset tools to assist in securing compromised accounts.
+            </p>
+        </section>
+
+        <section style="margin-bottom: 2rem;">
+            <h2 style="font-size: 1.35rem; font-weight: 700; color: #0f172a; margin-bottom: 0.75rem;">3. Course Enrollment & Intellectual Property</h2>
+            <p style="font-size: 0.95rem;">
+                When you purchase or enroll in a course on EduLearn, you receive a personal, non-transferable license to access the lecture videos, study notes, and exercises. All curriculum content, trademarks, and media are the intellectual property of their respective instructors and EduLearn. Commercial redistribution, piracy, or unauthorized downloading is strictly prohibited.
+            </p>
+        </section>
+
+        <section style="margin-bottom: 2rem;">
+            <h2 style="font-size: 1.35rem; font-weight: 700; color: #0f172a; margin-bottom: 0.75rem;">4. Pricing, Payments & Refund Policy</h2>
+            <p style="font-size: 0.95rem;">
+                Course prices are listed in Indian Rupees (INR) and are payable through our secure Razorpay integration. Once payment verification succeeds:
+            </p>
+            <ul style="padding-left: 1.5rem; font-size: 0.95rem;">
+                <li>The course is immediately added to the student's active dashboard.</li>
+                <li>An automated payment confirmation receipt and enrollment notification are dispatched by email.</li>
+                <li>Refund requests are evaluated in accordance with course completion progress and payment verification timestamps.</li>
+            </ul>
+        </section>
+
+        <section style="margin-bottom: 2rem;">
+            <h2 style="font-size: 1.35rem; font-weight: 700; color: #0f172a; margin-bottom: 0.75rem;">5. Student & Instructor Code of Conduct</h2>
+            <p style="font-size: 0.95rem;">
+                All communications sent through instructor contact forms, message inquiries, and community reviews must remain professional, respectful, and free of harassment or abusive language. EduLearn reserves the right to suspend accounts that violate safety guidelines.
+            </p>
+        </section>
+
+        <section style="margin-bottom: 2rem;">
+            <h2 style="font-size: 1.35rem; font-weight: 700; color: #0f172a; margin-bottom: 0.75rem;">6. Disclaimer of Warranties</h2>
+            <p style="font-size: 0.95rem;">
+                Courses are provided "as is" by skilled industry instructors. While we strive for maximum service uptime, EduLearn is not liable for intermittent network interruptions beyond our direct control.
+            </p>
+        </section>
+
+        <section>
+            <h2 style="font-size: 1.35rem; font-weight: 700; color: #0f172a; margin-bottom: 0.75rem;">7. Questions or Feedback</h2>
+            <p style="font-size: 0.95rem; margin-bottom: 1.25rem;">
+                For any inquiries regarding these terms or your account status, please visit our Help Center or return to the home page.
+            </p>
+            <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                <a href="{% url 'home' %}" class="btn btn-primary" style="display: inline-flex; align-items: center; gap: 0.5rem; font-weight: 600; padding: 0.6rem 1.35rem; text-decoration: none;">
+                    <i class="bi bi-house-door-fill"></i> Return to Home
+                </a>
+                <a href="{% url 'help_center' %}" style="display: inline-flex; align-items: center; gap: 0.5rem; font-weight: 600; padding: 0.6rem 1.35rem; text-decoration: none;">
+                    <i class="bi bi-question-circle-fill"></i> Help Center
+                </a>
+            </div>
+        </section>
+
+    </div>
+
+</div>
+{% endblock %}

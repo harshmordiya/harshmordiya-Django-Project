@@ -12,7 +12,6 @@
         <p class="section-desc">Search across all subjects or filter by category to find your next course.</p>
     </div>
 
-    <!-- Search & Filter Controls -->
     <div class="filter-bar">
         <form method="get" class="search-form">
             <div class="search-input-wrap">
@@ -55,7 +54,6 @@
         </form>
     </div>
 
-    <!-- Courses Grid -->
     {% if courses %}
         <div class="course-grid">
             {% for course in courses %}
@@ -74,7 +72,7 @@
                             {{ course.description }}
                         </p>
 
-                        <div class="course-meta">
+                        <div class="course-meta" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
                             <div class="course-instructor">
                                 <span>👨‍🏫</span>
                                 <span>
@@ -84,6 +82,10 @@
                                         Staff Instructor
                                     {% endif %}
                                 </span>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 0.75rem; font-size: 0.82rem; color: var(--slate-600);">
+                                <span title="Enrolled Students">👥 {{ course.enrolled_students_count }}</span>
+                                <span title="Quizzes">❓ {{ course.quizzes_count }}</span>
                             </div>
                         </div>
 
@@ -115,7 +117,6 @@
             {% endfor %}
         </div>
 
-        <!-- Pagination -->
         {% if page_obj.has_other_pages %}
             <div class="pagination">
                 {% if page_obj.has_previous %}
