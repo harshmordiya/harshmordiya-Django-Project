@@ -1,0 +1,436 @@
+
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Create Account - EduLearn{% endblock %}
+
+{% block content %}
+
+<style>
+    .password-input-wrapper {
+        position: relative;
+        width: 100%;
+    }
+
+    .password-input-wrapper input {
+        width: 100%;
+        box-sizing: border-box;
+        padding-right: 48px !important;
+    }
+
+    .toggle-password {
+        position: absolute;
+        right: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 30px;
+        height: 30px;
+        padding: 0;
+        border: none;
+        border-radius: 6px;
+        background: transparent;
+        color: #64748b;
+        cursor: pointer;
+        z-index: 2;
+        transition: color 0.2s ease, background 0.2s ease;
+    }
+
+    .toggle-password:hover {
+        color: #2563eb;
+        background: #eff6ff;
+    }
+
+    .toggle-password:focus-visible {
+        outline: 2px solid #2563eb;
+        outline-offset: 2px;
+    }
+
+    .toggle-password svg {
+        width: 21px;
+        height: 21px;
+        display: block;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 1.8;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+    }
+
+    .toggle-password .icon-eye-off {
+        display: none;
+    }
+
+    .toggle-password.is-visible .icon-eye {
+        display: none;
+    }
+
+    .toggle-password.is-visible .icon-eye-off {
+        display: block;
+    }
+</style>
+
+<div class="auth-wrapper">
+    <div class="auth-card-modern auth-card-wide">
+
+        <div class="auth-header">
+            <h1 class="auth-title">Create Your Account</h1>
+            <p class="auth-subtitle">
+                Join thousands of students and instructors today.
+                It only takes a minute!
+            </p>
+        </div>
+
+        <form method="post" novalidate>
+            {% csrf_token %}
+
+            {% if form.non_field_errors %}
+                <div class="alert alert-danger">
+                    <span>⚠️ {{ form.non_field_errors|join:", " }}</span>
+                </div>
+            {% endif %}
+
+            <!-- Account Credentials -->
+            <div style="margin-bottom: 1.5rem;">
+                <h3 style="
+                    font-size: 1rem;
+                    color: var(--slate-900);
+                    margin-bottom: 0.85rem;
+                    padding-bottom: 0.4rem;
+                    border-bottom: 1px solid var(--slate-200);
+                ">
+                     Account Credentials
+                </h3>
+
+                <div class="form-row">
+
+                    <div class="form-group">
+                        <label for="{{ form.username.id_for_label }}">
+                            Username
+                            <span style="color: var(--danger)">*</span>
+                        </label>
+
+                        {{ form.username }}
+
+                        {% if form.username.errors %}
+                            <div style="color: var(--danger); font-size: 0.82rem; margin-top: 0.35rem;">
+                                {{ form.username.errors.0 }}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="form-group">
+                        <label for="{{ form.email.id_for_label }}">
+                            Email Address
+                            <span style="color: var(--danger)">*</span>
+                        </label>
+
+                        {{ form.email }}
+
+                        {% if form.email.errors %}
+                            <div style="color: var(--danger); font-size: 0.82rem; margin-top: 0.35rem;">
+                                {{ form.email.errors.0 }}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                </div>
+
+                <div class="form-row">
+
+                    <!-- Password -->
+                    <div class="form-group">
+                        <label for="{{ form.password.id_for_label }}">
+                            Password
+                            <span style="color: var(--danger)">*</span>
+                        </label>
+
+                        <div class="password-input-wrapper">
+                            {{ form.password }}
+
+                            <button
+                                type="button"
+                                class="toggle-password"
+                                data-target="{{ form.password.id_for_label }}"
+                                aria-label="Show password"
+                                aria-pressed="false"
+                                title="Show password"
+                            >
+                                <svg
+                                    class="icon-eye"
+                                    viewBox="0 0 24 24"
+                                    aria-hidden="true"
+                                >
+                                    <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/>
+                                    <circle cx="12" cy="12" r="3"/>
+                                </svg>
+
+                                <svg
+                                    class="icon-eye-off"
+                                    viewBox="0 0 24 24"
+                                    aria-hidden="true"
+                                >
+                                    <path d="M3 3l18 18"/>
+                                    <path d="M10.6 10.6a2 2 0 0 0 2.8 2.8"/>
+                                    <path d="M9.9 5.2A10.7 10.7 0 0 1 12 5c6.4 0 10 7 10 7a15 15 0 0 1-3.1 3.9"/>
+                                    <path d="M6.6 6.6C3.7 8.4 2 12 2 12s3.6 7 10 7c1.3 0 2.5-.3 3.6-.8"/>
+                                </svg>
+                            </button>
+                        </div>
+
+                        {% if form.password.errors %}
+                            <div style="color: var(--danger); font-size: 0.82rem; margin-top: 0.35rem;">
+                                {{ form.password.errors.0 }}
+                            </div>
+                        {% else %}
+                            <div class="form-help">
+                                Must be at least 8 characters long.
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Confirm Password -->
+                    <div class="form-group">
+                        <label for="{{ form.confirm_password.id_for_label }}">
+                            Confirm Password
+                            <span style="color: var(--danger)">*</span>
+                        </label>
+
+                        <div class="password-input-wrapper">
+                            {{ form.confirm_password }}
+
+                            <button
+                                type="button"
+                                class="toggle-password"
+                                data-target="{{ form.confirm_password.id_for_label }}"
+                                aria-label="Show password"
+                                aria-pressed="false"
+                                title="Show password"
+                            >
+                                <svg
+                                    class="icon-eye"
+                                    viewBox="0 0 24 24"
+                                    aria-hidden="true"
+                                >
+                                    <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/>
+                                    <circle cx="12" cy="12" r="3"/>
+                                </svg>
+
+                                <svg
+                                    class="icon-eye-off"
+                                    viewBox="0 0 24 24"
+                                    aria-hidden="true"
+                                >
+                                    <path d="M3 3l18 18"/>
+                                    <path d="M10.6 10.6a2 2 0 0 0 2.8 2.8"/>
+                                    <path d="M9.9 5.2A10.7 10.7 0 0 1 12 5c6.4 0 10 7 10 7a15 15 0 0 1-3.1 3.9"/>
+                                    <path d="M6.6 6.6C3.7 8.4 2 12 2 12s3.6 7 10 7c1.3 0 2.5-.3 3.6-.8"/>
+                                </svg>
+                            </button>
+                        </div>
+
+                        {% if form.confirm_password.errors %}
+                            <div style="color: var(--danger); font-size: 0.82rem; margin-top: 0.35rem;">
+                                {{ form.confirm_password.errors.0 }}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Select Role -->
+            <div style="margin-bottom: 1.5rem;">
+                <h3 style="
+                    font-size: 1rem;
+                    color: var(--slate-900);
+                    margin-bottom: 0.85rem;
+                    padding-bottom: 0.4rem;
+                    border-bottom: 1px solid var(--slate-200);
+                ">
+                     Select Your Role
+                </h3>
+
+                <div class="form-group">
+                    <label for="{{ form.role.id_for_label }}">
+                        Account Type
+                        <span style="color: var(--danger)">*</span>
+                    </label>
+
+                    {{ form.role }}
+
+                    {% if form.role.errors %}
+                        <div style="color: var(--danger); font-size: 0.82rem; margin-top: 0.35rem;">
+                            {{ form.role.errors.0 }}
+                        </div>
+                    {% endif %}
+
+                    <div class="form-help">
+                        Choose <strong>Student</strong> to enroll in courses, or
+                        <strong>Instructor</strong> to manage your courses.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Profile Details -->
+            <div style="margin-bottom: 1.75rem;">
+                <h3 style="
+                    font-size: 1rem;
+                    color: var(--slate-900);
+                    margin-bottom: 0.85rem;
+                    padding-bottom: 0.4rem;
+                    border-bottom: 1px solid var(--slate-200);
+                ">
+                     Profile Details
+                </h3>
+
+                <div class="form-row">
+
+                    <div class="form-group">
+                        <label for="{{ form.first_name.id_for_label }}">
+                            First Name
+                            <span style="color: var(--danger)">*</span>
+                        </label>
+
+                        {{ form.first_name }}
+
+                        {% if form.first_name.errors %}
+                            <div style="color: var(--danger); font-size: 0.82rem; margin-top: 0.35rem;">
+                                {{ form.first_name.errors.0 }}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="form-group">
+                        <label for="{{ form.last_name.id_for_label }}">
+                            Last Name
+                        </label>
+
+                        {{ form.last_name }}
+
+                        {% if form.last_name.errors %}
+                            <div style="color: var(--danger); font-size: 0.82rem; margin-top: 0.35rem;">
+                                {{ form.last_name.errors.0 }}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                </div>
+
+                <div class="form-row">
+
+                    <div class="form-group">
+                        <label for="{{ form.phone.id_for_label }}">
+                            Phone Number
+                            <span style="color: var(--danger)">*</span>
+                        </label>
+
+                        {{ form.phone }}
+
+                        {% if form.phone.errors %}
+                            <div style="color: var(--danger); font-size: 0.82rem; margin-top: 0.35rem;">
+                                {{ form.phone.errors.0 }}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="form-group">
+                        <label for="{{ form.address.id_for_label }}">
+                            Address / City
+                        </label>
+
+                        {{ form.address }}
+
+                        {% if form.address.errors %}
+                            <div style="color: var(--danger); font-size: 0.82rem; margin-top: 0.35rem;">
+                                {{ form.address.errors.0 }}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                </div>
+
+                <div class="form-group" style="margin-top: 0.5rem;">
+                    <label for="{{ form.specialization.id_for_label }}">
+                        Specialization / Domain
+                    </label>
+
+                    {{ form.specialization }}
+
+                    {% if form.specialization.errors %}
+                        <div style="color: var(--danger); font-size: 0.82rem; margin-top: 0.35rem;">
+                            {{ form.specialization.errors.0 }}
+                        </div>
+                    {% endif %}
+
+                    <div class="form-help">
+                        Applicable if registering as Instructor
+                        (e.g. Web Development, Data Science, UI/UX).
+                    </div>
+                </div>
+            </div>
+
+            <button
+                type="submit"
+                class="btn btn-primary btn-block btn-lg"
+            >
+                Create Account &amp; Get Started →
+            </button>
+
+        </form>
+
+        <div class="auth-divider">
+            <span>OR</span>
+        </div>
+
+        <div class="auth-links">
+            <p>
+                Already have an account?
+                <a href="{% url 'login' %}">Sign in here</a>
+            </p>
+        </div>
+
+    </div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const toggleButtons = document.querySelectorAll(".toggle-password");
+
+    toggleButtons.forEach(function (button) {
+        button.addEventListener("click", function () {
+            const inputId = button.getAttribute("data-target");
+            const passwordInput = document.getElementById(inputId);
+
+            if (!passwordInput) {
+                return;
+            }
+
+            const showPassword = passwordInput.type === "password";
+
+            passwordInput.type = showPassword ? "text" : "password";
+
+            button.classList.toggle("is-visible", showPassword);
+
+            button.setAttribute(
+                "aria-label",
+                showPassword ? "Hide password" : "Show password"
+            );
+
+            button.setAttribute(
+                "title",
+                showPassword ? "Hide password" : "Show password"
+            );
+
+            button.setAttribute(
+                "aria-pressed",
+                String(showPassword)
+            );
+        });
+    });
+});
+</script>
+
+{% endblock %}

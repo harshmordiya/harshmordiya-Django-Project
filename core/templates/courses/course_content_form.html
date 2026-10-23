@@ -242,16 +242,6 @@
                     </div>
                 </div>
 
-                <div class="mb-0">
-                    <label for="{{ form.description.id_for_label }}" class="form-label fw-bold text-dark">
-                        Lesson Summary & Objectives <span class="text-muted fw-normal">(Optional)</span>
-                    </label>
-                    {{ form.description }}
-                    {% if form.description.errors %}
-                        <div class="invalid-feedback d-block">{{ form.description.errors.0 }}</div>
-                    {% endif %}
-                    <div class="form-text text-muted">Key takeaways, prerequisites, or topics covered in this lesson.</div>
-                </div>
             </div>
         </div>
 
@@ -341,22 +331,6 @@
                             </a>
                         </div>
                     {% endif %}
-                </div>
-
-                <div class="mb-3">
-                    <label for="{{ form.file_url.id_for_label }}" class="form-label fw-bold text-dark">
-                        External Cloud Resource Link <span class="text-muted fw-normal">(Optional)</span>
-                    </label>
-                    <div class="input-group">
-                        <span class="input-group-text bg-light text-muted">
-                            <i class="bi bi-cloud-check fs-5"></i>
-                        </span>
-                        {{ form.file_url }}
-                    </div>
-                    {% if form.file_url.errors %}
-                        <div class="invalid-feedback d-block">{{ form.file_url.errors.0 }}</div>
-                    {% endif %}
-                    <div class="form-text text-muted">Links to Google Drive folder, Notion notes, Dropbox, GitHub repository, etc.</div>
                 </div>
 
                 <div class="mb-0">

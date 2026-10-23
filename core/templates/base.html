@@ -48,17 +48,24 @@
                             <span class="user-role-tag" style="background: #fee2e2; color: #b91c1c; font-weight: 700;">admin</span>
                         </a>
                     {% elif nav_user_role == 'instructor' %}
-                        <a href="{% url 'instructor_courses' %}" class="user-badge" title="Instructor Portal">
-                            <span>👤 {{ user.username }}</span>
+                        <a href="{% url 'instructor_courses' %}" class="user-badge" title="Instructor Portal" style="display: inline-flex; align-items: center; gap: 0.45rem;">
+                            {% if nav_profile_picture_url %}
+                                <img src="{{ nav_profile_picture_url }}" alt="{{ user.username }}" style="width: 22px; height: 22px; border-radius: 50%; object-fit: cover; border: 1.5px solid #ffffff; box-shadow: 0 1px 3px rgba(0,0,0,0.15);">
+                            {% else %}
+                                <span>👤</span>
+                            {% endif %}
+                            <span>{{ user.username }}</span>
                             <span class="user-role-tag">{{ nav_user_role }}</span>
                         </a>
                         <a href="{% url 'instructor_profile' %}" class="btn btn-secondary btn-sm" title="My Faculty Profile">Profile</a>
-                        <a href="{% url 'course_create' %}" class="btn btn-primary btn-sm" title="Create New Course">
-                            ➕ Add Course
-                        </a>
                     {% else %}
-                        <a href="{% url 'dashboard' %}" class="user-badge" title="User Dashboard">
-                            <span>👤 {{ user.username }}</span>
+                        <a href="{% url 'dashboard' %}" class="user-badge" title="User Dashboard" style="display: inline-flex; align-items: center; gap: 0.45rem;">
+                            {% if nav_profile_picture_url %}
+                                <img src="{{ nav_profile_picture_url }}" alt="{{ user.username }}" style="width: 22px; height: 22px; border-radius: 50%; object-fit: cover; border: 1.5px solid #ffffff; box-shadow: 0 1px 3px rgba(0,0,0,0.15);">
+                            {% else %}
+                                <span>👤</span>
+                            {% endif %}
+                            <span>{{ user.username }}</span>
                             {% if nav_user_role %}
                                 <span class="user-role-tag">{{ nav_user_role }}</span>
                             {% endif %}

@@ -43,9 +43,6 @@
                         {% endif %}
                     </h2>
                     {% if is_course_manager %}
-                        <a href="{% url 'course_content_add' course.course_id %}" class="btn btn-secondary btn-sm">
-                            + Add Lesson
-                        </a>
                     {% endif %}
                 </div>
 
@@ -149,15 +146,24 @@
                 <h3 style="font-size: 1.15rem; margin-bottom: 0.85rem; color: var(--slate-900);">About the Instructor</h3>
                 {% if course.instructor %}
                     <div style="display: flex; gap: 1rem; align-items: center;">
-                        <div style="width: 52px; height: 52px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), #a855f7); color: white; display: flex; align-items: center; justify-content: center; font-size: 1.35rem; font-weight: 700;">
-                            {{ course.instructor.first_name|first }}{{ course.instructor.last_name|first }}
+                        <div style="width: 56px; height: 56px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), #a855f7); color: white; display: flex; align-items: center; justify-content: center; font-size: 1.35rem; font-weight: 700; overflow: hidden; flex-shrink: 0; box-shadow: 0 2px 6px rgba(0,0,0,0.12);">
+                            {% if course.instructor.profile_picture %}
+                                <img src="{{ course.instructor.profile_picture.url }}" alt="{{ course.instructor.full_name }}" style="width: 100%; height: 100%; object-fit: cover;">
+                            {% else %}
+                                {{ course.instructor.first_name|first }}{{ course.instructor.last_name|first }}
+                            {% endif %}
                         </div>
                         <div>
-                            <h4 style="font-size: 1.05rem; margin-bottom: 0.2rem;">{{ course.instructor.first_name }} {{ course.instructor.last_name }}</h4>
+                            <h4 style="font-size: 1.05rem; margin-bottom: 0.2rem; font-weight: 700;">{{ course.instructor.first_name }} {{ course.instructor.last_name }}</h4>
                             <p style="font-size: 0.88rem; color: var(--slate-500); margin: 0;">Specialization: {{ course.instructor.specialization }}</p>
                             <p style="font-size: 0.84rem; color: var(--slate-400); margin: 0;">{{ course.instructor.email }}</p>
                         </div>
                     </div>
+                    {% if course.instructor.bio %}
+                        <div style="margin-top: 1rem; padding-top: 0.85rem; border-top: 1px solid var(--slate-200); font-size: 0.9rem; color: var(--slate-600); line-height: 1.55;">
+                            {{ course.instructor.bio|linebreaksbr }}
+                        </div>
+                    {% endif %}
                     <div style="margin-top: 1.25rem;">
                         <a href="{% url 'contact_instructor' course.instructor.instructor_id %}?course_id={{ course.course_id }}" class="btn btn-outline btn-sm" style="width: 100%; justify-content: center;">
                             ✉️ Contact Instructor About This Course

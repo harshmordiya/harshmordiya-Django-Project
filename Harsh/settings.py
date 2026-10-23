@@ -38,7 +38,14 @@ ROOT_URLCONF = 'Harsh.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [
+            BASE_DIR / 'core' / 'templates',
+            BASE_DIR / 'core' / 'templates' / 'admin',
+            BASE_DIR / 'core' / 'templates' / 'instructor',
+            BASE_DIR / 'core' / 'templates' / 'student',
+            BASE_DIR / 'core' / 'templates' / 'courses',
+            BASE_DIR / 'core' / 'templates' / 'auth',
+        ],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [

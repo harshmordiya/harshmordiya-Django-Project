@@ -2192,6 +2192,106 @@ class InstructorProfileTests(TestCase):
         })
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "This email is already associated with another account")
+    def test_instructor_can_upload_valid_profile_picture(self):
+        import io
+        from PIL import Image
+
+        self.client.login(username="sapna_inst", password="testpassword123")
+
+        img_byte_arr = io.BytesIO()
+        img = Image.new("RGB", (120, 120), color="blue")
+        img.save(img_byte_arr, format="PNG")
+        uploaded_image = SimpleUploadedFile(
+            name="sapna_avatar.png",
+            content=img_byte_arr.getvalue(),
+            content_type="image/png"
+        )
+
+        update_data = {
+            "first_name": "Sapna",
+            "last_name": "Adroja",
+            "email": "sapna@edulearn.test",
+            "phone": "+91 9988776655",
+            "specialization": "Digital Marketing",
+            "bio": "Marketing expert with uploaded photo.",
+            "profile_picture": uploaded_image,
+        }
+
+        response = self.client.post(reverse("instructor_profile_edit"), update_data, follow=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Your instructor profile has been updated successfully!")
+
+        self.instructor.refresh_from_db()
+        self.assertTrue(bool(self.instructor.profile_picture))
+        self.assertIn("profile_pics/", self.instructor.profile_picture.name)
+
+        # Profile page should render image
+        profile_response = self.client.get(reverse("instructor_profile"))
+        self.assertContains(profile_response, self.instructor.profile_picture.url)
+
+        # Course detail page should also render the instructor's photo and bio
+        course_response = self.client.get(reverse("course_detail", args=[self.course.course_id]))
+        self.assertContains(course_response, self.instructor.profile_picture.url)
+        self.assertContains(course_response, "Marketing expert with uploaded photo.")
+
+        # Clean up uploaded file
+        if self.instructor.profile_picture:
+            self.instructor.profile_picture.delete(save=False)
+
+    def test_instructor_profile_picture_invalid_file_rejected(self):
+        self.client.login(username="sapna_inst", password="testpassword123")
+
+        invalid_file = SimpleUploadedFile(
+            name="bad_avatar.txt",
+            content=b"Invalid content",
+            content_type="text/plain"
+        )
+
+        response = self.client.post(reverse("instructor_profile_edit"), {
+            "first_name": "Sapna",
+            "last_name": "Adroja",
+            "email": "sapna@edulearn.test",
+            "phone": "+91 9988776655",
+            "specialization": "Digital Marketing",
+            "bio": "Bio content",
+            "profile_picture": invalid_file,
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "The uploaded file is not a valid image")
+
+    def test_instructor_can_clear_profile_picture(self):
+        import io
+        from PIL import Image
+
+        self.client.login(username="sapna_inst", password="testpassword123")
+
+        img_byte_arr = io.BytesIO()
+        img = Image.new("RGB", (80, 80), color="purple")
+        img.save(img_byte_arr, format="PNG")
+        uploaded_image = SimpleUploadedFile(
+            name="initial_instructor.png",
+            content=img_byte_arr.getvalue(),
+            content_type="image/png"
+        )
+
+        self.instructor.profile_picture = uploaded_image
+        self.instructor.save()
+        self.assertTrue(bool(self.instructor.profile_picture))
+
+        response = self.client.post(reverse("instructor_profile_edit"), {
+            "first_name": "Sapna",
+            "last_name": "Adroja",
+            "email": "sapna@edulearn.test",
+            "phone": "+91 9988776655",
+            "specialization": "Digital Marketing",
+            "bio": "Bio after removing picture",
+            "clear_profile_picture": "on",
+        }, follow=True)
+        self.assertEqual(response.status_code, 200)
+
+        self.instructor.refresh_from_db()
+        self.assertFalse(bool(self.instructor.profile_picture))
+
 
 class VisualAnalyticsChartTests(TestCase):
     def setUp(self):

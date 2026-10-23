@@ -1,4 +1,4 @@
-from .models import Cart, Course, CourseContent, Enrollment, Student, UserProfile
+from .models import Cart, Course, CourseContent, Enrollment, Instructor, Student, UserProfile
 
 def site_context(request):
     total_courses = Course.objects.filter(is_active=True).count()
@@ -14,6 +14,7 @@ def site_context(request):
     context = {
         "nav_cart_count": 0,
         "nav_user_role": None,
+        "nav_profile_picture_url": None,
         "site_total_courses": total_courses,
         "site_total_quizzes": total_quizzes,
         "site_total_enrolled_students": total_enrolled,
@@ -39,8 +40,21 @@ def site_context(request):
 
         context["nav_user_role"] = role
 
-        student = Student.objects.filter(email=request.user.email).first()
-        if student:
-            context["nav_cart_count"] = Cart.objects.filter(student=student).count()
+        if role == "instructor":
+            inst = Instructor.objects.filter(email__iexact=request.user.email).first()
+            if inst and inst.profile_picture:
+                try:
+                    context["nav_profile_picture_url"] = inst.profile_picture.url
+                except Exception:
+                    pass
+        else:
+            student = Student.objects.filter(email__iexact=request.user.email).first()
+            if student:
+                context["nav_cart_count"] = Cart.objects.filter(student=student).count()
+                if student.profile_picture:
+                    try:
+                        context["nav_profile_picture_url"] = student.profile_picture.url
+                    except Exception:
+                        pass
             
     return context
