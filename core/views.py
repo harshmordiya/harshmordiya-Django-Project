@@ -12,7 +12,7 @@ from django.contrib.auth.models import User
 from django.core.mail import send_mail
 from django.utils import timezone
 from functools import wraps
-from django.db.models import Q, Count, Sum, Value, DecimalField
+from django.db.models import Q, Count, Sum, Value, DecimalField, Max
 from django.db.models.functions import Coalesce
 from django.core.paginator import Paginator
 from django.contrib import messages
@@ -20,7 +20,7 @@ from django.conf import settings
 from django.views.decorators.csrf import csrf_exempt
 from django.urls import reverse
 
-from .forms import RegistrationForm, CourseForm, CourseContentForm, StudentProfileForm, InstructorProfileForm, ContactInstructorForm, InstructorReplyForm
+from .forms import RegistrationForm, CourseForm, CourseContentForm, StudentProfileForm, InstructorProfileForm, ContactInstructorForm, InstructorReplyForm, QuizForm, QuestionForm
 from .models import Cart, Course, CourseContent, PasswordResetOTP, Student, UserProfile, Payment, Enrollment, Instructor, InstructorMessage, Quiz, Question, QuizAttempt
 from .email_utils import (
     send_payment_confirmation_email,
@@ -2638,3 +2638,245 @@ def quiz_result_view(request, attempt_id):
         "time_seconds": time_seconds,
     }
     return render(request, "courses/quiz_result.html", context)
+
+
+# ---------------------------------------------------------------------------
+# Instructor Quiz & Question Management
+# ---------------------------------------------------------------------------
+
+@login_required
+def instructor_course_quizzes_view(request, course_id):
+    course = get_object_or_404(Course, course_id=course_id)
+    allowed, instructor = can_manage_course(request.user, course)
+    if not allowed:
+        messages.error(request, "Unauthorized: You can only view quizzes for your own courses.")
+        profile = UserProfile.objects.filter(user=request.user).first()
+        if profile and profile.role == "instructor":
+            return redirect("instructor_courses")
+        return redirect("dashboard")
+
+    quizzes = course.quizzes.all().annotate(
+        question_count=Count("questions")
+    ).order_by("-created_at")
+
+    total_quizzes = quizzes.count()
+    total_questions = sum(q.question_count for q in quizzes)
+
+    context = {
+        "course": course,
+        "quizzes": quizzes,
+        "total_quizzes": total_quizzes,
+        "total_questions": total_questions,
+        "instructor": course.instructor or instructor,
+    }
+    return render(request, "instructor/instructor_course_quizzes.html", context)
+
+
+@login_required
+def instructor_quiz_create_view(request, course_id):
+    course = get_object_or_404(Course, course_id=course_id)
+    allowed, instructor = can_manage_course(request.user, course)
+    if not allowed:
+        messages.error(request, "Unauthorized: You can only create quizzes for your own courses.")
+        return redirect("instructor_courses")
+
+    if request.method == "POST":
+        form = QuizForm(request.POST, instructor=instructor)
+        if form.is_valid():
+            quiz = form.save(commit=False)
+            quiz.course = course
+            quiz.save()
+            messages.success(request, f'Quiz "{quiz.title}" created successfully! Add your questions below.')
+            return redirect("instructor_quiz_questions", quiz_id=quiz.quiz_id)
+    else:
+        form = QuizForm(
+            initial={
+                "course": course,
+                "pass_percentage": 60,
+                "time_limit_minutes": 15,
+                "max_attempts": 3,
+                "is_active": True,
+            },
+            instructor=instructor,
+        )
+
+    context = {
+        "form": form,
+        "course": course,
+        "is_create": True,
+    }
+    return render(request, "instructor/instructor_quiz_form.html", context)
+
+
+@login_required
+def instructor_quiz_edit_view(request, quiz_id):
+    quiz = get_object_or_404(Quiz.objects.select_related("course"), quiz_id=quiz_id)
+    allowed, instructor = can_manage_course(request.user, quiz.course)
+    if not allowed:
+        messages.error(request, "Unauthorized: You can only edit quizzes for your own courses.")
+        return redirect("instructor_courses")
+
+    if request.method == "POST":
+        form = QuizForm(request.POST, instance=quiz, instructor=instructor)
+        if form.is_valid():
+            quiz = form.save()
+            messages.success(request, f'Quiz "{quiz.title}" updated successfully.')
+            return redirect("instructor_quiz_questions", quiz_id=quiz.quiz_id)
+    else:
+        form = QuizForm(instance=quiz, instructor=instructor)
+
+    context = {
+        "form": form,
+        "quiz": quiz,
+        "course": quiz.course,
+        "is_create": False,
+    }
+    return render(request, "instructor/instructor_quiz_form.html", context)
+
+
+@login_required
+def instructor_quiz_delete_view(request, quiz_id):
+    quiz = get_object_or_404(Quiz.objects.select_related("course"), quiz_id=quiz_id)
+    allowed, _ = can_manage_course(request.user, quiz.course)
+    if not allowed:
+        messages.error(request, "Unauthorized: You can only delete quizzes for your own courses.")
+        return redirect("instructor_courses")
+
+    course_id = quiz.course.course_id
+    quiz_title = quiz.title
+    quiz.delete()
+    messages.success(request, f'Quiz "{quiz_title}" was deleted.')
+    return redirect("instructor_course_quizzes", course_id=course_id)
+
+
+@login_required
+def instructor_quiz_questions_view(request, quiz_id):
+    quiz = get_object_or_404(Quiz.objects.select_related("course", "course__instructor"), quiz_id=quiz_id)
+    course = quiz.course
+    allowed, instructor = can_manage_course(request.user, course)
+    if not allowed:
+        messages.error(request, "Unauthorized: You can only manage questions for your own courses.")
+        profile = UserProfile.objects.filter(user=request.user).first()
+        if profile and profile.role == "instructor":
+            return redirect("instructor_courses")
+        return redirect("dashboard")
+
+    questions = quiz.questions.all().order_by("order", "question_id")
+    total_questions = questions.count()
+    total_marks = quiz.total_marks
+
+    context = {
+        "quiz": quiz,
+        "course": course,
+        "questions": questions,
+        "total_questions": total_questions,
+        "total_marks": total_marks,
+        "instructor": course.instructor or instructor,
+    }
+    return render(request, "instructor/instructor_quiz_questions.html", context)
+
+
+@login_required
+def instructor_question_create_view(request, quiz_id):
+    quiz = get_object_or_404(Quiz.objects.select_related("course"), quiz_id=quiz_id)
+    course = quiz.course
+    allowed, _ = can_manage_course(request.user, course)
+    if not allowed:
+        messages.error(request, "Unauthorized: You can only add questions to your own quizzes.")
+        return redirect("instructor_courses")
+
+    if request.method == "POST":
+        form = QuestionForm(request.POST)
+        if form.is_valid():
+            question = form.save(commit=False)
+            question.quiz = quiz
+            question.save()
+            messages.success(request, f"Question #{question.order} successfully added.")
+            if "save_and_add_another" in request.POST:
+                return redirect("instructor_question_create", quiz_id=quiz.quiz_id)
+            return redirect("instructor_quiz_questions", quiz_id=quiz.quiz_id)
+    else:
+        next_order = (quiz.questions.aggregate(Max("order"))["order__max"] or 0) + 1
+        form = QuestionForm(initial={"order": next_order, "marks": 1, "question_type": "multiple_choice"})
+
+    context = {
+        "form": form,
+        "quiz": quiz,
+        "course": course,
+        "is_create": True,
+    }
+    return render(request, "instructor/instructor_question_form.html", context)
+
+
+@login_required
+def instructor_question_edit_view(request, question_id):
+    question = get_object_or_404(
+        Question.objects.select_related("quiz", "quiz__course"),
+        question_id=question_id
+    )
+    quiz = question.quiz
+    course = quiz.course
+    allowed, _ = can_manage_course(request.user, course)
+    if not allowed:
+        messages.error(request, "Unauthorized: You can only edit questions for your own courses.")
+        return redirect("instructor_courses")
+
+    if request.method == "POST":
+        form = QuestionForm(request.POST, instance=question)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f"Question #{question.order} updated successfully.")
+            return redirect("instructor_quiz_questions", quiz_id=quiz.quiz_id)
+    else:
+        form = QuestionForm(instance=question)
+
+    context = {
+        "form": form,
+        "question": question,
+        "quiz": quiz,
+        "course": course,
+        "is_create": False,
+    }
+    return render(request, "instructor/instructor_question_form.html", context)
+
+
+@login_required
+def instructor_question_delete_view(request, question_id):
+    question = get_object_or_404(
+        Question.objects.select_related("quiz", "quiz__course"),
+        question_id=question_id
+    )
+    quiz = question.quiz
+    course = quiz.course
+    allowed, _ = can_manage_course(request.user, course)
+    if not allowed:
+        messages.error(request, "Unauthorized: You can only delete questions from your own courses.")
+        return redirect("instructor_courses")
+
+    order_num = question.order
+    question.delete()
+    messages.success(request, f"Question #{order_num} has been deleted.")
+    return redirect("instructor_quiz_questions", quiz_id=quiz.quiz_id)
+
+
+@login_required
+def instructor_content_quiz_manage_view(request, content_id):
+    content = get_object_or_404(CourseContent.objects.select_related("course"), content_id=content_id)
+    allowed, _ = can_manage_course(request.user, content.course)
+    if not allowed:
+        messages.error(request, "Unauthorized: You can only manage content for your own courses.")
+        return redirect("instructor_courses")
+
+    quiz = content.linked_quiz
+    if not quiz:
+        quiz = Quiz.objects.create(
+            course=content.course,
+            content=content,
+            title=content.title,
+            description=content.description or f"Assessment for {content.title}",
+            pass_percentage=60,
+            time_limit_minutes=15,
+            max_attempts=3,
+            is_active=True
+        )
+    return redirect("instructor_quiz_questions", quiz_id=quiz.quiz_id)

@@ -480,6 +480,9 @@ document.addEventListener("DOMContentLoaded", function() {
                                         <a href="{% url 'course_content_manage' course.course_id %}" class="btn btn-secondary btn-sm" title="Manage Lessons & Curriculum">
                                             📚 Lessons
                                         </a>
+                                        <a href="{% url 'instructor_course_quizzes' course.course_id %}" class="btn btn-secondary btn-sm" title="Manage Quizzes & Questions">
+                                            🎯 Quizzes
+                                        </a>
                                         <a href="{% url 'course_detail' course.course_id %}" class="btn btn-secondary btn-sm" title="View Public Page">
                                             👁️ View
                                         </a>

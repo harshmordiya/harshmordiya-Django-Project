@@ -1,0 +1,504 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+    {% if is_create %}Add Question - {{ quiz.title }}{% else %}Edit Question #{{ question.order }} - {{ quiz.title }}{% endif %} - EduLearn
+{% endblock %}
+
+{% block extra_css %}
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+<style>
+.edu-form-wrapper {
+    font-family: var(--font-body, 'Inter', system-ui, -apple-system, sans-serif);
+    color: #1e293b;
+}
+
+/* Breadcrumb override */
+.edu-breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    list-style: none;
+    padding: 0;
+    margin: 0 0 1.5rem 0;
+    font-size: 0.88rem;
+    color: #64748b;
+}
+.edu-breadcrumb li {
+    display: inline-flex;
+    align-items: center;
+}
+.edu-breadcrumb li:not(:last-child)::after {
+    content: "/";
+    margin-left: 0.5rem;
+    color: #94a3b8;
+}
+.edu-breadcrumb a {
+    color: #4f46e5;
+    text-decoration: none;
+    font-weight: 500;
+}
+.edu-breadcrumb a:hover {
+    text-decoration: underline;
+    color: #3730a3;
+}
+.edu-breadcrumb .active {
+    color: #0f172a;
+    font-weight: 600;
+}
+
+/* Context Banner Card */
+.quiz-context-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 1rem;
+    padding: 1.5rem 1.75rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+.form-hero-badge {
+    background: #eef2ff;
+    color: #4338ca;
+    font-weight: 700;
+    font-size: 0.82rem;
+    padding: 0.35rem 0.85rem;
+    border-radius: 9999px;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    margin-bottom: 0.65rem;
+    border: 1px solid #c7d2fe;
+}
+
+/* Form Controls */
+.edu-input, 
+.edu-form-wrapper input[type="text"],
+.edu-form-wrapper input[type="number"],
+.edu-form-wrapper select,
+.edu-form-wrapper textarea {
+    display: block !important;
+    width: 100% !important;
+    padding: 0.75rem 1rem !important;
+    font-size: 0.95rem !important;
+    font-family: inherit !important;
+    color: #1e293b !important;
+    background-color: #ffffff !important;
+    border: 1.5px solid #cbd5e1 !important;
+    border-radius: 0.65rem !important;
+    transition: border-color 0.2s, box-shadow 0.2s !important;
+    box-sizing: border-box !important;
+}
+
+.edu-form-wrapper input[type="text"]:focus,
+.edu-form-wrapper input[type="number"]:focus,
+.edu-form-wrapper select:focus,
+.edu-form-wrapper textarea:focus {
+    border-color: #4f46e5 !important;
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15) !important;
+    outline: none !important;
+}
+
+/* Answer Key Selector Buttons */
+.key-selector-grid {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    align-items: center;
+    margin-top: 0.5rem;
+}
+
+.key-choice-btn {
+    min-width: 54px;
+    height: 54px;
+    border-radius: 12px;
+    border: 2px solid #cbd5e1;
+    background: #ffffff;
+    font-weight: 800;
+    font-size: 1.15rem;
+    color: #475569;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    padding: 0 1rem;
+}
+.key-choice-btn:hover {
+    border-color: #4f46e5;
+    color: #4f46e5;
+    background: #eef2ff;
+    transform: translateY(-2px);
+}
+.key-choice-btn.active {
+    border-color: #10b981 !important;
+    background: #10b981 !important;
+    color: #ffffff !important;
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.35);
+}
+
+.key-tf-btn {
+    padding: 0.7rem 1.75rem;
+    border-radius: 12px;
+    border: 2px solid #cbd5e1;
+    background: #ffffff;
+    font-weight: 700;
+    font-size: 1rem;
+    color: #475569;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.2s ease;
+}
+.key-tf-btn:hover {
+    border-color: #4f46e5;
+    transform: translateY(-2px);
+}
+.key-tf-btn.active-true {
+    border-color: #10b981 !important;
+    background: #10b981 !important;
+    color: #ffffff !important;
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.35);
+}
+.key-tf-btn.active-false {
+    border-color: #ef4444 !important;
+    background: #ef4444 !important;
+    color: #ffffff !important;
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.35);
+}
+
+.selected-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    background: #ecfdf5;
+    color: #065f46;
+    border: 1px solid #a7f3d0;
+    border-radius: 9999px;
+    padding: 0.35rem 0.9rem;
+    font-size: 0.88rem;
+    font-weight: 700;
+    margin-top: 0.65rem;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="edu-form-wrapper container py-4" style="max-width: 860px;">
+
+    <!-- Breadcrumbs -->
+    <ul class="edu-breadcrumb">
+        <li><a href="{% url 'instructor_courses' %}"><i class="bi bi-person-video3 me-1"></i>Instructor Courses</a></li>
+        <li><a href="{% url 'instructor_course_quizzes' course.course_id %}">Quizzes</a></li>
+        <li><a href="{% url 'instructor_quiz_questions' quiz.quiz_id %}">{{ quiz.title|truncatechars:24 }}</a></li>
+        <li class="active">{% if is_create %}Add Question{% else %}Edit Question #{{ question.order }}{% endif %}</li>
+    </ul>
+
+    <!-- Context Card -->
+    <div class="quiz-context-card d-flex justify-content-between align-items-center flex-wrap gap-3">
+        <div>
+            <div class="form-hero-badge">
+                <i class="bi bi-patch-question-fill"></i> Quiz Assessment
+            </div>
+            <h3 class="fw-bold mb-1" style="color: #0f172a; font-size: 1.45rem;">
+                {% if is_create %}
+                    Add Question to Quiz
+                {% else %}
+                    Edit Question #{{ question.order }}
+                {% endif %}
+            </h3>
+            <div class="text-muted small">
+                <strong>Course:</strong> {{ course.title }} &bull; <strong>Quiz:</strong> {{ quiz.title }}
+            </div>
+        </div>
+        <a href="{% url 'instructor_quiz_questions' quiz.quiz_id %}" class="btn btn-outline-secondary btn-sm rounded-pill px-3.5 py-1.5 fw-semibold">
+            <i class="bi bi-arrow-left me-1"></i> Back to Questions
+        </a>
+    </div>
+
+    <!-- Main Form Card -->
+    <div class="card border-0 shadow-sm rounded-4 p-4 p-md-5 bg-white mb-4">
+        <form method="post" id="questionForm">
+            {% csrf_token %}
+
+            {% if form.errors %}
+                <div class="alert alert-danger rounded-3 mb-4">
+                    <strong class="d-block mb-1"><i class="bi bi-exclamation-triangle-fill me-1"></i> Please check the required fields:</strong>
+                    <ul class="mb-0 ps-3">
+                        {% for field, errors in form.errors.items %}
+                            {% for err in errors %}
+                                <li>{% if field != '__all__' %}<strong>{{ field|title }}:</strong> {% endif %}{{ err }}</li>
+                            {% endfor %}
+                        {% endfor %}
+                    </ul>
+                </div>
+            {% endif %}
+
+            <!-- Question Text -->
+            <div class="mb-4">
+                <label for="{{ form.question_text.id_for_label }}" class="form-label fw-bold" style="color: #0f172a; font-size: 1rem;">
+                    Question Prompt / Statement <span class="text-danger">*</span>
+                </label>
+                {{ form.question_text }}
+                <div class="form-text text-muted mt-1">Clearly state the problem or question for the learners.</div>
+            </div>
+
+            <!-- Question Format, Marks, Order in 3 columns -->
+            <div class="row g-3 mb-4">
+                <div class="col-md-5">
+                    <label for="{{ form.question_type.id_for_label }}" class="form-label fw-bold" style="color: #0f172a;">
+                        Question Format <span class="text-danger">*</span>
+                    </label>
+                    {{ form.question_type }}
+                </div>
+                <div class="col-6 col-md-3">
+                    <label for="{{ form.marks.id_for_label }}" class="form-label fw-bold" style="color: #0f172a;">
+                        Marks / Points <span class="text-danger">*</span>
+                    </label>
+                    {{ form.marks }}
+                </div>
+                <div class="col-6 col-md-4">
+                    <label for="{{ form.order.id_for_label }}" class="form-label fw-bold" style="color: #0f172a;">
+                        Question Sequence <span class="text-danger">*</span>
+                    </label>
+                    {{ form.order }}
+                </div>
+            </div>
+
+            <hr class="my-4" style="border-color: #e2e8f0;">
+
+            <!-- Multiple Choice Options -->
+            <div id="multipleChoiceSection">
+                <div class="d-flex align-items-center gap-2 mb-3">
+                    <h5 class="fw-bold mb-0" style="color: #0f172a; font-size: 1.1rem;">
+                        <i class="bi bi-list-check text-primary me-1"></i> Answer Choices
+                    </h5>
+                    <span class="text-muted small">(Enter options for learners to choose from)</span>
+                </div>
+
+                <div class="mb-3">
+                    <label for="{{ form.option_a.id_for_label }}" class="form-label fw-semibold text-slate-700">
+                        <span class="badge bg-secondary me-1 px-2 py-1">A</span> Choice A <span class="text-danger">*</span>
+                    </label>
+                    {{ form.option_a }}
+                </div>
+
+                <div class="mb-3">
+                    <label for="{{ form.option_b.id_for_label }}" class="form-label fw-semibold text-slate-700">
+                        <span class="badge bg-secondary me-1 px-2 py-1">B</span> Choice B <span class="text-danger">*</span>
+                    </label>
+                    {{ form.option_b }}
+                </div>
+
+                <div class="mb-3" id="groupOptionC">
+                    <label for="{{ form.option_c.id_for_label }}" class="form-label fw-semibold text-slate-700">
+                        <span class="badge bg-secondary me-1 px-2 py-1">C</span> Choice C
+                    </label>
+                    {{ form.option_c }}
+                </div>
+
+                <div class="mb-3" id="groupOptionD">
+                    <label for="{{ form.option_d.id_for_label }}" class="form-label fw-semibold text-slate-700">
+                        <span class="badge bg-secondary me-1 px-2 py-1">D</span> Choice D
+                    </label>
+                    {{ form.option_d }}
+                </div>
+            </div>
+
+            <hr class="my-4" style="border-color: #e2e8f0;">
+
+            <!-- Correct Answer Selection -->
+            <div class="mb-4">
+                <label class="form-label fw-bold d-block" style="color: #0f172a; font-size: 1rem;">
+                    Correct Answer Key <span class="text-danger">*</span>
+                </label>
+                <div class="text-muted small mb-2">Click to select which choice is the correct answer:</div>
+
+                <!-- MC Answer Selector Buttons -->
+                <div class="key-selector-grid" id="mcAnswerButtons">
+                    <button type="button" class="key-choice-btn btn-key-select" data-val="A">
+                        A
+                    </button>
+                    <button type="button" class="key-choice-btn btn-key-select" data-val="B">
+                        B
+                    </button>
+                    <button type="button" class="key-choice-btn btn-key-select" data-val="C">
+                        C
+                    </button>
+                    <button type="button" class="key-choice-btn btn-key-select" data-val="D">
+                        D
+                    </button>
+                </div>
+
+                <!-- True / False Selector Buttons -->
+                <div class="key-selector-grid" id="tfAnswerButtons" style="display: none;">
+                    <button type="button" class="key-tf-btn btn-key-select" data-val="True">
+                        <i class="bi bi-check-circle-fill text-success"></i> True
+                    </button>
+                    <button type="button" class="key-tf-btn btn-key-select" data-val="False">
+                        <i class="bi bi-x-circle-fill text-danger"></i> False
+                    </button>
+                </div>
+
+                <!-- Selected Indicator Badge -->
+                <div class="mt-2">
+                    <span class="selected-indicator" id="selectedAnswerIndicator">
+                        <i class="bi bi-check2-circle"></i>
+                        <span>Selected Answer: <strong id="selectedAnswerText">None</strong></span>
+                    </span>
+                </div>
+
+                <!-- Hidden / synced actual input -->
+                <div class="mt-2" style="max-width: 300px;">
+                    <label class="form-label small text-muted mb-1">Answer Key Code:</label>
+                    {{ form.correct_answer }}
+                </div>
+            </div>
+
+            <hr class="my-4" style="border-color: #e2e8f0;">
+
+            <!-- Explanation -->
+            <div class="mb-4">
+                <label for="{{ form.explanation.id_for_label }}" class="form-label fw-bold" style="color: #0f172a;">
+                    Answer Explanation / Solution Reference <span class="text-muted fw-normal">(Optional)</span>
+                </label>
+                {{ form.explanation }}
+                <div class="form-text text-muted mt-1">Students will see this explanation upon submitting their quiz.</div>
+            </div>
+
+            <!-- Form Action Buttons -->
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 pt-3">
+                <a href="{% url 'instructor_quiz_questions' quiz.quiz_id %}" class="btn btn-outline-secondary px-4 py-2 rounded-pill fw-semibold">
+                    Cancel
+                </a>
+                <div class="d-flex gap-2">
+                    {% if is_create %}
+                        <button type="submit" name="save_and_add_another" value="1" class="btn btn-outline-primary px-4 py-2 rounded-pill fw-bold">
+                            <i class="bi bi-plus-circle me-1"></i> Save & Add Another
+                        </button>
+                    {% endif %}
+                    <button type="submit" class="btn btn-primary px-5 py-2 rounded-pill fw-bold shadow">
+                        <i class="bi bi-check-lg me-1"></i> {% if is_create %}Save Question{% else %}Update Question{% endif %}
+                    </button>
+                </div>
+            </div>
+
+        </form>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const qTypeSelect = document.getElementById("id_question_type");
+    const optAInput = document.getElementById("id_option_a");
+    const optBInput = document.getElementById("id_option_b");
+    const groupOptC = document.getElementById("groupOptionC");
+    const groupOptD = document.getElementById("groupOptionD");
+    const mcButtons = document.getElementById("mcAnswerButtons");
+    const tfButtons = document.getElementById("tfAnswerButtons");
+    const correctInput = document.getElementById("id_correct_answer");
+    const indicatorText = document.getElementById("selectedAnswerText");
+
+    function getNormalizedCode(raw) {
+        if (!raw) return "";
+        raw = raw.trim();
+        const upper = raw.toUpperCase();
+        if (["A", "B", "C", "D"].includes(upper)) return upper;
+        if (["TRUE", "T", "YES", "1"].includes(upper)) return "True";
+        if (["FALSE", "F", "NO", "0"].includes(upper)) return "False";
+
+        // Check if raw text matches any option text
+        if (optAInput && optAInput.value && raw.toLowerCase() === optAInput.value.trim().toLowerCase()) return "A";
+        if (optBInput && optBInput.value && raw.toLowerCase() === optBInput.value.trim().toLowerCase()) return "B";
+        const optC = document.getElementById("id_option_c");
+        if (optC && optC.value && raw.toLowerCase() === optC.value.trim().toLowerCase()) return "C";
+        const optD = document.getElementById("id_option_d");
+        if (optD && optD.value && raw.toLowerCase() === optD.value.trim().toLowerCase()) return "D";
+
+        return upper;
+    }
+
+    function refreshKeyUI() {
+        const norm = getNormalizedCode(correctInput.value);
+
+        if (indicatorText) {
+            indicatorText.textContent = norm ? norm : "None selected";
+        }
+
+        // Highlight MC buttons
+        document.querySelectorAll("#mcAnswerButtons .btn-key-select").forEach(btn => {
+            const val = btn.getAttribute("data-val");
+            if (val === norm) {
+                btn.classList.add("active");
+            } else {
+                btn.classList.remove("active");
+            }
+        });
+
+        // Highlight TF buttons
+        document.querySelectorAll("#tfAnswerButtons .btn-key-select").forEach(btn => {
+            const val = btn.getAttribute("data-val");
+            btn.classList.remove("active-true", "active-false");
+            if (val === norm) {
+                if (val === "True") btn.classList.add("active-true");
+                if (val === "False") btn.classList.add("active-false");
+            }
+        });
+    }
+
+    function syncFormatUI() {
+        const val = qTypeSelect ? qTypeSelect.value : "multiple_choice";
+        if (val === "true_false") {
+            if (groupOptC) groupOptC.style.display = "none";
+            if (groupOptD) groupOptD.style.display = "none";
+            if (mcButtons) mcButtons.style.setProperty("display", "none", "important");
+            if (tfButtons) tfButtons.style.setProperty("display", "flex", "important");
+
+            if (!optAInput.value) optAInput.value = "True";
+            if (!optBInput.value) optBInput.value = "False";
+            if (!["True", "False"].includes(correctInput.value)) {
+                correctInput.value = "True";
+            }
+        } else {
+            if (groupOptC) groupOptC.style.display = "block";
+            if (groupOptD) groupOptD.style.display = "block";
+            if (mcButtons) mcButtons.style.setProperty("display", "flex", "important");
+            if (tfButtons) tfButtons.style.setProperty("display", "none", "important");
+
+            if (["True", "False"].includes(correctInput.value)) {
+                correctInput.value = "A";
+            }
+        }
+        refreshKeyUI();
+    }
+
+    document.querySelectorAll(".btn-key-select").forEach(btn => {
+        btn.addEventListener("click", function(e) {
+            e.preventDefault();
+            const val = this.getAttribute("data-val");
+            correctInput.value = val;
+            refreshKeyUI();
+        });
+    });
+
+    if (correctInput) {
+        correctInput.addEventListener("input", function() {
+            refreshKeyUI();
+        });
+    }
+
+    if (qTypeSelect) {
+        qTypeSelect.addEventListener("change", syncFormatUI);
+        syncFormatUI();
+    } else {
+        refreshKeyUI();
+    }
+});
+</script>
+{% endblock %}

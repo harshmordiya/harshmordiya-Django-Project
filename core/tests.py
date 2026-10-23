@@ -2766,3 +2766,233 @@ class QuizAttemptFlowTests(TestCase):
         self.assertEqual(result_response.status_code, 200)
         self.assertContains(result_response, "Did Not Pass")
         self.assertContains(result_response, "0%")
+
+
+
+class InstructorQuestionManagementTests(TestCase):
+    """
+    Comprehensive tests ensuring instructors can manage quizzes,
+    add questions with choices (Option A, B, C, D) and answer keys,
+    edit, and delete questions with strict ownership checks.
+    """
+    def setUp(self):
+        # Primary Instructor
+        self.instructor_user = User.objects.create_user(
+            username="prof_alan",
+            email="alan@cambridge.edu",
+            password="securepassword123",
+            first_name="Alan",
+            last_name="Turing"
+        )
+        UserProfile.objects.create(user=self.instructor_user, role="instructor")
+        self.instructor = Instructor.objects.create(
+            first_name="Alan",
+            last_name="Turing",
+            email="alan@cambridge.edu",
+            specialization="Computer Science & Logic"
+        )
+
+        # Course owned by Primary Instructor
+        self.course = Course.objects.create(
+            title="Foundations of Computer Science",
+            instructor=self.instructor,
+            category="computerscience",
+            price=Decimal("1999.00"),
+            duration="30 Hours",
+            is_active=True
+        )
+
+        # Quiz in Primary Instructor's Course
+        self.quiz = Quiz.objects.create(
+            course=self.course,
+            title="Turing Machines & Computability",
+            description="Assessment covering automata theory.",
+            pass_percentage=70,
+            time_limit_minutes=20,
+            max_attempts=3,
+            is_active=True
+        )
+
+        # Secondary (Other) Instructor
+        self.other_user = User.objects.create_user(
+            username="prof_ada",
+            email="ada@lovelace.org",
+            password="securepassword123",
+            first_name="Ada",
+            last_name="Lovelace"
+        )
+        UserProfile.objects.create(user=self.other_user, role="instructor")
+        self.other_instructor = Instructor.objects.create(
+            first_name="Ada",
+            last_name="Lovelace",
+            email="ada@lovelace.org",
+            specialization="Analytical Engines"
+        )
+        self.other_course = Course.objects.create(
+            title="Analytical Engine Programming",
+            instructor=self.other_instructor,
+            category="computerscience",
+            price=Decimal("1500.00"),
+            is_active=True
+        )
+
+        # Student user
+        self.student_user = User.objects.create_user(
+            username="student_user",
+            email="student@edulearn.test",
+            password="securepassword123"
+        )
+        UserProfile.objects.create(user=self.student_user, role="student")
+
+    def test_instructor_course_quizzes_view(self):
+        self.client.login(username="prof_alan", password="securepassword123")
+        response = self.client.get(reverse("instructor_course_quizzes", args=[self.course.course_id]))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Foundations of Computer Science")
+        self.assertContains(response, "Turing Machines &amp; Computability")
+
+    def test_instructor_quiz_create(self):
+        self.client.login(username="prof_alan", password="securepassword123")
+        post_data = {
+            "title": "Halting Problem Quiz",
+            "description": "Short quiz on decidability and reduction.",
+            "pass_percentage": "75",
+            "time_limit_minutes": "15",
+            "max_attempts": "2",
+            "is_active": "on",
+        }
+        response = self.client.post(
+            reverse("instructor_quiz_create", args=[self.course.course_id]),
+            post_data
+        )
+        new_quiz = Quiz.objects.filter(title="Halting Problem Quiz", course=self.course).first()
+        self.assertIsNotNone(new_quiz)
+        self.assertEqual(new_quiz.pass_percentage, 75)
+        self.assertRedirects(response, reverse("instructor_quiz_questions", args=[new_quiz.quiz_id]))
+
+    def test_instructor_quiz_questions_view(self):
+        self.client.login(username="prof_alan", password="securepassword123")
+        response = self.client.get(reverse("instructor_quiz_questions", args=[self.quiz.quiz_id]))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Turing Machines &amp; Computability")
+        self.assertContains(response, "No Questions Added Yet")
+
+    def test_instructor_can_add_multiple_choice_question(self):
+        self.client.login(username="prof_alan", password="securepassword123")
+        post_data = {
+            "question_text": "What is the computational complexity of the Halting Problem?",
+            "question_type": "multiple_choice",
+            "option_a": "Polynomial time (P)",
+            "option_b": "Nondeterministic Polynomial (NP-Complete)",
+            "option_c": "Undecidable",
+            "option_d": "Linear time O(n)",
+            "correct_answer": "C",
+            "marks": "2",
+            "explanation": "Alan Turing proved in 1936 that no general algorithm exists to decide the halting problem.",
+            "order": "1",
+        }
+        response = self.client.post(
+            reverse("instructor_question_create", args=[self.quiz.quiz_id]),
+            post_data
+        )
+        self.assertRedirects(response, reverse("instructor_quiz_questions", args=[self.quiz.quiz_id]))
+
+        question = Question.objects.filter(quiz=self.quiz).first()
+        self.assertIsNotNone(question)
+        self.assertEqual(question.question_text, "What is the computational complexity of the Halting Problem?")
+        self.assertEqual(question.question_type, "multiple_choice")
+        self.assertEqual(question.option_a, "Polynomial time (P)")
+        self.assertEqual(question.option_b, "Nondeterministic Polynomial (NP-Complete)")
+        self.assertEqual(question.option_c, "Undecidable")
+        self.assertEqual(question.option_d, "Linear time O(n)")
+        self.assertEqual(question.correct_answer, "C")
+        self.assertEqual(question.marks, 2)
+        self.assertEqual(question.order, 1)
+
+    def test_instructor_can_add_true_false_question(self):
+        self.client.login(username="prof_alan", password="securepassword123")
+        post_data = {
+            "question_text": "Every regular language is context-free.",
+            "question_type": "true_false",
+            "option_a": "True",
+            "option_b": "False",
+            "correct_answer": "True",
+            "marks": "1",
+            "explanation": "Regular languages are a strict subset of context-free languages in the Chomsky hierarchy.",
+            "order": "2",
+        }
+        response = self.client.post(
+            reverse("instructor_question_create", args=[self.quiz.quiz_id]),
+            post_data
+        )
+        self.assertRedirects(response, reverse("instructor_quiz_questions", args=[self.quiz.quiz_id]))
+
+        question = Question.objects.filter(quiz=self.quiz, order=2).first()
+        self.assertIsNotNone(question)
+        self.assertEqual(question.correct_answer, "True")
+
+    def test_instructor_question_edit(self):
+        question = Question.objects.create(
+            quiz=self.quiz,
+            question_text="Sample draft question",
+            question_type="multiple_choice",
+            option_a="Choice 1",
+            option_b="Choice 2",
+            correct_answer="A",
+            marks=1,
+            order=1
+        )
+        self.client.login(username="prof_alan", password="securepassword123")
+        post_data = {
+            "question_text": "Updated question text with refined clarity?",
+            "question_type": "multiple_choice",
+            "option_a": "First Choice",
+            "option_b": "Second Choice",
+            "option_c": "Third Choice",
+            "option_d": "Fourth Choice",
+            "correct_answer": "B",
+            "marks": "3",
+            "explanation": "Updated explanation for choice B.",
+            "order": "1"
+        }
+        response = self.client.post(
+            reverse("instructor_question_edit", args=[question.question_id]),
+            post_data
+        )
+        self.assertRedirects(response, reverse("instructor_quiz_questions", args=[self.quiz.quiz_id]))
+
+        question.refresh_from_db()
+        self.assertEqual(question.question_text, "Updated question text with refined clarity?")
+        self.assertEqual(question.correct_answer, "B")
+        self.assertEqual(question.marks, 3)
+
+    def test_instructor_question_delete(self):
+        question = Question.objects.create(
+            quiz=self.quiz,
+            question_text="Question to be deleted",
+            question_type="multiple_choice",
+            option_a="A",
+            option_b="B",
+            correct_answer="A",
+            marks=1,
+            order=1
+        )
+        self.assertEqual(self.quiz.questions.count(), 1)
+
+        self.client.login(username="prof_alan", password="securepassword123")
+        response = self.client.post(reverse("instructor_question_delete", args=[question.question_id]))
+        self.assertRedirects(response, reverse("instructor_quiz_questions", args=[self.quiz.quiz_id]))
+        self.assertEqual(self.quiz.questions.count(), 0)
+
+    def test_unauthorized_instructor_cannot_manage_another_instructors_quiz(self):
+        # Secondary instructor logs in and tries to add question to primary instructor's quiz
+        self.client.login(username="prof_ada", password="securepassword123")
+        response = self.client.get(reverse("instructor_quiz_questions", args=[self.quiz.quiz_id]))
+        self.assertEqual(response.status_code, 302)
+        self.assertRedirects(response, reverse("instructor_courses"))
+
+    def test_student_cannot_access_instructor_quiz_management(self):
+        self.client.login(username="student_user", password="securepassword123")
+        response = self.client.get(reverse("instructor_quiz_questions", args=[self.quiz.quiz_id]))
+        self.assertEqual(response.status_code, 302)
+        self.assertRedirects(response, reverse("dashboard"))

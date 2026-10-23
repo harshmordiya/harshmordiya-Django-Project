@@ -1,0 +1,206 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+    {% if is_create %}Create Quiz - {{ course.title }}{% else %}Edit Quiz - {{ quiz.title }}{% endif %} - EduLearn
+{% endblock %}
+
+{% block extra_css %}
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+<style>
+.edu-form-wrapper {
+    font-family: var(--font-body, 'Inter', system-ui, -apple-system, sans-serif);
+    color: #1e293b;
+}
+
+/* Breadcrumb */
+.edu-breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    list-style: none;
+    padding: 0;
+    margin: 0 0 1.5rem 0;
+    font-size: 0.88rem;
+    color: #64748b;
+}
+.edu-breadcrumb li {
+    display: inline-flex;
+    align-items: center;
+}
+.edu-breadcrumb li:not(:last-child)::after {
+    content: "/";
+    margin-left: 0.5rem;
+    color: #94a3b8;
+}
+.edu-breadcrumb a {
+    color: #4f46e5;
+    text-decoration: none;
+    font-weight: 500;
+}
+.edu-breadcrumb a:hover {
+    text-decoration: underline;
+    color: #3730a3;
+}
+.edu-breadcrumb .active {
+    color: #0f172a;
+    font-weight: 600;
+}
+
+.form-hero-badge {
+    background: #eef2ff;
+    color: #4338ca;
+    font-weight: 700;
+    font-size: 0.82rem;
+    padding: 0.35rem 0.85rem;
+    border-radius: 9999px;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    margin-bottom: 0.65rem;
+    border: 1px solid #c7d2fe;
+}
+
+.edu-form-wrapper input[type="text"],
+.edu-form-wrapper input[type="number"],
+.edu-form-wrapper select,
+.edu-form-wrapper textarea {
+    display: block !important;
+    width: 100% !important;
+    padding: 0.75rem 1rem !important;
+    font-size: 0.95rem !important;
+    font-family: inherit !important;
+    color: #1e293b !important;
+    background-color: #ffffff !important;
+    border: 1.5px solid #cbd5e1 !important;
+    border-radius: 0.65rem !important;
+    transition: border-color 0.2s, box-shadow 0.2s !important;
+    box-sizing: border-box !important;
+}
+
+.edu-form-wrapper input[type="text"]:focus,
+.edu-form-wrapper input[type="number"]:focus,
+.edu-form-wrapper select:focus,
+.edu-form-wrapper textarea:focus {
+    border-color: #4f46e5 !important;
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15) !important;
+    outline: none !important;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="edu-form-wrapper container py-4" style="max-width: 780px;">
+
+    <!-- Breadcrumb -->
+    <ul class="edu-breadcrumb">
+        <li><a href="{% url 'instructor_courses' %}"><i class="bi bi-person-video3 me-1"></i>Instructor Courses</a></li>
+        <li><a href="{% url 'instructor_course_quizzes' course.course_id %}">Quizzes</a></li>
+        <li class="active">{% if is_create %}Create Quiz{% else %}Edit Quiz{% endif %}</li>
+    </ul>
+
+    <!-- Main Card -->
+    <div class="card border-0 shadow-sm rounded-4 p-4 p-md-5 bg-white mb-4">
+        <div class="mb-4">
+            <div class="form-hero-badge">
+                <i class="bi bi-patch-question-fill"></i> Quiz Assessment Setup
+            </div>
+            <h2 class="fw-bold mb-1" style="color: #0f172a; font-size: 1.65rem;">
+                {% if is_create %}
+                    Create New Quiz
+                {% else %}
+                    Edit Quiz Settings
+                {% endif %}
+            </h2>
+            <p class="text-muted small mb-0">
+                Course: <strong>{{ course.title }}</strong>
+            </p>
+        </div>
+
+        <form method="post">
+            {% csrf_token %}
+
+            {% if form.errors %}
+                <div class="alert alert-danger rounded-3 mb-4">
+                    <strong class="d-block mb-1"><i class="bi bi-exclamation-triangle-fill me-1"></i> Please check the required fields:</strong>
+                    <ul class="mb-0 ps-3">
+                        {% for field, errors in form.errors.items %}
+                            {% for err in errors %}
+                                <li>{% if field != '__all__' %}<strong>{{ field|title }}:</strong> {% endif %}{{ err }}</li>
+                            {% endfor %}
+                        {% endfor %}
+                    </ul>
+                </div>
+            {% endif %}
+
+            <!-- Title -->
+            <div class="mb-3">
+                <label for="{{ form.title.id_for_label }}" class="form-label fw-bold" style="color: #0f172a;">
+                    Quiz Title <span class="text-danger">*</span>
+                </label>
+                {{ form.title }}
+                <div class="form-text text-muted mt-1">e.g. "Module 1 Review Quiz" or "Digital Marketing Metrics Assessment".</div>
+            </div>
+
+            <!-- Description -->
+            <div class="mb-4">
+                <label for="{{ form.description.id_for_label }}" class="form-label fw-bold" style="color: #0f172a;">
+                    Instructions / Overview <span class="text-muted fw-normal">(Optional)</span>
+                </label>
+                {{ form.description }}
+                <div class="form-text text-muted mt-1">Provide instructions or objectives for students before they start.</div>
+            </div>
+
+            <div class="row g-3 mb-4">
+                <div class="col-md-4">
+                    <label for="{{ form.pass_percentage.id_for_label }}" class="form-label fw-bold" style="color: #0f172a;">
+                        Passing Threshold (%) <span class="text-danger">*</span>
+                    </label>
+                    {{ form.pass_percentage }}
+                    <div class="form-text text-muted mt-1">Default: 60%</div>
+                </div>
+
+                <div class="col-md-4">
+                    <label for="{{ form.time_limit_minutes.id_for_label }}" class="form-label fw-bold" style="color: #0f172a;">
+                        Time Limit (Minutes) <span class="text-danger">*</span>
+                    </label>
+                    {{ form.time_limit_minutes }}
+                    <div class="form-text text-muted mt-1">0 = Unlimited time</div>
+                </div>
+
+                <div class="col-md-4">
+                    <label for="{{ form.max_attempts.id_for_label }}" class="form-label fw-bold" style="color: #0f172a;">
+                        Max Allowed Attempts <span class="text-danger">*</span>
+                    </label>
+                    {{ form.max_attempts }}
+                    <div class="form-text text-muted mt-1">0 = Unlimited</div>
+                </div>
+            </div>
+
+            <!-- Visibility / Active Status -->
+            <div class="mb-4 p-3 rounded-3 d-flex align-items-center gap-3" style="background: #f8fafc; border: 1.5px solid #e2e8f0;">
+                <div class="form-check form-switch mb-0">
+                    {{ form.is_active }}
+                    <label class="form-check-label fw-semibold" style="color: #0f172a;" for="{{ form.is_active.id_for_label }}">
+                        Make Quiz Active & Visible to Enrolled Students
+                    </label>
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 pt-3">
+                <a href="{% url 'instructor_course_quizzes' course.course_id %}" class="btn btn-outline-secondary px-4 py-2 rounded-pill fw-semibold">
+                    Cancel
+                </a>
+                <button type="submit" class="btn btn-primary px-5 py-2 rounded-pill fw-bold shadow">
+                    <i class="bi bi-check-lg me-1"></i> {% if is_create %}Save & Add Questions{% else %}Update Quiz Settings{% endif %}
+                </button>
+            </div>
+        </form>
+    </div>
+
+</div>
+{% endblock %}

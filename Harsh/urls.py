@@ -64,6 +64,17 @@ urlpatterns = [
     path("quiz/attempt/<int:attempt_id>/result/", views.quiz_result_view, name="quiz_result"),
     path("content/<int:content_id>/quiz/", views.course_content_quiz_dispatch_view, name="content_quiz_dispatch"),
 
+    # Instructor Quiz & Question Management
+    path("instructor/courses/<int:course_id>/quizzes/", views.instructor_course_quizzes_view, name="instructor_course_quizzes"),
+    path("instructor/courses/<int:course_id>/quizzes/create/", views.instructor_quiz_create_view, name="instructor_quiz_create"),
+    path("instructor/quizzes/<int:quiz_id>/edit/", views.instructor_quiz_edit_view, name="instructor_quiz_edit"),
+    path("instructor/quizzes/<int:quiz_id>/delete/", views.instructor_quiz_delete_view, name="instructor_quiz_delete"),
+    path("instructor/quizzes/<int:quiz_id>/questions/", views.instructor_quiz_questions_view, name="instructor_quiz_questions"),
+    path("instructor/quizzes/<int:quiz_id>/questions/add/", views.instructor_question_create_view, name="instructor_question_create"),
+    path("instructor/questions/<int:question_id>/edit/", views.instructor_question_edit_view, name="instructor_question_edit"),
+    path("instructor/questions/<int:question_id>/delete/", views.instructor_question_delete_view, name="instructor_question_delete"),
+    path("instructor/content/<int:content_id>/manage-quiz/", views.instructor_content_quiz_manage_view, name="instructor_content_quiz_manage"),
+
     # Instructor Portal & Actions
     path("instructor/courses/", views.instructor_courses_view, name="instructor_courses"),
     path("instructor/dashboard/", views.instructor_courses_view, name="instructor_dashboard"),

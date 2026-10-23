@@ -735,6 +735,14 @@ class InstructorReplyForm(forms.Form):
 
 
 class QuizForm(forms.ModelForm):
+    def __init__(self, *args, **kwargs):
+        instructor = kwargs.pop("instructor", None)
+        super().__init__(*args, **kwargs)
+        if instructor is not None and "course" in self.fields:
+            self.fields["course"].queryset = Course.objects.filter(instructor=instructor)
+        if "course" in self.fields:
+            self.fields["course"].required = False
+
     class Meta:
         model = Quiz
         fields = [
@@ -773,13 +781,59 @@ class QuestionForm(forms.ModelForm):
         ]
         widgets = {
             "question_text": forms.Textarea(attrs={"class": "form-textarea", "rows": 3, "placeholder": "Enter question text"}),
-            "question_type": forms.Select(attrs={"class": "form-select"}),
+            "question_type": forms.Select(attrs={"class": "form-select", "id": "id_question_type"}),
             "option_a": forms.TextInput(attrs={"class": "form-input", "placeholder": "Option A"}),
             "option_b": forms.TextInput(attrs={"class": "form-input", "placeholder": "Option B"}),
             "option_c": forms.TextInput(attrs={"class": "form-input", "placeholder": "Option C"}),
             "option_d": forms.TextInput(attrs={"class": "form-input", "placeholder": "Option D"}),
-            "correct_answer": forms.TextInput(attrs={"class": "form-input", "placeholder": "Correct Answer (e.g. A, B, C, D)"}),
+            "correct_answer": forms.TextInput(attrs={"class": "form-input", "placeholder": "Correct Answer (e.g. A, B, C, D or True/False)"}),
             "marks": forms.NumberInput(attrs={"class": "form-input", "min": "1"}),
             "explanation": forms.Textarea(attrs={"class": "form-textarea", "rows": 2, "placeholder": "Explanation of correct answer"}),
             "order": forms.NumberInput(attrs={"class": "form-input", "min": "1"}),
         }
+
+    def clean_correct_answer(self):
+        answer = self.cleaned_data.get("correct_answer", "").strip()
+        q_type = self.cleaned_data.get("question_type")
+
+        if q_type == "multiple_choice":
+            ans_upper = answer.upper()
+            if ans_upper in ["A", "B", "C", "D"]:
+                return ans_upper
+            opt_a = self.cleaned_data.get("option_a", "").strip().lower()
+            opt_b = self.cleaned_data.get("option_b", "").strip().lower()
+            opt_c = self.cleaned_data.get("option_c", "").strip().lower()
+            opt_d = self.cleaned_data.get("option_d", "").strip().lower()
+            raw_lower = answer.lower()
+            if opt_a and raw_lower == opt_a:
+                return "A"
+            if opt_b and raw_lower == opt_b:
+                return "B"
+            if opt_c and raw_lower == opt_c:
+                return "C"
+            if opt_d and raw_lower == opt_d:
+                return "D"
+            raise forms.ValidationError("For Multiple Choice, correct answer must be A, B, C, or D.")
+        elif q_type == "true_false":
+            if answer.lower() in ["true", "t", "yes", "y", "1"]:
+                return "True"
+            elif answer.lower() in ["false", "f", "no", "n", "0"]:
+                return "False"
+            raise forms.ValidationError("For True/False questions, correct answer must be True or False.")
+        return answer
+
+    def clean(self):
+        cleaned_data = super().clean()
+        q_type = cleaned_data.get("question_type")
+        opt_a = cleaned_data.get("option_a", "").strip()
+        opt_b = cleaned_data.get("option_b", "").strip()
+
+        if q_type == "multiple_choice":
+            if not opt_a or not opt_b:
+                raise forms.ValidationError("Multiple choice questions require at least Option A and Option B.")
+        elif q_type == "true_false":
+            if not opt_a:
+                cleaned_data["option_a"] = "True"
+            if not opt_b:
+                cleaned_data["option_b"] = "False"
+        return cleaned_data

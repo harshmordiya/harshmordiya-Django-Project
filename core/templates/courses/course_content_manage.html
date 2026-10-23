@@ -275,6 +275,9 @@
             <a href="{% url 'course_detail' course.course_id %}" class="btn btn-outline-secondary btn-sm rounded-pill px-3" target="_blank" title="View Public Course Page">
                 <i class="bi bi-box-arrow-up-right me-1"></i> Public Preview
             </a>
+            <a href="{% url 'instructor_course_quizzes' course.course_id %}" class="btn btn-outline-primary btn-sm rounded-pill px-3" title="Manage Quizzes & Questions">
+                <i class="bi bi-patch-question-fill me-1"></i> Quizzes
+            </a>
             <a href="{% url 'course_edit' course.course_id %}" class="btn btn-outline-secondary btn-sm rounded-pill px-3" title="Edit Course Details">
                 <i class="bi bi-gear me-1"></i> Edit Course
             </a>
@@ -593,6 +596,11 @@
                                 <td class="text-end">
                                     <div class="btn-group btn-group-sm" role="group">
                                         {% if item.content_type == 'quiz' %}
+                                            <a href="{% url 'instructor_content_quiz_manage' item.content_id %}" 
+                                               class="btn btn-outline-primary" 
+                                               title="Manage Questions with Choices & Answers">
+                                                <i class="bi bi-ui-radios-grid"></i> Questions
+                                            </a>
                                             <a href="{% url 'content_quiz_dispatch' item.content_id %}" 
                                                class="btn btn-outline-success" 
                                                title="Preview & Attempt Quiz"
