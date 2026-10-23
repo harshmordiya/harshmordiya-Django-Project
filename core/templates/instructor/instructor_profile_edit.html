@@ -216,7 +216,24 @@
     </div>
 
     <div class="form-card">
-    
+        <div class="form-header">
+            <div class="form-avatar">
+                {% if instructor.profile_picture %}
+                    <img src="{{ instructor.profile_picture.url }}" alt="{{ instructor.full_name }}" id="header-avatar-img">
+                {% else %}
+                    {{ instructor.first_name|first|upper }}{{ instructor.last_name|first|upper }}
+                {% endif %}
+            </div>
+            <div>
+                <h1 style="font-size: 1.5rem; font-weight: 800; color: var(--slate-900); margin: 0 0 0.35rem 0;">
+                    Edit Faculty Profile
+                </h1>
+                <p style="margin: 0; color: var(--slate-500); font-size: 0.9rem;">
+                    Update your professional credentials, biography, and profile picture.
+                </p>
+            </div>
+        </div>
+
         <form method="post" enctype="multipart/form-data" novalidate id="instructor-profile-form">
             {% csrf_token %}
             {{ form.clear_profile_picture }}

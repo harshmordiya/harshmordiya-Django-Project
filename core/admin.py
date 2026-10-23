@@ -14,6 +14,9 @@ from .models import (
     Enrollment,
     CourseContent,
     InstructorMessage,
+    Quiz,
+    Question,
+    QuizAttempt,
 )
 
 class StudentAccountStatusFilter(admin.SimpleListFilter):
@@ -450,3 +453,116 @@ class InstructorMessageAdmin(admin.ModelAdmin):
     @admin.display(boolean=True, description="Replied")
     def is_replied_display(self, obj):
         return obj.is_replied
+
+
+class QuestionInline(admin.StackedInline):
+    model = Question
+    extra = 1
+    fields = (
+        ("order", "marks", "question_type"),
+        "question_text",
+        ("option_a", "option_b"),
+        ("option_c", "option_d"),
+        "correct_answer",
+        "explanation",
+    )
+
+
+@admin.register(Quiz)
+class QuizAdmin(admin.ModelAdmin):
+    list_display = (
+        "quiz_id",
+        "title",
+        "course",
+        "pass_percentage",
+        "time_limit_minutes",
+        "total_questions_count",
+        "is_active",
+        "created_at",
+    )
+    list_filter = (
+        "is_active",
+        ("course", admin.RelatedOnlyFieldListFilter),
+        ("created_at", admin.DateFieldListFilter),
+    )
+    search_fields = (
+        "title",
+        "description",
+        "course__title",
+    )
+    search_help_text = "Search quizzes by quiz title, description, or course title"
+    ordering = ("-created_at",)
+    date_hierarchy = "created_at"
+    list_per_page = 25
+    list_select_related = ("course",)
+    autocomplete_fields = ("course",)
+    inlines = [QuestionInline]
+
+    @admin.display(description="Questions")
+    def total_questions_count(self, obj):
+        return obj.total_questions
+
+
+@admin.register(Question)
+class QuestionAdmin(admin.ModelAdmin):
+    list_display = (
+        "question_id",
+        "quiz",
+        "course_title",
+        "order",
+        "question_type",
+        "marks",
+        "correct_answer",
+    )
+    list_filter = (
+        "question_type",
+        ("quiz", admin.RelatedOnlyFieldListFilter),
+        ("quiz__course", admin.RelatedOnlyFieldListFilter),
+    )
+    search_fields = (
+        "question_text",
+        "quiz__title",
+        "quiz__course__title",
+    )
+    search_help_text = "Search questions by question prompt, quiz title, or course title"
+    ordering = ("quiz", "order", "question_id")
+    list_per_page = 25
+    list_select_related = ("quiz", "quiz__course")
+    autocomplete_fields = ("quiz",)
+
+    @admin.display(description="Course")
+    def course_title(self, obj):
+        return obj.quiz.course.title
+
+
+
+@admin.register(QuizAttempt)
+class QuizAttemptAdmin(admin.ModelAdmin):
+    list_display = (
+        "attempt_id",
+        "student",
+        "quiz",
+        "score",
+        "total_marks",
+        "percentage",
+        "passed",
+        "completed_at",
+    )
+    list_filter = (
+        "passed",
+        ("quiz", admin.RelatedOnlyFieldListFilter),
+        ("completed_at", admin.DateFieldListFilter),
+    )
+    search_fields = (
+        "student__first_name",
+        "student__last_name",
+        "student__email",
+        "quiz__title",
+        "quiz__course__title",
+    )
+    ordering = ("-completed_at",)
+    date_hierarchy = "completed_at"
+    list_per_page = 25
+    list_select_related = ("student", "quiz", "quiz__course")
+    autocomplete_fields = ("student", "quiz")
+    readonly_fields = ("completed_at",)

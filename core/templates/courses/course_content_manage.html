@@ -592,6 +592,14 @@
 
                                 <td class="text-end">
                                     <div class="btn-group btn-group-sm" role="group">
+                                        {% if item.content_type == 'quiz' %}
+                                            <a href="{% url 'content_quiz_dispatch' item.content_id %}" 
+                                               class="btn btn-outline-success" 
+                                               title="Preview & Attempt Quiz"
+                                               target="_blank">
+                                                <i class="bi bi-play-circle-fill"></i> Attempt
+                                            </a>
+                                        {% endif %}
                                         <a href="{% url 'course_content_edit' item.content_id %}" 
                                            class="btn btn-outline-primary" 
                                            title="Edit Lesson Content">

@@ -514,6 +514,18 @@ class CourseContent(models.Model):
     def __str__(self):
         return f"{self.course.title} - {self.title}"
 
+    @property
+    def linked_quiz(self):
+        if hasattr(self, "linked_quizzes"):
+            direct = self.linked_quizzes.filter(is_active=True).first()
+            if direct:
+                return direct
+        from .models import Quiz
+        matching = Quiz.objects.filter(course=self.course, title__iexact=self.title, is_active=True).first()
+        if matching:
+            return matching
+        return Quiz.objects.filter(course=self.course, is_active=True).first()
+
 
 class InstructorMessage(models.Model):
     message_id = models.AutoField(primary_key=True)
@@ -558,3 +570,202 @@ class InstructorMessage(models.Model):
     @property
     def is_replied(self):
         return bool(self.reply_text and self.reply_text.strip())
+
+
+class Quiz(models.Model):
+    quiz_id = models.AutoField(primary_key=True)
+    course = models.ForeignKey(
+        Course,
+        on_delete=models.CASCADE,
+        related_name="quizzes",
+        help_text="Course to which this quiz belongs"
+    )
+    content = models.ForeignKey(
+        "CourseContent",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="linked_quizzes",
+        help_text="Associated curriculum lesson item if part of syllabus"
+    )
+    title = models.CharField(
+        max_length=200,
+        help_text="Title or topic of the quiz"
+    )
+    description = models.TextField(
+        blank=True,
+        default="",
+        help_text="Instructions or overview for learners taking this quiz"
+    )
+    pass_percentage = models.PositiveIntegerField(
+        default=60,
+        help_text="Minimum score percentage required to pass"
+    )
+    time_limit_minutes = models.PositiveIntegerField(
+        default=15,
+        help_text="Time limit in minutes (0 means no time limit)"
+    )
+    max_attempts = models.PositiveIntegerField(
+        default=3,
+        help_text="Maximum allowed attempts per student (0 for unlimited)"
+    )
+    is_active = models.BooleanField(
+        default=True,
+        help_text="Whether this quiz is active and visible to enrolled students"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name = "Quiz"
+        verbose_name_plural = "Quizzes"
+
+    def __str__(self):
+        return f"{self.course.title} - {self.title}"
+
+    @property
+    def total_questions(self):
+        return self.questions.count()
+
+    @property
+    def total_marks(self):
+        total = self.questions.aggregate(models.Sum("marks"))["marks__sum"]
+        return total or 0
+
+
+class Question(models.Model):
+    QUESTION_TYPE_CHOICES = [
+        ("multiple_choice", "Multiple Choice"),
+        ("true_false", "True / False"),
+        ("short_answer", "Short Answer"),
+    ]
+
+    question_id = models.AutoField(primary_key=True)
+    quiz = models.ForeignKey(
+        Quiz,
+        on_delete=models.CASCADE,
+        related_name="questions",
+        help_text="Quiz to which this question belongs"
+    )
+    question_text = models.TextField(
+        help_text="Question prompt or problem statement"
+    )
+    question_type = models.CharField(
+        max_length=20,
+        choices=QUESTION_TYPE_CHOICES,
+        default="multiple_choice"
+    )
+    option_a = models.CharField(
+        max_length=300,
+        blank=True,
+        default="",
+        help_text="Choice A"
+    )
+    option_b = models.CharField(
+        max_length=300,
+        blank=True,
+        default="",
+        help_text="Choice B"
+    )
+    option_c = models.CharField(
+        max_length=300,
+        blank=True,
+        default="",
+        help_text="Choice C"
+    )
+    option_d = models.CharField(
+        max_length=300,
+        blank=True,
+        default="",
+        help_text="Choice D"
+    )
+    correct_answer = models.CharField(
+        max_length=50,
+        help_text="Correct answer code (e.g. A, B, C, D, True, False, or text)"
+    )
+    explanation = models.TextField(
+        blank=True,
+        default="",
+        help_text="Optional explanation or reference for the correct answer"
+    )
+    marks = models.PositiveIntegerField(
+        default=1,
+        help_text="Marks / points awarded for answering this question correctly"
+    )
+    order = models.PositiveIntegerField(
+        default=1,
+        help_text="Display order sequence within the quiz"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["order", "question_id"]
+        verbose_name = "Question"
+        verbose_name_plural = "Questions"
+
+    def __str__(self):
+        snippet = (self.question_text[:45] + "...") if len(self.question_text) > 45 else self.question_text
+        return f"Q{self.order}: {snippet}"
+
+    @property
+    def course(self):
+        return self.quiz.course
+
+
+class QuizAttempt(models.Model):
+    attempt_id = models.AutoField(primary_key=True)
+    quiz = models.ForeignKey(
+        Quiz,
+        on_delete=models.CASCADE,
+        related_name="attempts",
+        help_text="The quiz that was attempted"
+    )
+    student = models.ForeignKey(
+        Student,
+        on_delete=models.CASCADE,
+        related_name="quiz_attempts",
+        help_text="Student who took the quiz"
+    )
+    score = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        default=Decimal("0.00"),
+        help_text="Points earned by the student"
+    )
+    total_marks = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        default=Decimal("0.00"),
+        help_text="Total possible points"
+    )
+    percentage = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        default=Decimal("0.00"),
+        help_text="Score percentage"
+    )
+    passed = models.BooleanField(
+        default=False,
+        help_text="Whether the student passed the quiz"
+    )
+    answers_json = models.TextField(
+        blank=True,
+        default="{}",
+        help_text="JSON mapping of question_id to student chosen answer"
+    )
+    time_spent_seconds = models.PositiveIntegerField(
+        default=0,
+        help_text="Time taken in seconds"
+    )
+    completed_at = models.DateTimeField(
+        default=timezone.now
+    )
+
+    class Meta:
+        ordering = ["-completed_at"]
+        verbose_name = "Quiz Attempt"
+        verbose_name_plural = "Quiz Attempts"
+
+    def __str__(self):
+        return f"{self.student.full_name} - {self.quiz.title} ({self.percentage}%)"

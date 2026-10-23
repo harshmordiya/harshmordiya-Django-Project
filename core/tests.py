@@ -7,8 +7,8 @@ from django.utils import timezone
 from django.urls import reverse
 from decimal import Decimal
 
-from core.models import Course, CourseContent, Instructor, UserProfile, Student, Enrollment, Payment, InstructorMessage, Cart
-from core.forms import CourseContentForm
+from core.models import Course, CourseContent, Instructor, UserProfile, Student, Enrollment, Payment, InstructorMessage, Cart, Quiz, Question, QuizAttempt
+from core.forms import CourseContentForm, QuizForm, QuestionForm
 
 
 class CourseContentManagementTests(TestCase):
@@ -2480,3 +2480,289 @@ class RecentActivityAndStudentMessagesTests(TestCase):
         self.assertIn("student_recent_activity", response.context)
         self.assertEqual(len(response.context["student_recent_activity"]), 1)
         self.assertContains(response, "Enigma Codebreaking")
+
+
+
+class QuizAndQuestionModelTests(TestCase):
+    def setUp(self):
+        self.instructor = Instructor.objects.create(
+            first_name="Guido",
+            last_name="van Rossum",
+            email="guido@python.org",
+            specialization="Python Core"
+        )
+        self.course = Course.objects.create(
+            title="Python Mastery 2026",
+            category="programming",
+            price=Decimal("499.00"),
+            description="Master modern Python programming.",
+            duration="8 weeks",
+            instructor=self.instructor,
+            is_active=True
+        )
+        self.quiz = Quiz.objects.create(
+            course=self.course,
+            title="Variables & Data Types Quiz",
+            description="Test your understanding of basic Python types.",
+            pass_percentage=70,
+            time_limit_minutes=20,
+            max_attempts=3,
+            is_active=True
+        )
+        self.q1 = Question.objects.create(
+            quiz=self.quiz,
+            question_text="Which of the following is an immutable data type in Python?",
+            question_type="multiple_choice",
+            option_a="list",
+            option_b="tuple",
+            option_c="dict",
+            option_d="set",
+            correct_answer="B",
+            explanation="Tuples are immutable sequences in Python.",
+            marks=2,
+            order=1
+        )
+        self.q2 = Question.objects.create(
+            quiz=self.quiz,
+            question_text="Python supports multiple inheritance.",
+            question_type="true_false",
+            option_a="True",
+            option_b="False",
+            correct_answer="True",
+            explanation="Python allows classes to inherit from multiple parent classes.",
+            marks=1,
+            order=2
+        )
+
+    def test_quiz_properties_and_string_representation(self):
+        self.assertEqual(str(self.quiz), "Python Mastery 2026 - Variables & Data Types Quiz")
+        self.assertEqual(self.quiz.course, self.course)
+        self.assertEqual(self.quiz.pass_percentage, 70)
+        self.assertEqual(self.quiz.time_limit_minutes, 20)
+        self.assertEqual(self.quiz.total_questions, 2)
+        self.assertEqual(self.quiz.total_marks, 3)
+
+    def test_question_properties_and_string_representation(self):
+        self.assertIn("Q1: Which of the following is an immutable", str(self.q1))
+        self.assertEqual(self.q1.course, self.course)
+        self.assertEqual(self.q1.correct_answer, "B")
+        self.assertEqual(self.q1.marks, 2)
+        self.assertEqual(self.q2.order, 2)
+        self.assertEqual(self.q2.marks, 1)
+
+    def test_cascade_delete_quiz_deletes_questions(self):
+        question_id = self.q1.question_id
+        self.quiz.delete()
+        self.assertFalse(Question.objects.filter(question_id=question_id).exists())
+
+    def test_cascade_delete_course_deletes_quizzes_and_questions(self):
+        quiz_id = self.quiz.quiz_id
+        question_id = self.q2.question_id
+        self.course.delete()
+        self.assertFalse(Quiz.objects.filter(quiz_id=quiz_id).exists())
+        self.assertFalse(Question.objects.filter(question_id=question_id).exists())
+
+    def test_quiz_and_question_forms_valid(self):
+        quiz_form_data = {
+            "title": "Control Flow Quiz",
+            "course": self.course.course_id,
+            "description": "If-else and loop mechanics",
+            "pass_percentage": 75,
+            "time_limit_minutes": 15,
+            "max_attempts": 2,
+            "is_active": True,
+        }
+        quiz_form = QuizForm(data=quiz_form_data)
+        self.assertTrue(quiz_form.is_valid())
+        new_quiz = quiz_form.save()
+        self.assertEqual(new_quiz.title, "Control Flow Quiz")
+
+        question_form_data = {
+            "question_text": "What keyword is used for functions?",
+            "question_type": "multiple_choice",
+            "option_a": "func",
+            "option_b": "def",
+            "option_c": "function",
+            "option_d": "define",
+            "correct_answer": "B",
+            "marks": 1,
+            "order": 1,
+        }
+        question_form = QuestionForm(data=question_form_data)
+        self.assertTrue(question_form.is_valid())
+        new_q = question_form.save(commit=False)
+        new_q.quiz = new_quiz
+        new_q.save()
+        self.assertEqual(new_q.correct_answer, "B")
+        self.assertEqual(new_quiz.total_questions, 1)
+
+    def test_admin_quiz_and_question_changelist_accessible(self):
+        admin_user = User.objects.create_superuser(
+            username="quiz_superadmin",
+            email="quiz_admin@edulearn.test",
+            password="adminpassword123"
+        )
+        self.client.login(username="quiz_superadmin", password="adminpassword123")
+
+        quiz_admin_url = reverse("admin:core_quiz_changelist")
+        resp_quiz = self.client.get(quiz_admin_url)
+        self.assertEqual(resp_quiz.status_code, 200)
+        self.assertContains(resp_quiz, "Variables &amp; Data Types Quiz")
+
+        question_admin_url = reverse("admin:core_question_changelist")
+        resp_q = self.client.get(question_admin_url)
+        self.assertEqual(resp_q.status_code, 200)
+        self.assertContains(resp_q, "Which of the following is an immutable")
+
+
+
+class QuizAttemptFlowTests(TestCase):
+    def setUp(self):
+        self.client = Client()
+
+        self.instructor_user = User.objects.create_user(
+            username="quiz_instructor",
+            email="quiz_inst@edulearn.test",
+            password="testpassword123"
+        )
+        UserProfile.objects.create(user=self.instructor_user, role="instructor")
+        self.instructor = Instructor.objects.create(
+            first_name="Ada",
+            last_name="Lovelace",
+            email="quiz_inst@edulearn.test"
+        )
+
+        self.student_user = User.objects.create_user(
+            username="quiz_student",
+            email="quiz_stud@edulearn.test",
+            password="testpassword123",
+            first_name="Alan",
+            last_name="Turing"
+        )
+        UserProfile.objects.create(user=self.student_user, role="student")
+        self.student = Student.objects.create(
+            first_name="Alan",
+            last_name="Turing",
+            email="quiz_stud@edulearn.test"
+        )
+
+        self.course = Course.objects.create(
+            title="Computational Logic & Architecture",
+            category="programming",
+            price=Decimal("1500.00"),
+            description="Deep dive into binary systems and CPU design.",
+            duration="10 weeks",
+            instructor=self.instructor,
+            is_active=True
+        )
+
+        self.content_quiz = CourseContent.objects.create(
+            course=self.course,
+            title="Logic Gates & Boolean Algebra Quiz",
+            content_type="quiz",
+            is_free_preview=True,
+            order=1
+        )
+
+        self.quiz = Quiz.objects.create(
+            course=self.course,
+            title="Logic Gates & Boolean Algebra Quiz",
+            content=self.content_quiz,
+            description="Test your understanding of logic gates and truth tables.",
+            pass_percentage=60,
+            time_limit_minutes=15,
+            max_attempts=3,
+            is_active=True
+        )
+
+        self.q1 = Question.objects.create(
+            quiz=self.quiz,
+            question_text="Which logic gate outputs 1 only when all inputs are 1?",
+            question_type="multiple_choice",
+            option_a="OR gate",
+            option_b="AND gate",
+            option_c="NOT gate",
+            option_d="XOR gate",
+            correct_answer="B",
+            marks=1,
+            order=1
+        )
+
+        self.q2 = Question.objects.create(
+            quiz=self.quiz,
+            question_text="A NOT gate is also known as an inverter.",
+            question_type="true_false",
+            option_a="True",
+            option_b="False",
+            correct_answer="True",
+            marks=1,
+            order=2
+        )
+
+    def test_course_detail_shows_attempt_quiz_button(self):
+        self.client.login(username="quiz_student", password="testpassword123")
+        response = self.client.get(reverse("course_detail", args=[self.course.course_id]))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Attempt Quiz")
+        self.assertContains(response, reverse("content_quiz_dispatch", args=[self.content_quiz.content_id]))
+
+    def test_content_quiz_dispatch_redirects_to_quiz_attempt(self):
+        self.client.login(username="quiz_student", password="testpassword123")
+        response = self.client.get(reverse("content_quiz_dispatch", args=[self.content_quiz.content_id]))
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, reverse("quiz_attempt", args=[self.quiz.quiz_id]))
+
+    def test_quiz_attempt_view_get(self):
+        self.client.login(username="quiz_student", password="testpassword123")
+        response = self.client.get(reverse("quiz_attempt", args=[self.quiz.quiz_id]))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Logic Gates &amp; Boolean Algebra Quiz")
+        self.assertContains(response, "Which logic gate outputs 1 only when all inputs are 1?")
+        self.assertContains(response, "A NOT gate is also known as an inverter.")
+        self.assertContains(response, "Submit Quiz")
+
+    def test_quiz_attempt_submission_correct_scoring(self):
+        self.client.login(username="quiz_student", password="testpassword123")
+        post_data = {
+            f"question_{self.q1.question_id}": "B",     # Correct (+1)
+            f"question_{self.q2.question_id}": "True",  # Correct (+1)
+            "time_spent_seconds": "45",
+        }
+        response = self.client.post(reverse("quiz_attempt", args=[self.quiz.quiz_id]), post_data)
+        self.assertEqual(response.status_code, 302)
+
+        attempt = QuizAttempt.objects.filter(quiz=self.quiz, student=self.student).first()
+        self.assertIsNotNone(attempt)
+        self.assertEqual(attempt.score, Decimal("2.00"))
+        self.assertEqual(attempt.total_marks, Decimal("2.00"))
+        self.assertEqual(attempt.percentage, Decimal("100.00"))
+        self.assertTrue(attempt.passed)
+        self.assertEqual(attempt.time_spent_seconds, 45)
+
+        # Follow redirect to quiz result review
+        result_response = self.client.get(response.url)
+        self.assertEqual(result_response.status_code, 200)
+        self.assertContains(result_response, "100%")
+        self.assertContains(result_response, "Passed Assessment")
+        self.assertContains(result_response, "2 / 2")
+
+    def test_quiz_attempt_submission_failed_scoring(self):
+        self.client.login(username="quiz_student", password="testpassword123")
+        post_data = {
+            f"question_{self.q1.question_id}": "A",      # Incorrect (0)
+            f"question_{self.q2.question_id}": "False",  # Incorrect (0)
+            "time_spent_seconds": "30",
+        }
+        response = self.client.post(reverse("quiz_attempt", args=[self.quiz.quiz_id]), post_data)
+        self.assertEqual(response.status_code, 302)
+
+        attempt = QuizAttempt.objects.filter(quiz=self.quiz, student=self.student).first()
+        self.assertIsNotNone(attempt)
+        self.assertEqual(attempt.score, Decimal("0.00"))
+        self.assertEqual(attempt.percentage, Decimal("0.00"))
+        self.assertFalse(attempt.passed)
+
+        result_response = self.client.get(response.url)
+        self.assertEqual(result_response.status_code, 200)
+        self.assertContains(result_response, "Did Not Pass")
+        self.assertContains(result_response, "0%")

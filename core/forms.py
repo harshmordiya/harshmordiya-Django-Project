@@ -3,7 +3,7 @@ from django import forms
 from django.contrib.auth.models import User
 from django.utils import timezone
 
-from .models import UserProfile, Student, Instructor, Course, CourseContent, InstructorMessage
+from .models import UserProfile, Student, Instructor, Course, CourseContent, InstructorMessage, Quiz, Question
 from .validators import validate_course_notes_file
 
 
@@ -731,3 +731,55 @@ class InstructorReplyForm(forms.Form):
 
 
 
+
+
+
+class QuizForm(forms.ModelForm):
+    class Meta:
+        model = Quiz
+        fields = [
+            "title",
+            "course",
+            "description",
+            "pass_percentage",
+            "time_limit_minutes",
+            "max_attempts",
+            "is_active",
+        ]
+        widgets = {
+            "title": forms.TextInput(attrs={"class": "form-input", "placeholder": "Quiz Title"}),
+            "course": forms.Select(attrs={"class": "form-select"}),
+            "description": forms.Textarea(attrs={"class": "form-textarea", "rows": 3, "placeholder": "Quiz instructions..."}),
+            "pass_percentage": forms.NumberInput(attrs={"class": "form-input", "min": "1", "max": "100"}),
+            "time_limit_minutes": forms.NumberInput(attrs={"class": "form-input", "min": "0"}),
+            "max_attempts": forms.NumberInput(attrs={"class": "form-input", "min": "0"}),
+        }
+
+
+class QuestionForm(forms.ModelForm):
+    class Meta:
+        model = Question
+        fields = [
+            "question_text",
+            "question_type",
+            "option_a",
+            "option_b",
+            "option_c",
+            "option_d",
+            "correct_answer",
+            "marks",
+            "explanation",
+            "order",
+        ]
+        widgets = {
+            "question_text": forms.Textarea(attrs={"class": "form-textarea", "rows": 3, "placeholder": "Enter question text"}),
+            "question_type": forms.Select(attrs={"class": "form-select"}),
+            "option_a": forms.TextInput(attrs={"class": "form-input", "placeholder": "Option A"}),
+            "option_b": forms.TextInput(attrs={"class": "form-input", "placeholder": "Option B"}),
+            "option_c": forms.TextInput(attrs={"class": "form-input", "placeholder": "Option C"}),
+            "option_d": forms.TextInput(attrs={"class": "form-input", "placeholder": "Option D"}),
+            "correct_answer": forms.TextInput(attrs={"class": "form-input", "placeholder": "Correct Answer (e.g. A, B, C, D)"}),
+            "marks": forms.NumberInput(attrs={"class": "form-input", "min": "1"}),
+            "explanation": forms.Textarea(attrs={"class": "form-textarea", "rows": 2, "placeholder": "Explanation of correct answer"}),
+            "order": forms.NumberInput(attrs={"class": "form-input", "min": "1"}),
+        }

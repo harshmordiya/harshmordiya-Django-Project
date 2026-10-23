@@ -59,6 +59,11 @@ urlpatterns = [
     path("courses/content/<int:content_id>/delete/", views.course_content_delete_view, name="course_content_delete"),
     path("courses/content/<int:content_id>/reorder/<str:direction>/", views.course_content_reorder_view, name="course_content_reorder"),
 
+    # Quizzes & Assessments
+    path("quiz/<int:quiz_id>/attempt/", views.quiz_attempt_view, name="quiz_attempt"),
+    path("quiz/attempt/<int:attempt_id>/result/", views.quiz_result_view, name="quiz_result"),
+    path("content/<int:content_id>/quiz/", views.course_content_quiz_dispatch_view, name="content_quiz_dispatch"),
+
     # Instructor Portal & Actions
     path("instructor/courses/", views.instructor_courses_view, name="instructor_courses"),
     path("instructor/dashboard/", views.instructor_courses_view, name="instructor_dashboard"),

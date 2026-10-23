@@ -21,7 +21,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.urls import reverse
 
 from .forms import RegistrationForm, CourseForm, CourseContentForm, StudentProfileForm, InstructorProfileForm, ContactInstructorForm, InstructorReplyForm
-from .models import Cart, Course, CourseContent, PasswordResetOTP, Student, UserProfile, Payment, Enrollment, Instructor, InstructorMessage
+from .models import Cart, Course, CourseContent, PasswordResetOTP, Student, UserProfile, Payment, Enrollment, Instructor, InstructorMessage, Quiz, Question, QuizAttempt
 from .email_utils import (
     send_payment_confirmation_email,
     send_enrollment_confirmation_email,
@@ -744,6 +744,14 @@ def course_detail_view(request, course_id):
     enrolled_students_count = course.enrollments.filter(status__in=["active", "completed"]).count()
     contents_count = contents.count()
 
+    student_quiz_attempts = {}
+    if request.user.is_authenticated:
+        student = get_student_for_user(request.user)
+        if student:
+            for att in QuizAttempt.objects.filter(student=student, quiz__course=course).order_by("-completed_at"):
+                if att.quiz_id not in student_quiz_attempts:
+                    student_quiz_attempts[att.quiz_id] = att
+
     return render(
         request,
         "course_detail.html",
@@ -755,6 +763,7 @@ def course_detail_view(request, course_id):
             "quizzes_count": quizzes_count,
             "enrolled_students_count": enrolled_students_count,
             "contents_count": contents_count,
+            "student_quiz_attempts": student_quiz_attempts,
         }
     )
 
@@ -2397,3 +2406,235 @@ def privacy_policy_view(request):
 
 def terms_of_service_view(request):
     return render(request, "terms_of_service.html")
+
+
+@login_required
+def course_content_quiz_dispatch_view(request, content_id):
+    content = get_object_or_404(CourseContent.objects.select_related("course"), content_id=content_id)
+    quiz = content.linked_quiz
+    if not quiz:
+        quiz = Quiz.objects.create(
+            course=content.course,
+            title=content.title,
+            description=content.description or f"Assessment for {content.title}",
+            content=content,
+            pass_percentage=60,
+            time_limit_minutes=15,
+            max_attempts=3,
+            is_active=True
+        )
+        if quiz.questions.count() == 0:
+            Question.objects.create(
+                quiz=quiz,
+                question_text=f"Which principle is essential when studying {content.title}?",
+                question_type="multiple_choice",
+                option_a="Thorough conceptual understanding and continuous hands-on practice",
+                option_b="Skipping foundational lessons without review",
+                option_c="Memorizing syntax without understanding principles",
+                option_d="Ignoring documentation and project requirements",
+                correct_answer="A",
+                explanation="Conceptual comprehension combined with practical execution produces the highest retention and skill mastery.",
+                marks=1,
+                order=1
+            )
+    return redirect("quiz_attempt", quiz_id=quiz.quiz_id)
+
+
+@login_required
+def quiz_attempt_view(request, quiz_id):
+    quiz = get_object_or_404(Quiz.objects.select_related("course"), quiz_id=quiz_id)
+    course = quiz.course
+
+    is_admin = is_admin_user(request.user)
+    is_instructor = False
+    instructor = get_instructor_for_user(request.user)
+    if instructor and (course.instructor == instructor or course.instructor is None):
+        is_instructor = True
+
+    is_free_preview = False
+    if quiz.content and quiz.content.is_free_preview:
+        is_free_preview = True
+
+    student = get_student_for_user(request.user)
+    is_enrolled = False
+    if student:
+        is_enrolled = Enrollment.objects.filter(
+            student=student,
+            course=course,
+            status__in=["active", "completed"]
+        ).exists()
+
+    if not (is_enrolled or is_admin or is_instructor or is_free_preview):
+        messages.error(request, f"You must be enrolled in '{course.title}' to attempt this quiz.")
+        return redirect("course_detail", course_id=course.course_id)
+
+    if not student:
+        student, _ = Student.objects.get_or_create(
+            email=request.user.email,
+            defaults={
+                "first_name": request.user.first_name or request.user.username,
+                "last_name": request.user.last_name or "",
+            }
+        )
+
+    existing_attempts = QuizAttempt.objects.filter(quiz=quiz, student=student).order_by("-completed_at")
+    attempt_count = existing_attempts.count()
+
+    if quiz.max_attempts > 0 and attempt_count >= quiz.max_attempts and not (is_admin or is_instructor):
+        messages.warning(
+            request,
+            f"You have reached the maximum allowed attempts ({quiz.max_attempts}) for this quiz."
+        )
+        latest_attempt = existing_attempts.first()
+        if latest_attempt:
+            return redirect("quiz_result", attempt_id=latest_attempt.attempt_id)
+        return redirect("course_detail", course_id=course.course_id)
+
+    questions = quiz.questions.all().order_by("order", "question_id")
+
+    if request.method == "POST":
+        if questions.count() == 0:
+            messages.error(request, "This quiz currently has no questions.")
+            return redirect("course_detail", course_id=course.course_id)
+
+        earned_score = Decimal("0.00")
+        total_marks = Decimal("0.00")
+        answers_dict = {}
+
+        for q in questions:
+            total_marks += Decimal(str(q.marks))
+            chosen = request.POST.get(f"question_{q.question_id}", "").strip()
+            answers_dict[str(q.question_id)] = chosen
+            if chosen and chosen.strip().upper() == q.correct_answer.strip().upper():
+                earned_score += Decimal(str(q.marks))
+
+        percentage = Decimal("0.00")
+        if total_marks > 0:
+            percentage = (earned_score / total_marks) * Decimal("100.00")
+
+        passed = bool(percentage >= Decimal(str(quiz.pass_percentage)))
+
+        time_spent = 0
+        try:
+            time_spent = max(0, int(request.POST.get("time_spent_seconds", "0")))
+        except (ValueError, TypeError):
+            time_spent = 0
+
+        attempt = QuizAttempt.objects.create(
+            quiz=quiz,
+            student=student,
+            score=earned_score,
+            total_marks=total_marks,
+            percentage=percentage.quantize(Decimal("0.01")),
+            passed=passed,
+            answers_json=json.dumps(answers_dict),
+            time_spent_seconds=time_spent
+        )
+
+        if passed:
+            messages.success(
+                request,
+                f"Congratulations! You scored {percentage:.1f}% and passed '{quiz.title}'."
+            )
+        else:
+            messages.warning(
+                request,
+                f"You scored {percentage:.1f}%. The passing threshold is {quiz.pass_percentage}%. Review your answers below."
+            )
+
+        return redirect("quiz_result", attempt_id=attempt.attempt_id)
+
+    attempts_left = None
+    if quiz.max_attempts > 0:
+        attempts_left = max(0, quiz.max_attempts - attempt_count)
+
+    context = {
+        "quiz": quiz,
+        "course": course,
+        "questions": questions,
+        "student": student,
+        "attempt_count": attempt_count,
+        "attempts_left": attempts_left,
+        "is_enrolled": is_enrolled,
+        "is_free_preview": is_free_preview,
+    }
+    return render(request, "courses/quiz_attempt.html", context)
+
+
+@login_required
+def quiz_result_view(request, attempt_id):
+    attempt = get_object_or_404(
+        QuizAttempt.objects.select_related("quiz", "quiz__course", "student"),
+        attempt_id=attempt_id
+    )
+    quiz = attempt.quiz
+    course = quiz.course
+
+    is_admin = is_admin_user(request.user)
+    is_owner = bool(request.user.email and attempt.student.email.lower() == request.user.email.lower())
+    is_instructor = False
+    instructor = get_instructor_for_user(request.user)
+    if instructor and (course.instructor == instructor or course.instructor is None):
+        is_instructor = True
+
+    if not (is_admin or is_owner or is_instructor):
+        messages.error(request, "You are not authorized to view this quiz result.")
+        return redirect("course_detail", course_id=course.course_id)
+
+    try:
+        answers_dict = json.loads(attempt.answers_json) if attempt.answers_json else {}
+    except Exception:
+        answers_dict = {}
+
+    questions = quiz.questions.all().order_by("order", "question_id")
+    reviewed_questions = []
+
+    correct_count = 0
+    total_questions = questions.count()
+
+    for q in questions:
+        chosen = answers_dict.get(str(q.question_id), "")
+        is_correct = bool(chosen and chosen.strip().upper() == q.correct_answer.strip().upper())
+        if is_correct:
+            correct_count += 1
+
+        options = []
+        if q.question_type == "multiple_choice":
+            if q.option_a: options.append({"code": "A", "text": q.option_a})
+            if q.option_b: options.append({"code": "B", "text": q.option_b})
+            if q.option_c: options.append({"code": "C", "text": q.option_c})
+            if q.option_d: options.append({"code": "D", "text": q.option_d})
+        elif q.question_type == "true_false":
+            options.append({"code": "True", "text": "True"})
+            options.append({"code": "False", "text": "False"})
+
+        reviewed_questions.append({
+            "question": q,
+            "chosen": chosen,
+            "is_correct": is_correct,
+            "options": options,
+            "correct_answer": q.correct_answer,
+            "explanation": q.explanation,
+        })
+
+    total_student_attempts = QuizAttempt.objects.filter(quiz=quiz, student=attempt.student).count()
+    can_retake = True
+    if quiz.max_attempts > 0 and total_student_attempts >= quiz.max_attempts:
+        can_retake = False
+
+    time_minutes = attempt.time_spent_seconds // 60
+    time_seconds = attempt.time_spent_seconds % 60
+
+    context = {
+        "attempt": attempt,
+        "quiz": quiz,
+        "course": course,
+        "reviewed_questions": reviewed_questions,
+        "correct_count": correct_count,
+        "total_questions": total_questions,
+        "can_retake": can_retake,
+        "attempts_used": total_student_attempts,
+        "time_minutes": time_minutes,
+        "time_seconds": time_seconds,
+    }
+    return render(request, "courses/quiz_result.html", context)

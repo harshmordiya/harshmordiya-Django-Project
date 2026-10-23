@@ -97,10 +97,23 @@
                                                     📥 Resource
                                                 </a>
                                             {% endif %}
+                                            {% if content.content_type == 'quiz' %}
+                                                <a href="{% url 'content_quiz_dispatch' content.content_id %}" class="btn btn-primary btn-sm" style="padding: 0.35rem 0.85rem; font-size: 0.82rem; background: linear-gradient(135deg, #4f46e5, #7c3aed); border: none; display: inline-flex; align-items: center; gap: 0.35rem; font-weight: 600; box-shadow: 0 2px 4px rgba(79, 70, 229, 0.25);">
+                                                    <span>📝</span>
+                                                    <span>Attempt Quiz</span>
+                                                </a>
+                                            {% endif %}
                                         {% else %}
-                                            <span style="font-size: 0.82rem; color: var(--slate-400); display: inline-flex; align-items: center; gap: 0.25rem;">
-                                                🔒 Locked
-                                            </span>
+                                            {% if content.content_type == 'quiz' %}
+                                                <a href="{% url 'cart' %}" class="btn btn-outline-secondary btn-sm" style="padding: 0.35rem 0.75rem; font-size: 0.82rem; display: inline-flex; align-items: center; gap: 0.3rem;">
+                                                    <span>🔒</span>
+                                                    <span>Enroll to Attempt Quiz</span>
+                                                </a>
+                                            {% else %}
+                                                <span style="font-size: 0.82rem; color: var(--slate-400); display: inline-flex; align-items: center; gap: 0.25rem;">
+                                                    🔒 Locked
+                                                </span>
+                                            {% endif %}
                                         {% endif %}
 
                                         {% if is_course_manager %}

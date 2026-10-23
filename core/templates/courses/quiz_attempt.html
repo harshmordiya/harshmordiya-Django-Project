@@ -1,0 +1,255 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Attempt Quiz: {{ quiz.title }} - EduLearn{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 900px; padding: 2rem 1rem;">
+
+    <!-- Breadcrumbs -->
+    <div style="margin-bottom: 1.5rem; font-size: 0.88rem; color: var(--slate-500); display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+        <a href="{% url 'home' %}" style="color: var(--primary); text-decoration: none;">Home</a>
+        <span>/</span>
+        <a href="{% url 'course_list' %}" style="color: var(--primary); text-decoration: none;">Courses</a>
+        <span>/</span>
+        <a href="{% url 'course_detail' course.course_id %}" style="color: var(--primary); text-decoration: none;">{{ course.title|truncatechars:30 }}</a>
+        <span>/</span>
+        <span style="color: var(--slate-800); font-weight: 600;">{{ quiz.title }}</span>
+    </div>
+
+    <!-- Quiz Header Banner -->
+    <div class="card" style="background: white; border: 1px solid var(--slate-200); border-radius: var(--radius-xl); padding: 2rem; box-shadow: var(--shadow-sm); margin-bottom: 2rem;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 1.5rem; flex-wrap: wrap;">
+            <div>
+                <span class="badge" style="background: var(--primary-light); color: var(--primary); font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; padding: 0.35rem 0.75rem; border-radius: 9999px;">
+                    📝 Knowledge Assessment
+                </span>
+                <h1 style="font-size: 1.85rem; font-weight: 800; color: var(--slate-900); margin: 0.75rem 0 0.5rem 0;">
+                    {{ quiz.title }}
+                </h1>
+                <p style="color: var(--slate-600); font-size: 0.95rem; margin: 0; max-width: 650px; line-height: 1.5;">
+                    {{ quiz.description|default:"Answer all questions to the best of your ability. Once submitted, your score will be calculated immediately with explanations." }}
+                </p>
+            </div>
+
+            <!-- Quiz Timer Pill (if time limit > 0) -->
+            {% if quiz.time_limit_minutes > 0 %}
+                <div id="quizTimerBox" style="background: linear-gradient(135deg, #0f172a, #1e293b); color: white; border-radius: var(--radius-lg); padding: 0.85rem 1.35rem; display: flex; align-items: center; gap: 0.75rem; box-shadow: 0 4px 12px rgba(15, 23, 42, 0.25); flex-shrink: 0;">
+                    <i class="bi bi-clock-history" style="font-size: 1.35rem; color: #38bdf8;"></i>
+                    <div>
+                        <div style="font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; color: #94a3b8; font-weight: 600;">Time Remaining</div>
+                        <div id="timerDisplay" style="font-size: 1.25rem; font-weight: 800; font-family: monospace; color: #ffffff;">{{ quiz.time_limit_minutes }}:00</div>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Meta Indicators Row -->
+        <div style="display: flex; gap: 1.25rem; margin-top: 1.5rem; padding-top: 1.25rem; border-top: 1px solid var(--slate-100); flex-wrap: wrap; font-size: 0.88rem; color: var(--slate-600);">
+            <div style="display: flex; align-items: center; gap: 0.4rem;">
+                <i class="bi bi-patch-question-fill text-primary"></i>
+                <span><strong>{{ questions|length }}</strong> Questions</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 0.4rem;">
+                <i class="bi bi-award-fill" style="color: #f59e0b;"></i>
+                <span>Passing Grade: <strong>{{ quiz.pass_percentage }}%</strong></span>
+            </div>
+            {% if quiz.time_limit_minutes > 0 %}
+                <div style="display: flex; align-items: center; gap: 0.4rem;">
+                    <i class="bi bi-stopwatch text-info"></i>
+                    <span>Limit: <strong>{{ quiz.time_limit_minutes }} mins</strong></span>
+                </div>
+            {% endif %}
+            {% if attempts_left is not None %}
+                <div style="display: flex; align-items: center; gap: 0.4rem;">
+                    <i class="bi bi-arrow-repeat text-success"></i>
+                    <span>Remaining Attempts: <strong>{{ attempts_left }}</strong> of {{ quiz.max_attempts }}</span>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Questions Form -->
+    <form method="post" id="quizAttemptForm" novalidate>
+        {% csrf_token %}
+        <input type="hidden" name="time_spent_seconds" id="timeSpentSeconds" value="0">
+
+        {% for q in questions %}
+            <div class="card question-card" style="background: white; border: 1px solid var(--slate-200); border-radius: var(--radius-lg); padding: 1.75rem; margin-bottom: 1.5rem; box-shadow: var(--shadow-sm); transition: border-color 0.2s;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; border-bottom: 1px solid var(--slate-100); padding-bottom: 0.75rem;">
+                    <span style="font-weight: 700; color: var(--primary); font-size: 0.9rem; letter-spacing: 0.03em;">
+                        QUESTION {{ forloop.counter }} OF {{ questions|length }}
+                    </span>
+                    <span class="badge" style="background: #f1f5f9; color: var(--slate-700); font-weight: 600; font-size: 0.78rem;">
+                        {{ q.marks }} Point{{ q.marks|pluralize }}
+                    </span>
+                </div>
+
+                <h3 style="font-size: 1.15rem; font-weight: 700; color: var(--slate-900); line-height: 1.5; margin: 0 0 1.25rem 0;">
+                    {{ q.question_text }}
+                </h3>
+
+                <!-- Options -->
+                <div class="options-container" style="display: flex; flex-direction: column; gap: 0.75rem;">
+                    {% if q.question_type == 'multiple_choice' %}
+                        {% if q.option_a %}
+                            <label class="option-label" style="display: flex; align-items: center; gap: 0.85rem; padding: 0.85rem 1.15rem; border: 1.5px solid #e2e8f0; border-radius: var(--radius-md); cursor: pointer; transition: all 0.2s;">
+                                <input type="radio" name="question_{{ q.question_id }}" value="A" style="width: 18px; height: 18px; accent-color: var(--primary); cursor: pointer;">
+                                <span style="font-weight: 700; color: var(--slate-500); width: 22px;">A.</span>
+                                <span style="color: var(--slate-800); font-size: 0.95rem;">{{ q.option_a }}</span>
+                            </label>
+                        {% endif %}
+                        {% if q.option_b %}
+                            <label class="option-label" style="display: flex; align-items: center; gap: 0.85rem; padding: 0.85rem 1.15rem; border: 1.5px solid #e2e8f0; border-radius: var(--radius-md); cursor: pointer; transition: all 0.2s;">
+                                <input type="radio" name="question_{{ q.question_id }}" value="B" style="width: 18px; height: 18px; accent-color: var(--primary); cursor: pointer;">
+                                <span style="font-weight: 700; color: var(--slate-500); width: 22px;">B.</span>
+                                <span style="color: var(--slate-800); font-size: 0.95rem;">{{ q.option_b }}</span>
+                            </label>
+                        {% endif %}
+                        {% if q.option_c %}
+                            <label class="option-label" style="display: flex; align-items: center; gap: 0.85rem; padding: 0.85rem 1.15rem; border: 1.5px solid #e2e8f0; border-radius: var(--radius-md); cursor: pointer; transition: all 0.2s;">
+                                <input type="radio" name="question_{{ q.question_id }}" value="C" style="width: 18px; height: 18px; accent-color: var(--primary); cursor: pointer;">
+                                <span style="font-weight: 700; color: var(--slate-500); width: 22px;">C.</span>
+                                <span style="color: var(--slate-800); font-size: 0.95rem;">{{ q.option_c }}</span>
+                            </label>
+                        {% endif %}
+                        {% if q.option_d %}
+                            <label class="option-label" style="display: flex; align-items: center; gap: 0.85rem; padding: 0.85rem 1.15rem; border: 1.5px solid #e2e8f0; border-radius: var(--radius-md); cursor: pointer; transition: all 0.2s;">
+                                <input type="radio" name="question_{{ q.question_id }}" value="D" style="width: 18px; height: 18px; accent-color: var(--primary); cursor: pointer;">
+                                <span style="font-weight: 700; color: var(--slate-500); width: 22px;">D.</span>
+                                <span style="color: var(--slate-800); font-size: 0.95rem;">{{ q.option_d }}</span>
+                            </label>
+                        {% endif %}
+                    {% elif q.question_type == 'true_false' %}
+                        <label class="option-label" style="display: flex; align-items: center; gap: 0.85rem; padding: 0.85rem 1.15rem; border: 1.5px solid #e2e8f0; border-radius: var(--radius-md); cursor: pointer; transition: all 0.2s;">
+                            <input type="radio" name="question_{{ q.question_id }}" value="True" style="width: 18px; height: 18px; accent-color: var(--primary); cursor: pointer;">
+                            <span style="font-weight: 700; color: #16a34a; width: 22px;">✓</span>
+                            <span style="color: var(--slate-800); font-size: 0.95rem; font-weight: 600;">True</span>
+                        </label>
+                        <label class="option-label" style="display: flex; align-items: center; gap: 0.85rem; padding: 0.85rem 1.15rem; border: 1.5px solid #e2e8f0; border-radius: var(--radius-md); cursor: pointer; transition: all 0.2s;">
+                            <input type="radio" name="question_{{ q.question_id }}" value="False" style="width: 18px; height: 18px; accent-color: var(--primary); cursor: pointer;">
+                            <span style="font-weight: 700; color: #dc2626; width: 22px;">✗</span>
+                            <span style="color: var(--slate-800); font-size: 0.95rem; font-weight: 600;">False</span>
+                        </label>
+                    {% endif %}
+                </div>
+            </div>
+        {% empty %}
+            <div class="card" style="padding: 3rem; text-align: center; color: var(--slate-500); background: white; border: 1px dashed var(--slate-300); border-radius: var(--radius-lg);">
+                <i class="bi bi-emoji-neutral" style="font-size: 2.5rem; color: var(--slate-400); display: block; margin-bottom: 0.75rem;"></i>
+                <p style="font-size: 1.05rem; font-weight: 600; margin: 0 0 0.5rem 0;">No questions available in this quiz yet.</p>
+                <p style="font-size: 0.9rem; margin: 0;">Questions are currently being prepared by the course instructor.</p>
+            </div>
+        {% endfor %}
+
+        <!-- Submit & Actions Footer -->
+        {% if questions %}
+            <div class="card" style="background: white; border: 1px solid var(--slate-200); border-radius: var(--radius-xl); padding: 1.5rem 2rem; box-shadow: var(--shadow-md); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; position: sticky; bottom: 1.5rem; z-index: 100;">
+                <div>
+                    <div style="font-size: 0.88rem; color: var(--slate-500);">Ready to finish?</div>
+                    <div style="font-size: 1.05rem; font-weight: 700; color: var(--slate-900);">Submit for Immediate Grading</div>
+                </div>
+
+                <div style="display: flex; gap: 0.75rem; align-items: center;">
+                    <a href="{% url 'course_detail' course.course_id %}" class="btn btn-secondary" onclick="return confirm('Are you sure you want to exit? Your answers will not be saved.');">
+                        Cancel
+                    </a>
+                    <button type="submit" id="submitQuizBtn" class="btn btn-primary" style="padding: 0.75rem 2rem; font-size: 1rem; font-weight: 700; background: linear-gradient(135deg, #4f46e5, #7c3aed); border: none; box-shadow: 0 4px 12px rgba(79, 70, 229, 0.35);">
+                        <span>🚀</span>
+                        <span>Submit Quiz</span>
+                    </button>
+                </div>
+            </div>
+        {% endif %}
+    </form>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    // Interactive option styling
+    const optionLabels = document.querySelectorAll('.option-label');
+    optionLabels.forEach(label => {
+        const radio = label.querySelector('input[type="radio"]');
+        if (!radio) return;
+
+        radio.addEventListener('change', function() {
+            const groupName = this.name;
+            document.querySelectorAll(`input[name="${groupName}"]`).forEach(sibling => {
+                const parent = sibling.closest('.option-label');
+                if (parent) {
+                    parent.style.borderColor = '#e2e8f0';
+                    parent.style.background = 'transparent';
+                }
+            });
+            if (this.checked) {
+                label.style.borderColor = '#4f46e5';
+                label.style.background = '#eef2ff';
+            }
+        });
+
+        label.addEventListener('mouseenter', function() {
+            if (!radio.checked) {
+                label.style.borderColor = '#94a3b8';
+                label.style.background = '#f8fafc';
+            }
+        });
+
+        label.addEventListener('mouseleave', function() {
+            if (!radio.checked) {
+                label.style.borderColor = '#e2e8f0';
+                label.style.background = 'transparent';
+            }
+        });
+    });
+
+    // Timer functionality
+    const totalMinutes = {{ quiz.time_limit_minutes|default:0 }};
+    const timeSpentInput = document.getElementById('timeSpentSeconds');
+    let secondsElapsed = 0;
+
+    const timerInterval = setInterval(function() {
+        secondsElapsed++;
+        if (timeSpentInput) {
+            timeSpentInput.value = secondsElapsed;
+        }
+
+        if (totalMinutes > 0) {
+            const totalSecondsAllowed = totalMinutes * 60;
+            const remaining = totalSecondsAllowed - secondsElapsed;
+            const timerDisplay = document.getElementById('timerDisplay');
+
+            if (timerDisplay) {
+                if (remaining <= 0) {
+                    clearInterval(timerInterval);
+                    timerDisplay.textContent = "00:00";
+                    alert("⏰ Time is up! Submitting your quiz now.");
+                    document.getElementById('quizAttemptForm').submit();
+                    return;
+                }
+
+                const mins = Math.floor(remaining / 60);
+                const secs = remaining % 60;
+                timerDisplay.textContent = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+
+                if (remaining <= 60) {
+                    const timerBox = document.getElementById('quizTimerBox');
+                    if (timerBox) timerBox.style.background = 'linear-gradient(135deg, #b91c1c, #dc2626)';
+                }
+            }
+        }
+    }, 1000);
+
+    const form = document.getElementById('quizAttemptForm');
+    if (form) {
+        form.addEventListener('submit', function() {
+            clearInterval(timerInterval);
+            const btn = document.getElementById('submitQuizBtn');
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = 'Submitting...';
+            }
+        });
+    }
+});
+</script>
+{% endblock %}
