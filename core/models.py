@@ -106,6 +106,22 @@ class Student(models.Model):
     def paid_total(self, value):
         self.__dict__["paid_total"] = value
 
+    @property
+    def quiz_attempts_count(self):
+        return self.quiz_attempts.count()
+
+    @property
+    def passed_quiz_attempts_count(self):
+        return self.quiz_attempts.filter(passed=True).count()
+
+    @property
+    def average_quiz_score(self):
+        attempts = self.quiz_attempts.all()
+        if not attempts.exists():
+            return Decimal("0.00")
+        avg = attempts.aggregate(models.Avg("percentage"))["percentage__avg"]
+        return round(Decimal(str(avg)), 1) if avg is not None else Decimal("0.00")
+
 
 class Instructor(models.Model):
     instructor_id = models.AutoField(primary_key=True)
@@ -771,6 +787,15 @@ class QuizAttempt(models.Model):
 
     def __str__(self):
         return f"{self.student.full_name} - {self.quiz.title} ({self.percentage}%)"
+
+    @property
+    def formatted_time_spent(self):
+        secs = self.time_spent_seconds or 0
+        minutes = secs // 60
+        remaining_secs = secs % 60
+        if minutes > 0:
+            return f"{minutes}m {remaining_secs}s"
+        return f"{remaining_secs}s"
     
 @receiver(pre_delete, sender=Instructor)
 def deactivate_instructor_courses(sender, instance, **kwargs):

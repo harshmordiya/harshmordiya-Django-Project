@@ -1127,6 +1127,69 @@ class StudentModelAndProfileTests(TestCase):
         self.assertEqual(self.student.user, self.student_user)
         self.assertEqual(self.student.enrolled_courses_count, 1)
 
+    def test_student_profile_displays_quiz_history(self):
+        """Student profile page displays quiz attempts, scores, and review links."""
+        quiz = Quiz.objects.create(
+            course=self.course,
+            title="Django ORM Master Quiz",
+            description="Test your queries",
+            pass_percentage=60,
+            time_limit_minutes=15,
+        )
+        attempt = QuizAttempt.objects.create(
+            quiz=quiz,
+            student=self.student,
+            score=Decimal("8.00"),
+            total_marks=Decimal("10.00"),
+            percentage=Decimal("80.00"),
+            passed=True,
+            time_spent_seconds=145,
+        )
+
+        self.client.login(username="john_doe", password="securepassword123")
+        response = self.client.get(reverse("student_profile"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Quiz Attempt History")
+        self.assertContains(response, "Django ORM Master Quiz")
+        self.assertContains(response, "80.00%")
+        self.assertContains(response, "Passed")
+        self.assertContains(response, reverse("quiz_result", args=[attempt.attempt_id]))
+        self.assertEqual(response.context["total_quiz_attempts"], 1)
+        self.assertEqual(response.context["passed_quiz_attempts"], 1)
+        self.assertEqual(response.context["average_quiz_score"], Decimal("80.0"))
+
+    def test_student_quiz_attempt_model_properties(self):
+        """Student and QuizAttempt model helper properties for quiz history."""
+        quiz = Quiz.objects.create(
+            course=self.course,
+            title="Django Models Quiz",
+            pass_percentage=70,
+        )
+        attempt1 = QuizAttempt.objects.create(
+            quiz=quiz,
+            student=self.student,
+            score=Decimal("8.00"),
+            total_marks=Decimal("10.00"),
+            percentage=Decimal("80.00"),
+            passed=True,
+            time_spent_seconds=90,
+        )
+        attempt2 = QuizAttempt.objects.create(
+            quiz=quiz,
+            student=self.student,
+            score=Decimal("5.00"),
+            total_marks=Decimal("10.00"),
+            percentage=Decimal("50.00"),
+            passed=False,
+            time_spent_seconds=45,
+        )
+
+        self.assertEqual(self.student.quiz_attempts_count, 2)
+        self.assertEqual(self.student.passed_quiz_attempts_count, 1)
+        self.assertEqual(self.student.average_quiz_score, Decimal("65.0"))
+        self.assertEqual(attempt1.formatted_time_spent, "1m 30s")
+        self.assertEqual(attempt2.formatted_time_spent, "45s")
+
     def test_student_profile_view_requires_login(self):
         """Unauthenticated user is redirected to login page when accessing profile."""
         response = self.client.get(reverse("student_profile"))

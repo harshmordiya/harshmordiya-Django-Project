@@ -12,7 +12,8 @@ from django.contrib.auth.models import User
 from django.core.mail import send_mail
 from django.utils import timezone
 from functools import wraps
-from django.db.models import Q, Count, Sum, Value, DecimalField, Max
+from django.db.models import Q, Count, Sum, Value, DecimalField, Max, Avg
+from django.db import models
 from django.db.models.functions import Coalesce
 from django.core.paginator import Paginator
 from django.contrib import messages
@@ -346,12 +347,31 @@ def student_profile_view(request):
     active_enrollments = enrollments.filter(status="active")
     completed_enrollments = enrollments.filter(status="completed")
 
+    quiz_attempts = (
+        QuizAttempt.objects.filter(student=student)
+        .select_related("quiz", "quiz__course")
+        .order_by("-completed_at")
+    )
+    total_quiz_attempts = quiz_attempts.count()
+    passed_quiz_attempts = quiz_attempts.filter(passed=True).count()
+    failed_quiz_attempts = total_quiz_attempts - passed_quiz_attempts
+    avg_score = Decimal("0.00")
+    if total_quiz_attempts > 0:
+        avg_val = quiz_attempts.aggregate(Avg("percentage"))["percentage__avg"]
+        if avg_val is not None:
+            avg_score = round(Decimal(str(avg_val)), 1)
+
     context = {
         "student": student,
         "enrollments": enrollments,
         "active_enrollments": active_enrollments,
         "completed_enrollments": completed_enrollments,
         "payments": payments,
+        "quiz_attempts": quiz_attempts,
+        "total_quiz_attempts": total_quiz_attempts,
+        "passed_quiz_attempts": passed_quiz_attempts,
+        "failed_quiz_attempts": failed_quiz_attempts,
+        "average_quiz_score": avg_score,
         "total_enrolled": enrollments.count(),
         "active_count": active_enrollments.count(),
         "completed_count": completed_enrollments.count(),
@@ -476,12 +496,31 @@ def student_profile_detail_view(request, student_id):
     active_enrollments = enrollments.filter(status="active")
     completed_enrollments = enrollments.filter(status="completed")
 
+    quiz_attempts = (
+        QuizAttempt.objects.filter(student=target_student)
+        .select_related("quiz", "quiz__course")
+        .order_by("-completed_at")
+    )
+    total_quiz_attempts = quiz_attempts.count()
+    passed_quiz_attempts = quiz_attempts.filter(passed=True).count()
+    failed_quiz_attempts = total_quiz_attempts - passed_quiz_attempts
+    avg_score = Decimal("0.00")
+    if total_quiz_attempts > 0:
+        avg_val = quiz_attempts.aggregate(Avg("percentage"))["percentage__avg"]
+        if avg_val is not None:
+            avg_score = round(Decimal(str(avg_val)), 1)
+
     context = {
         "student": target_student,
         "enrollments": enrollments,
         "active_enrollments": active_enrollments,
         "completed_enrollments": completed_enrollments,
         "payments": payments,
+        "quiz_attempts": quiz_attempts,
+        "total_quiz_attempts": total_quiz_attempts,
+        "passed_quiz_attempts": passed_quiz_attempts,
+        "failed_quiz_attempts": failed_quiz_attempts,
+        "average_quiz_score": avg_score,
         "total_enrolled": enrollments.count(),
         "active_count": active_enrollments.count(),
         "completed_count": completed_enrollments.count(),
