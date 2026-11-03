@@ -580,6 +580,54 @@ document.addEventListener("DOMContentLoaded", function() {
                     </div>
                 {% endfor %}
             </div>
+
+            {% if student_recent_quiz_attempts %}
+                <div style="margin-top: 2rem; background: white; border: 1px solid var(--slate-200); border-radius: var(--radius-lg); padding: 1.5rem; box-shadow: var(--shadow-sm);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
+                        <div>
+                            <h3 style="font-size: 1.15rem; font-weight: 700; color: var(--slate-900); margin: 0; display: flex; align-items: center; gap: 0.5rem;">
+                                <span>📝</span>
+                                <span>My Quiz Assessments & Scores</span>
+                            </h3>
+                            <p style="color: var(--slate-500); font-size: 0.85rem; margin: 0.2rem 0 0 0;">
+                                Track your assessment performance, review answers, and retake quizzes.
+                            </p>
+                        </div>
+                        <span class="badge" style="background: #e0e7ff; color: #4338ca; font-weight: 700; font-size: 0.8rem; padding: 0.35rem 0.75rem; border-radius: 9999px;">
+                            {{ student_recent_quiz_attempts|length }} Attempt{{ student_recent_quiz_attempts|length|pluralize }}
+                        </span>
+                    </div>
+
+                    <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                        {% for att in student_recent_quiz_attempts %}
+                            <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.9rem 1.15rem; border: 1px solid #e2e8f0; border-radius: var(--radius-md); background: #f8fafc; flex-wrap: wrap; gap: 0.75rem;">
+                                <div>
+                                    <div style="font-weight: 700; color: var(--slate-900); font-size: 0.98rem; display: flex; align-items: center; gap: 0.4rem;">
+                                        <span>🎯</span>
+                                        <span>{{ att.quiz.title }}</span>
+                                    </div>
+                                    <div style="font-size: 0.82rem; color: var(--slate-500); margin-top: 0.15rem;">
+                                        Course: <strong>{{ att.quiz.course.title }}</strong> &bull; Completed {{ att.completed_at|date:"d M Y, H:i" }}
+                                    </div>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 0.75rem;">
+                                    <span style="font-weight: 800; font-size: 1.15rem; color: {% if att.passed %}#16a34a{% else %}#dc2626{% endif %};">
+                                        {{ att.percentage|floatformat:0 }}%
+                                    </span>
+                                    {% if att.passed %}
+                                        <span class="badge" style="background: #dcfce7; color: #15803d; font-size: 0.75rem; padding: 0.25rem 0.65rem; border-radius: 9999px;">✓ Passed</span>
+                                    {% else %}
+                                        <span class="badge" style="background: #fee2e2; color: #b91c1c; font-size: 0.75rem; padding: 0.25rem 0.65rem; border-radius: 9999px;">✗ Retake Needed</span>
+                                    {% endif %}
+                                    <a href="{% url 'quiz_result' att.attempt_id %}" class="btn btn-outline btn-sm" style="font-size: 0.8rem; padding: 0.3rem 0.75rem;">
+                                        Review Answers →
+                                    </a>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endif %}
         </div>
         {% endif %}
 

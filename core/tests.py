@@ -2996,3 +2996,67 @@ class InstructorQuestionManagementTests(TestCase):
         response = self.client.get(reverse("instructor_quiz_questions", args=[self.quiz.quiz_id]))
         self.assertEqual(response.status_code, 302)
         self.assertRedirects(response, reverse("dashboard"))
+
+    def test_instructor_quiz_edit_updates_existing_record_and_preserves_course(self):
+        initial_quiz_count = Quiz.objects.count()
+        original_course_id = self.quiz.course.course_id
+        quiz_id = self.quiz.quiz_id
+
+        self.client.login(username="prof_alan", password="securepassword123")
+        post_data = {
+            "title": "Advanced Turing Machines & Complexity",
+            "description": "Updated deep-dive syllabus description.",
+            "pass_percentage": "80",
+            "time_limit_minutes": "35",
+            "max_attempts": "5",
+            "is_active": "on",
+        }
+        response = self.client.post(
+            reverse("instructor_quiz_edit", args=[quiz_id]),
+            post_data
+        )
+        self.assertRedirects(response, reverse("instructor_quiz_edit", args=[quiz_id]))
+
+        # Verify no duplicate quiz record was created
+        self.assertEqual(Quiz.objects.count(), initial_quiz_count)
+
+        # Verify existing quiz was updated
+        self.quiz.refresh_from_db()
+        self.assertEqual(self.quiz.quiz_id, quiz_id)
+        self.assertEqual(self.quiz.course_id, original_course_id)
+        self.assertEqual(self.quiz.title, "Advanced Turing Machines & Complexity")
+        self.assertEqual(self.quiz.description, "Updated deep-dive syllabus description.")
+        self.assertEqual(self.quiz.pass_percentage, 80)
+        self.assertEqual(self.quiz.time_limit_minutes, 35)
+        self.assertEqual(self.quiz.max_attempts, 5)
+        self.assertTrue(self.quiz.is_active)
+
+    def test_instructor_quiz_edit_validation_errors(self):
+        self.client.login(username="prof_alan", password="securepassword123")
+        post_data = {
+            "title": "",
+            "pass_percentage": "-10",
+        }
+        response = self.client.post(
+            reverse("instructor_quiz_edit", args=[self.quiz.quiz_id]),
+            post_data
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Quiz title is required.")
+
+        # Ensure database record was NOT corrupted or changed
+        self.quiz.refresh_from_db()
+        self.assertNotEqual(self.quiz.title, "")
+        self.assertIsNotNone(self.quiz.course_id)
+
+    def test_instructor_quiz_edit_unauthorized(self):
+        self.client.login(username="prof_ada", password="securepassword123")
+        response = self.client.post(
+            reverse("instructor_quiz_edit", args=[self.quiz.quiz_id]),
+            {"title": "Hacked Title"}
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertRedirects(response, reverse("instructor_courses"))
+
+        self.quiz.refresh_from_db()
+        self.assertNotEqual(self.quiz.title, "Hacked Title")

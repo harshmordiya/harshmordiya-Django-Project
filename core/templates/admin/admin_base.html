@@ -653,6 +653,31 @@
             backdrop.classList.toggle('show');
         }
     }
+
+    document.addEventListener("DOMContentLoaded", function() {
+        const alerts = document.querySelectorAll(".alert-dismissible");
+        alerts.forEach(function(alertEl) {
+            let timer = setTimeout(function() {
+                alertEl.style.transition = "opacity 0.4s ease-out, transform 0.4s ease-out, max-height 0.35s ease 0.15s, padding 0.35s ease 0.15s, margin 0.35s ease 0.15s";
+                alertEl.style.opacity = "0";
+                alertEl.style.transform = "translateY(-8px)";
+                setTimeout(function() {
+                    alertEl.remove();
+                }, 400);
+            }, 3000);
+
+            alertEl.addEventListener("mouseenter", function() {
+                clearTimeout(timer);
+            });
+            alertEl.addEventListener("mouseleave", function() {
+                timer = setTimeout(function() {
+                    alertEl.style.transition = "opacity 0.4s ease-out, transform 0.4s ease-out";
+                    alertEl.style.opacity = "0";
+                    setTimeout(function() { alertEl.remove(); }, 400);
+                }, 1500);
+            });
+        });
+    });
 </script>
 {% block extra_js %}{% endblock %}
 </body>

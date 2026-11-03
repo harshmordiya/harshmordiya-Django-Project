@@ -19,6 +19,7 @@ from django.contrib import messages
 from django.conf import settings
 from django.views.decorators.csrf import csrf_exempt
 from django.urls import reverse
+from .models import Quiz
 
 from .forms import RegistrationForm, CourseForm, CourseContentForm, StudentProfileForm, InstructorProfileForm, ContactInstructorForm, InstructorReplyForm, QuizForm, QuestionForm
 from .models import Cart, Course, CourseContent, PasswordResetOTP, Student, UserProfile, Payment, Enrollment, Instructor, InstructorMessage, Quiz, Question, QuizAttempt
@@ -236,7 +237,16 @@ def dashboard_view(request):
 
     completed_courses_count = enrollments.filter(status="completed").count()
     enrolled_course_ids = enrollments.values_list("course_id", flat=True)
-    total_student_quizzes = CourseContent.objects.filter(course_id__in=enrolled_course_ids, content_type="quiz").count()
+    total_student_quizzes = max(
+        Quiz.objects.filter(course_id__in=enrolled_course_ids, is_active=True).count(),
+        CourseContent.objects.filter(course_id__in=enrolled_course_ids, content_type="quiz").count()
+    )
+
+    student_recent_quiz_attempts = (
+        QuizAttempt.objects.filter(student=student)
+        .select_related("quiz", "quiz__course")
+        .order_by("-completed_at")[:5]
+    ) if student else QuizAttempt.objects.none()
 
     authored_course_ids = authored_courses.values_list("course_id", flat=True)
     instructor_quizzes_count = CourseContent.objects.filter(course_id__in=authored_course_ids, content_type="quiz").count()
@@ -303,6 +313,7 @@ def dashboard_view(request):
             "sent_messages_count": sent_messages_count,
             "replied_messages_count": replied_messages_count,
             "active_tab": active_tab,
+            "student_recent_quiz_attempts": student_recent_quiz_attempts,
             "chart_student_status_labels": json.dumps(student_chart_status_labels),
             "chart_student_status_data": json.dumps(student_chart_status_data),
             "chart_student_cat_labels": json.dumps(student_chart_cat_labels),
@@ -740,7 +751,8 @@ def course_detail_view(request, course_id):
         raise Http404("Course not found or currently unavailable.")
 
     contents = course.contents.all().order_by("order", "content_id")
-    quizzes_count = contents.filter(content_type="quiz").count()
+    course_quizzes = course.quizzes.filter(is_active=True).order_by("created_at")
+    quizzes_count = max(course_quizzes.count(), contents.filter(content_type="quiz").count())
     enrolled_students_count = course.enrollments.filter(status__in=["active", "completed"]).count()
     contents_count = contents.count()
 
@@ -752,12 +764,20 @@ def course_detail_view(request, course_id):
                 if att.quiz_id not in student_quiz_attempts:
                     student_quiz_attempts[att.quiz_id] = att
 
+    for qz in course_quizzes:
+        qz.user_attempt = student_quiz_attempts.get(qz.quiz_id)
+
+    for item in contents:
+        if item.content_type == "quiz" and item.linked_quiz:
+            item.user_attempt = student_quiz_attempts.get(item.linked_quiz.quiz_id)
+
     return render(
         request,
         "course_detail.html",
         {
             "course": course,
             "contents": contents,
+            "course_quizzes": course_quizzes,
             "is_enrolled": is_enrolled,
             "is_course_manager": is_course_manager,
             "quizzes_count": quizzes_count,
@@ -2710,29 +2730,141 @@ def instructor_quiz_create_view(request, course_id):
 
 @login_required
 def instructor_quiz_edit_view(request, quiz_id):
-    quiz = get_object_or_404(Quiz.objects.select_related("course"), quiz_id=quiz_id)
-    allowed, instructor = can_manage_course(request.user, quiz.course)
+    # 1. Fetch existing quiz and preserve its course relationship
+    quiz = get_object_or_404(Quiz.objects.select_related("course"), pk=quiz_id)
+    course = quiz.course
+
+    # 2. Permission check: verify logged-in user can manage this course
+    allowed, instructor = can_manage_course(request.user, course)
+    if not allowed and request.session.get("user_email"):
+        session_email = request.session.get("user_email").strip().lower()
+        if course.instructor and course.instructor.email.strip().lower() == session_email:
+            allowed = True
+            instructor = course.instructor
+
     if not allowed:
-        messages.error(request, "Unauthorized: You can only edit quizzes for your own courses.")
-        return redirect("instructor_courses")
+        messages.error(request, "You do not have permission to edit this quiz.")
+        profile = UserProfile.objects.filter(user=request.user).first()
+        if profile and profile.role == "instructor":
+            return redirect("instructor_courses")
+        return redirect("dashboard")
 
+    # 3. Handle POST update
     if request.method == "POST":
+        # Form values with support for project field names and aliases
+        title = request.POST.get("title", "").strip()
+        instructions = (request.POST.get("description") or request.POST.get("instructions") or "").strip()
+
+        passing_threshold = request.POST.get("pass_percentage") or request.POST.get("passing_threshold") or "60"
+        time_limit = request.POST.get("time_limit_minutes") or request.POST.get("time_limit") or "0"
+        max_attempts = request.POST.get("max_attempts", "0")
+        is_active = ("is_active" in request.POST) and (request.POST.get("is_active") in ["on", "true", "True", "1", True])
+
         form = QuizForm(request.POST, instance=quiz, instructor=instructor)
-        if form.is_valid():
-            quiz = form.save()
-            messages.success(request, f'Quiz "{quiz.title}" updated successfully.')
-            return redirect("instructor_quiz_questions", quiz_id=quiz.quiz_id)
-    else:
-        form = QuizForm(instance=quiz, instructor=instructor)
 
-    context = {
-        "form": form,
-        "quiz": quiz,
-        "course": quiz.course,
-        "is_create": False,
-    }
-    return render(request, "instructor/instructor_quiz_form.html", context)
+        # Validation: Title required
+        if not title:
+            messages.error(request, "Quiz title is required.")
+            return render(
+                request,
+                "instructor/instructor_quiz_form.html",
+                {
+                    "form": form,
+                    "quiz": quiz,
+                    "course": course,
+                    "is_create": False,
+                }
+            )
 
+        # Numeric field parsing
+        try:
+            passing_threshold_int = int(str(passing_threshold).strip())
+            time_limit_int = int(str(time_limit).strip())
+            max_attempts_int = int(str(max_attempts).strip())
+        except (ValueError, TypeError):
+            messages.error(
+                request,
+                "Passing threshold, time limit and max attempts must be valid numbers."
+            )
+            return render(
+                request,
+                "instructor/instructor_quiz_form.html",
+                {
+                    "form": form,
+                    "quiz": quiz,
+                    "course": course,
+                    "is_create": False,
+                }
+            )
+
+        # Numeric value range checks
+        if passing_threshold_int < 0 or passing_threshold_int > 100:
+            messages.error(request, "Passing threshold must be between 0 and 100.")
+            return render(
+                request,
+                "instructor/instructor_quiz_form.html",
+                {
+                    "form": form,
+                    "quiz": quiz,
+                    "course": course,
+                    "is_create": False,
+                }
+            )
+
+        if time_limit_int < 0:
+            messages.error(request, "Time limit cannot be negative.")
+            return render(
+                request,
+                "instructor/instructor_quiz_form.html",
+                {
+                    "form": form,
+                    "quiz": quiz,
+                    "course": course,
+                    "is_create": False,
+                }
+            )
+
+        if max_attempts_int < 0:
+            messages.error(request, "Maximum attempts cannot be negative.")
+            return render(
+                request,
+                "instructor/instructor_quiz_form.html",
+                {
+                    "form": form,
+                    "quiz": quiz,
+                    "course": course,
+                    "is_create": False,
+                }
+            )
+
+        # 4. UPDATE existing Quiz record; strictly preserve course ForeignKey
+        quiz.title = title
+        quiz.description = instructions
+        quiz.pass_percentage = passing_threshold_int
+        quiz.time_limit_minutes = time_limit_int
+        quiz.max_attempts = max_attempts_int
+        quiz.is_active = is_active
+        quiz.course = course  # Ensure course relationship remains unchanged
+        quiz.save()
+
+        # 5. Success message & Redirect back to edit page
+        messages.success(request, "Quiz settings updated successfully!")
+        return redirect("instructor_quiz_edit", quiz_id=quiz.quiz_id)
+
+    # -----------------------------
+    # GET request
+    # -----------------------------
+    form = QuizForm(instance=quiz, instructor=instructor)
+    return render(
+        request,
+        "instructor/instructor_quiz_form.html",
+        {
+            "form": form,
+            "quiz": quiz,
+            "course": course,
+            "is_create": False,
+        }
+    )
 
 @login_required
 def instructor_quiz_delete_view(request, quiz_id):

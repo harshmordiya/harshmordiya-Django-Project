@@ -1,6 +1,8 @@
 from decimal import Decimal
 from django.db import models
 from django.utils import timezone
+from django.db.models.signals import pre_delete
+from django.dispatch import receiver
 
 
 class Admin(models.Model):
@@ -769,3 +771,11 @@ class QuizAttempt(models.Model):
 
     def __str__(self):
         return f"{self.student.full_name} - {self.quiz.title} ({self.percentage}%)"
+    
+@receiver(pre_delete, sender=Instructor)
+def deactivate_instructor_courses(sender, instance, **kwargs):
+    Course.objects.filter(
+        instructor=instance
+    ).update(
+        is_active=False
+    )

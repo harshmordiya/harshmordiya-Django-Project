@@ -116,7 +116,8 @@ h1, h2, h3, h4, h5, h6 {
     gap: 1.5rem;
 }
 
-.brand-logo {
+.brand-logo,
+a.brand-logo {
     display: flex;
     align-items: center;
     gap: 0.65rem;
@@ -125,11 +126,19 @@ h1, h2, h3, h4, h5, h6 {
     font-weight: 800;
     color: var(--slate-900);
     letter-spacing: -0.02em;
+    text-decoration: none !important;
 }
 
-.brand-logo:hover {
+.brand-logo:hover,
+.brand-logo:focus,
+.brand-logo:active,
+.brand-logo span,
+a.brand-logo:hover,
+a.brand-logo:focus,
+a.brand-logo:active,
+a.brand-logo span {
     color: var(--primary);
-    text-decoration: none;
+    text-decoration: none !important;
 }
 
 .brand-icon {
@@ -219,7 +228,8 @@ h1, h2, h3, h4, h5, h6 {
     font-weight: 700;
 }
 
-.user-badge {
+.user-badge,
+a.user-badge {
     display: inline-flex;
     align-items: center;
     gap: 0.5rem;
@@ -229,6 +239,18 @@ h1, h2, h3, h4, h5, h6 {
     border-radius: var(--radius-full);
     font-weight: 600;
     font-size: 0.85rem;
+    text-decoration: none !important;
+}
+
+.user-badge:hover,
+.user-badge:focus,
+.user-badge:active,
+.user-badge span,
+a.user-badge:hover,
+a.user-badge:focus,
+a.user-badge:active,
+a.user-badge span {
+    text-decoration: none !important;
 }
 
 .user-role-tag {
@@ -1673,4 +1695,32 @@ h1, h2, h3, h4, h5, h6 {
     height: 20px;
     accent-color: var(--primary);
     cursor: pointer;
+}
+
+/* ---------------------------------------------------------------------------
+   Global No-Underline for Brand Logo, Project Name, and User/Instructor Badges
+   --------------------------------------------------------------------------- */
+.brand-logo, .brand-logo:hover, .brand-logo:focus, .brand-logo:active, .brand-logo span,
+a.brand-logo, a.brand-logo:hover, a.brand-logo:focus, a.brand-logo span,
+.user-badge, .user-badge:hover, .user-badge:focus, .user-badge:active, .user-badge span,
+a.user-badge, a.user-badge:hover, a.user-badge:focus, a.user-badge span,
+.cart-pill, .cart-pill:hover, .cart-pill:focus, a.cart-pill, a.cart-pill span {
+    text-decoration: none !important;
+}
+
+/* Alert auto-dismiss transition */
+.messages-container .alert {
+    transition: opacity 0.4s ease-out, transform 0.4s ease-out, max-height 0.35s ease 0.15s, padding 0.35s ease 0.15s, margin 0.35s ease 0.15s;
+}
+
+.messages-container .alert.alert-fading-out {
+    opacity: 0 !important;
+    transform: translateY(-8px) !important;
+    max-height: 0 !important;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+    border: none !important;
+    overflow: hidden !important;
 }

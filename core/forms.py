@@ -763,6 +763,20 @@ class QuizForm(forms.ModelForm):
             "max_attempts": forms.NumberInput(attrs={"class": "form-input", "min": "0"}),
         }
 
+    def clean_course(self):
+        course = self.cleaned_data.get("course")
+        if not course and self.instance and self.instance.pk and getattr(self.instance, "course_id", None):
+            return self.instance.course
+        return course
+
+    def save(self, commit=True):
+        quiz = super().save(commit=False)
+        if not getattr(quiz, "course_id", None) and self.instance and getattr(self.instance, "course_id", None):
+            quiz.course = self.instance.course
+        if commit:
+            quiz.save()
+        return quiz
+
 
 class QuestionForm(forms.ModelForm):
     class Meta:
