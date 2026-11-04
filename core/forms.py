@@ -3,7 +3,7 @@ from django import forms
 from django.contrib.auth.models import User
 from django.utils import timezone
 
-from .models import UserProfile, Student, Instructor, Course, CourseContent, InstructorMessage, Quiz, Question
+from .models import UserProfile, Student, Instructor, Course, CourseContent, InstructorMessage, Quiz, Question, Feedback
 from .validators import validate_course_notes_file
 
 
@@ -851,3 +851,47 @@ class QuestionForm(forms.ModelForm):
             if not opt_b:
                 cleaned_data["option_b"] = "False"
         return cleaned_data
+
+
+class FeedbackForm(forms.ModelForm):
+    RATING_CHOICES = [
+        (5, "5 Stars - Exceptional"),
+        (4, "4 Stars - Very Good"),
+        (3, "3 Stars - Good"),
+        (2, "2 Stars - Fair"),
+        (1, "1 Star - Needs Improvement"),
+    ]
+
+    rating = forms.ChoiceField(
+        choices=RATING_CHOICES,
+        widget=forms.Select(attrs={
+            "class": "form-select",
+            "id": "id_rating",
+        }),
+        help_text="Choose a star rating from 1 to 5."
+    )
+
+    comment = forms.CharField(
+        required=False,
+        widget=forms.Textarea(attrs={
+            "class": "form-control",
+            "rows": 4,
+            "placeholder": "What did you enjoy most about this course? How were the explanations, quizzes, and projects? Your feedback helps future learners and your instructor!",
+            "id": "id_comment",
+        }),
+        help_text="Optional: Write a detailed testimonial or suggestions."
+    )
+
+    class Meta:
+        model = Feedback
+        fields = ["rating", "comment"]
+
+    def clean_rating(self):
+        rating = self.cleaned_data.get("rating")
+        try:
+            val = int(rating)
+            if val < 1 or val > 5:
+                raise forms.ValidationError("Rating must be between 1 and 5.")
+            return val
+        except (ValueError, TypeError):
+            raise forms.ValidationError("Please provide a valid rating number.")

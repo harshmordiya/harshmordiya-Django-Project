@@ -3356,3 +3356,97 @@ class CourseCompletionViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Certificate of Completion")
 
+
+    def test_completion_page_renders_feedback_form(self):
+        """Completion page renders interactive feedback form."""
+        Enrollment.objects.create(
+            student=self.student,
+            course=self.course,
+            status="completed"
+        )
+        self.client.login(username="harsh_student", password="harshpassword123")
+        url = reverse("course_completion", args=[self.course.course_id])
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Rate Your Experience")
+        self.assertContains(response, "star-btn")
+        self.assertContains(response, "feedbackComment")
+        self.assertContains(response, "Submit Course Feedback")
+
+    def test_submit_feedback_via_submit_feedback_with_next_redirect(self):
+        """Posting to submit_feedback with next parameter redirects back to course_completion."""
+        Enrollment.objects.create(
+            student=self.student,
+            course=self.course,
+            status="completed"
+        )
+        self.client.login(username="harsh_student", password="harshpassword123")
+        completion_url = reverse("course_completion", args=[self.course.course_id])
+        submit_url = reverse("submit_feedback", args=[self.course.course_id])
+
+        response = self.client.post(submit_url, {
+            "rating": "5",
+            "comment": "Incredible course on data science, very comprehensive!",
+            "next": completion_url + "#feedback-section"
+        })
+
+        self.assertRedirects(response, completion_url + "#feedback-section")
+        self.assertEqual(Feedback.objects.filter(student=self.student, course=self.course).count(), 1)
+        fb = Feedback.objects.get(student=self.student, course=self.course)
+        self.assertEqual(fb.rating, 5)
+        self.assertIn("Incredible course", fb.comment)
+
+    def test_submit_and_update_feedback_direct_completion_view(self):
+        """Posting directly to course_completion with action=submit_feedback saves and updates feedback."""
+        Enrollment.objects.create(
+            student=self.student,
+            course=self.course,
+            status="completed"
+        )
+        self.client.login(username="harsh_student", password="harshpassword123")
+        url = reverse("course_completion", args=[self.course.course_id])
+
+        # 1. Submit initial feedback
+        response = self.client.post(url, {
+            "action": "submit_feedback",
+            "rating": "4",
+            "comment": "Very practical and well organized."
+        })
+        self.assertRedirects(response, url)
+        fb = Feedback.objects.get(student=self.student, course=self.course)
+        self.assertEqual(fb.rating, 4)
+
+        # 2. Update feedback to 5 stars
+        response2 = self.client.post(url, {
+            "action": "submit_feedback",
+            "rating": "5",
+            "comment": "Updated: Absolute 5-star experience after final capstone!"
+        })
+        self.assertRedirects(response2, url)
+        fb.refresh_from_db()
+        self.assertEqual(fb.rating, 5)
+        self.assertIn("Absolute 5-star", fb.comment)
+
+    def test_completion_page_displays_existing_feedback(self):
+        """When student has previously given feedback, existing review showcase is displayed."""
+        Enrollment.objects.create(
+            student=self.student,
+            course=self.course,
+            status="completed"
+        )
+        Feedback.objects.create(
+            student=self.student,
+            course=self.course,
+            rating=5,
+            comment="The instructor Astha was crystal clear on algorithms."
+        )
+        self.client.login(username="harsh_student", password="harshpassword123")
+        url = reverse("course_completion", args=[self.course.course_id])
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Verified Review Submitted")
+        self.assertContains(response, "5.0 / 5.0")
+        self.assertContains(response, "The instructor Astha was crystal clear on algorithms.")
+        self.assertContains(response, "Edit My Feedback")

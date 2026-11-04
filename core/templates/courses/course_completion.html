@@ -237,9 +237,107 @@
         flex-wrap: wrap;
     }
 
+
+    /* Feedback Section Styles */
+    .completion-feedback-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 16px;
+        padding: 2.25rem;
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.04), 0 8px 10px -6px rgba(0, 0, 0, 0.02);
+        margin-bottom: 3.5rem;
+        position: relative;
+    }
+    .feedback-header-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        background: #fef3c7;
+        color: #92400e;
+        padding: 0.35rem 0.85rem;
+        border-radius: 9999px;
+        font-size: 0.82rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        margin-bottom: 0.75rem;
+    }
+    .feedback-section-title {
+        font-size: 1.4rem;
+        font-weight: 800;
+        color: #0f172a;
+        margin: 0 0 0.4rem 0;
+    }
+    .feedback-section-sub {
+        color: #64748b;
+        font-size: 0.95rem;
+        margin: 0 0 1.5rem 0;
+        line-height: 1.5;
+    }
+    .interactive-stars-row {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        padding: 0.5rem 1rem;
+        border-radius: 12px;
+    }
+    .star-btn {
+        background: none;
+        border: none;
+        font-size: 2rem;
+        line-height: 1;
+        cursor: pointer;
+        color: #cbd5e1;
+        transition: transform 0.15s ease, color 0.15s ease;
+        padding: 0 0.15rem;
+    }
+    .star-btn:hover {
+        transform: scale(1.22);
+    }
+    .star-btn.active, .star-btn.hovered {
+        color: #f59e0b;
+        text-shadow: 0 2px 8px rgba(245, 158, 11, 0.4);
+    }
+    .rating-feedback-label {
+        font-size: 0.95rem;
+        font-weight: 700;
+        color: #b45309;
+        margin-left: 0.75rem;
+        min-width: 170px;
+    }
+    .review-prompt-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3rem;
+        background: #f1f5f9;
+        color: #475569;
+        border: 1px solid #e2e8f0;
+        border-radius: 9999px;
+        padding: 0.35rem 0.8rem;
+        font-size: 0.8rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        user-select: none;
+    }
+    .review-prompt-chip:hover {
+        background: #e2e8f0;
+        color: #0f172a;
+        transform: translateY(-1px);
+    }
+    .existing-review-display {
+        background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%);
+        border: 1.5px solid #a7f3d0;
+        border-radius: 14px;
+        padding: 1.5rem;
+        margin-bottom: 1.75rem;
+    }
+
     /* Print styles */
     @media print {
-        header.site-header, footer.site-footer, .completion-hero, .cert-actions-bar, .feedback-section-box, .nav-links, .btn {
+        header.site-header, footer.site-footer, .completion-hero, .cert-actions-bar, .feedback-section-box, .completion-feedback-card, .completion-summary-card, .nav-links, .btn {
             display: none !important;
         }
         body, html {
@@ -379,82 +477,273 @@
     </div>
 
     <!-- Course Achievement Summary -->
-    <div style="max-width: 960px; margin: 0 auto 3rem; padding: 0 1rem;">
-        <div style="background: white; border: 1px solid #e2e8f0; border-radius: 14px; padding: 2rem; box-shadow: 0 4px 12px rgba(0,0,0,0.03);">
+    <div style="max-width: 960px; margin: 0 auto 2.5rem; padding: 0 1rem;" class="completion-summary-card">
+        <div style="background: white; border: 1px solid #e2e8f0; border-radius: 16px; padding: 2rem; box-shadow: 0 4px 12px rgba(0,0,0,0.03);">
             <h3 style="font-size: 1.25rem; font-weight: 700; color: #0f172a; margin: 0 0 1.25rem; display: flex; align-items: center; gap: 0.5rem;">
-                <span>📊</span> Course Completion Summary
+                <span>📊</span> Course Curriculum & Achievement Summary
             </h3>
 
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.25rem; margin-bottom: 2rem;">
-                <div style="background: #f8fafc; padding: 1.25rem; border-radius: 10px; border: 1px solid #f1f5f9;">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.25rem;">
+                <div style="background: #f8fafc; padding: 1.25rem; border-radius: 12px; border: 1px solid #f1f5f9;">
                     <div style="color: #64748b; font-size: 0.82rem; text-transform: uppercase; font-weight: 600;">Course Duration</div>
                     <div style="font-size: 1.25rem; font-weight: 800; color: #0f172a; margin-top: 0.35rem;">⏱️ {{ course.duration }}</div>
                 </div>
 
-                <div style="background: #f8fafc; padding: 1.25rem; border-radius: 10px; border: 1px solid #f1f5f9;">
+                <div style="background: #f8fafc; padding: 1.25rem; border-radius: 12px; border: 1px solid #f1f5f9;">
                     <div style="color: #64748b; font-size: 0.82rem; text-transform: uppercase; font-weight: 600;">Lessons Completed</div>
                     <div style="font-size: 1.25rem; font-weight: 800; color: #0f172a; margin-top: 0.35rem;">📚 {{ contents_count }} Lesson{{ contents_count|pluralize }}</div>
                 </div>
 
-                <div style="background: #f8fafc; padding: 1.25rem; border-radius: 10px; border: 1px solid #f1f5f9;">
+                <div style="background: #f8fafc; padding: 1.25rem; border-radius: 12px; border: 1px solid #f1f5f9;">
                     <div style="color: #64748b; font-size: 0.82rem; text-transform: uppercase; font-weight: 600;">Assessments & Quizzes</div>
                     <div style="font-size: 1.25rem; font-weight: 800; color: #0f172a; margin-top: 0.35rem;">🎯 {{ quizzes_count }} Quiz{{ quizzes_count|pluralize:"zes" }}</div>
                 </div>
 
-                <div style="background: #f8fafc; padding: 1.25rem; border-radius: 10px; border: 1px solid #f1f5f9;">
+                <div style="background: #f8fafc; padding: 1.25rem; border-radius: 12px; border: 1px solid #f1f5f9;">
                     <div style="color: #64748b; font-size: 0.82rem; text-transform: uppercase; font-weight: 600;">Course Category</div>
                     <div style="font-size: 1.25rem; font-weight: 800; color: #0f172a; margin-top: 0.35rem;">🏷️ {{ course.get_category_display }}</div>
                 </div>
             </div>
+        </div>
+    </div>
 
-            <!-- Course Rating & Review Widget -->
-            <div style="padding: 1.5rem; background: #fffbeb; border: 1px solid #fde68a; border-radius: 12px;">
-                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem; flex-wrap: wrap; gap: 0.5rem;">
-                    <h4 style="margin: 0; color: #92400e; font-size: 1.1rem; font-weight: 700;">
-                        ⭐ Rate Your Learning Experience
-                    </h4>
-                    {% if user_feedback %}
-                        <span class="badge" style="background: #dcfce7; color: #15803d; font-weight: 700; padding: 0.3rem 0.65rem; border-radius: 9999px;">
-                            Submitted ({{ user_feedback.rating }}/5)
-                        </span>
-                    {% endif %}
+    <!-- Dedicated Course Review & Feedback Section -->
+    <div style="max-width: 960px; margin: 0 auto 3.5rem; padding: 0 1rem;" id="feedback-section">
+        <div class="completion-feedback-card">
+
+            <div style="display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.25rem;">
+                <div>
+                    <div class="feedback-header-badge">
+                        <span>⭐</span> Student Evaluation
+                    </div>
+                    <h2 class="feedback-section-title">
+                        Rate Your Experience & Share Feedback
+                    </h2>
+                    <p class="feedback-section-sub">
+                        Congratulations on completing <strong>{{ course.title }}</strong>! Your review helps fellow learners make informed decisions and provides valuable insights to your instructor.
+                    </p>
                 </div>
-                <p style="color: #78350f; font-size: 0.9rem; margin-bottom: 1rem;">
-                    How was your experience with {{ course.title }}? Your review helps prospective students and guides the instructor!
-                </p>
 
-                <form method="POST" action="{% url 'submit_feedback' course.course_id %}">
-                    {% csrf_token %}
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem; margin-bottom: 1rem;">
-                        <div>
-                            <label style="display: block; font-weight: 600; font-size: 0.88rem; margin-bottom: 0.35rem; color: #78350f;">Your Rating</label>
-                            <select name="rating" required style="width: 100%; padding: 0.65rem; border: 1px solid #d97706; border-radius: 8px; background: white; font-weight: 600;">
-                                <option value="">Select Star Rating</option>
-                                <option value="5" {% if user_feedback and user_feedback.rating == 5 %}selected{% endif %}>⭐⭐⭐⭐⭐ 5 - Exceptional</option>
-                                <option value="4" {% if user_feedback and user_feedback.rating == 4 %}selected{% endif %}>⭐⭐⭐⭐ 4 - Very Good</option>
-                                <option value="3" {% if user_feedback and user_feedback.rating == 3 %}selected{% endif %}>⭐⭐⭐ 3 - Good</option>
-                                <option value="2" {% if user_feedback and user_feedback.rating == 2 %}selected{% endif %}>⭐⭐ 2 - Fair</option>
-                                <option value="1" {% if user_feedback and user_feedback.rating == 1 %}selected{% endif %}>⭐ 1 - Poor</option>
-                            </select>
+                {% if user_feedback %}
+                    <span style="background: #dcfce7; color: #15803d; border: 1px solid #86efac; font-weight: 700; font-size: 0.85rem; padding: 0.45rem 1rem; border-radius: 9999px; display: inline-flex; align-items: center; gap: 0.4rem;">
+                        <span>✓</span> Verified Review Submitted
+                    </span>
+                {% endif %}
+            </div>
+
+            {% if user_feedback %}
+                <!-- Existing Feedback Showcase -->
+                <div class="existing-review-display" id="existingReviewCard">
+                    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 0.75rem;">
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <span style="font-size: 1.35rem; color: #f59e0b; letter-spacing: 0.1em;">
+                                {% for i in "12345" %}
+                                    {% if forloop.counter <= user_feedback.rating %}★{% else %}<span style="color: #cbd5e1;">★</span>{% endif %}
+                                {% endfor %}
+                            </span>
+                            <span style="font-weight: 800; color: #065f46; font-size: 1.05rem;">
+                                {{ user_feedback.rating }}.0 / 5.0
+                            </span>
                         </div>
-                        <div>
-                            <label style="display: block; font-weight: 600; font-size: 0.88rem; margin-bottom: 0.35rem; color: #78350f;">Review / Testimonial</label>
-                            <textarea name="comment" rows="2" placeholder="What did you like best about this course?" style="width: 100%; padding: 0.65rem; border: 1px solid #d97706; border-radius: 8px; resize: vertical;">{{ user_feedback.comment|default:"" }}</textarea>
+                        <div style="font-size: 0.82rem; color: #047857;">
+                            Submitted {{ user_feedback.created_at|date:"F d, Y" }}
                         </div>
                     </div>
-                    <button type="submit" class="btn btn-primary" style="background: linear-gradient(135deg, #d97706, #b45309); border: none; font-weight: 700; padding: 0.6rem 1.5rem; border-radius: 8px;">
-                        {% if user_feedback %}Update My Feedback{% else %}Submit My Review{% endif %}
-                    </button>
-                </form>
-            </div>
+
+                    {% if user_feedback.comment %}
+                        <blockquote style="margin: 0; font-style: italic; color: #064e3b; font-size: 0.95rem; line-height: 1.6; border-left: 3px solid #10b981; padding-left: 1rem;">
+                            "{{ user_feedback.comment }}"
+                        </blockquote>
+                    {% else %}
+                        <p style="margin: 0; color: #047857; font-size: 0.9rem; font-style: italic;">
+                            No written comments provided with this rating.
+                        </p>
+                    {% endif %}
+
+                    <div style="margin-top: 1rem; padding-top: 0.75rem; border-top: 1px dashed #a7f3d0; display: flex; justify-content: flex-end;">
+                        <button type="button" class="btn btn-sm btn-outline-success" onclick="toggleEditFeedback();" id="toggleEditBtn" style="border: 1px solid #059669; color: #059669; font-weight: 700; border-radius: 9999px; padding: 0.35rem 1rem; background: white;">
+                            ✏️ Edit My Feedback
+                        </button>
+                    </div>
+                </div>
+            {% endif %}
+
+            <!-- Feedback Submission Form -->
+            <form method="POST" action="{% url 'submit_feedback' course.course_id %}" id="feedbackForm" style="{% if user_feedback %}display: none;{% endif %}">
+                {% csrf_token %}
+                <input type="hidden" name="next" value="{% url 'course_completion' course.course_id %}#feedback-section">
+                <input type="hidden" name="action" value="submit_feedback">
+                <input type="hidden" name="rating" id="ratingInput" value="{{ user_feedback.rating|default:'5' }}" required>
+
+                <!-- 1. Star Rating Selector -->
+                <div style="margin-bottom: 1.5rem;">
+                    <label style="display: block; font-weight: 700; color: #1e293b; margin-bottom: 0.5rem; font-size: 0.95rem;">
+                        How would you rate this course? <span style="color: #ef4444;">*</span>
+                    </label>
+
+                    <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
+                        <div class="interactive-stars-row" id="starContainer">
+                            <button type="button" class="star-btn" data-value="1" title="1 Star - Poor">★</button>
+                            <button type="button" class="star-btn" data-value="2" title="2 Stars - Fair">★</button>
+                            <button type="button" class="star-btn" data-value="3" title="3 Stars - Good">★</button>
+                            <button type="button" class="star-btn" data-value="4" title="4 Stars - Very Good">★</button>
+                            <button type="button" class="star-btn" data-value="5" title="5 Stars - Exceptional">★</button>
+                        </div>
+                        <span class="rating-feedback-label" id="ratingLabelDisplay">
+                            ⭐⭐⭐⭐⭐ 5 Stars - Exceptional
+                        </span>
+                    </div>
+                </div>
+
+                <!-- 2. Testimonial / Feedback Comment -->
+                <div style="margin-bottom: 1.25rem;">
+                    <label for="feedbackComment" style="display: block; font-weight: 700; color: #1e293b; margin-bottom: 0.5rem; font-size: 0.95rem;">
+                        Your Detailed Review / Testimonial (Optional)
+                    </label>
+
+                    <!-- Inspiration Chips -->
+                    <div style="margin-bottom: 0.65rem; display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+                        <span style="font-size: 0.78rem; color: #64748b; font-weight: 600;">Quick suggestions:</span>
+                        <button type="button" class="review-prompt-chip" onclick="appendPrompt('The lessons were easy to follow and very well structured.');">
+                            + Well structured
+                        </button>
+                        <button type="button" class="review-prompt-chip" onclick="appendPrompt('The hands-on quizzes and practical exercises helped solidify my understanding.');">
+                            + Great quizzes & practice
+                        </button>
+                        <button type="button" class="review-prompt-chip" onclick="appendPrompt('The instructor was very clear and knowledgeable.');">
+                            + Great instructor
+                        </button>
+                        <button type="button" class="review-prompt-chip" onclick="appendPrompt('Highly recommended for anyone looking to master this subject!');">
+                            + Highly recommended
+                        </button>
+                    </div>
+
+                    <textarea
+                        name="comment"
+                        id="feedbackComment"
+                        rows="4"
+                        placeholder="What did you like best about this course? How were the explanations, quizzes, and resources? Any tips for future students?"
+                        style="width: 100%; padding: 0.85rem; border: 1.5px solid #cbd5e1; border-radius: 12px; font-family: inherit; font-size: 0.95rem; resize: vertical; line-height: 1.5;"
+                    >{{ user_feedback.comment|default:"" }}</textarea>
+                </div>
+
+                <!-- 3. Form Action Buttons -->
+                <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
+                    <div style="font-size: 0.8rem; color: #94a3b8; display: flex; align-items: center; gap: 0.35rem;">
+                        <span>🔒</span> Reviews are authenticated and visible on the course catalog and instructor dashboard.
+                    </div>
+
+                    <div style="display: flex; align-items: center; gap: 0.75rem;">
+                        {% if user_feedback %}
+                            <button type="button" class="btn btn-outline" onclick="toggleEditFeedback();" style="border: 1px solid #cbd5e1; padding: 0.65rem 1.25rem; font-weight: 600; border-radius: 9999px;">
+                                Cancel
+                            </button>
+                        {% endif %}
+                        <button type="submit" class="btn btn-primary" style="background: linear-gradient(135deg, #f59e0b 0%, #b45309 100%); border: none; font-weight: 700; padding: 0.7rem 1.75rem; border-radius: 9999px; color: white; display: inline-flex; align-items: center; gap: 0.5rem; box-shadow: 0 4px 12px rgba(180, 83, 9, 0.25);">
+                            <span>{% if user_feedback %}💾 Update My Review{% else %}🚀 Submit Course Feedback{% endif %}</span>
+                        </button>
+                    </div>
+                </div>
+
+            </form>
+
         </div>
     </div>
 
 </div>
 
 <script>
+// Interactive Star Rating Logic
+const ratingLabels = {
+    1: "⭐ 1 Star - Poor / Needs Improvement",
+    2: "⭐⭐ 2 Stars - Fair / Met Some Goals",
+    3: "⭐⭐⭐ 3 Stars - Good / Met Expectations",
+    4: "⭐⭐⭐⭐ 4 Stars - Very Good / Highly Recommended",
+    5: "⭐⭐⭐⭐⭐ 5 Stars - Exceptional / Exceeded Expectations"
+};
+
+const starBtns = document.querySelectorAll(".star-btn");
+const ratingInput = document.getElementById("ratingInput");
+const ratingLabelDisplay = document.getElementById("ratingLabelDisplay");
+
+function updateStarDisplay(val) {
+    starBtns.forEach(btn => {
+        const btnVal = parseInt(btn.getAttribute("data-value"));
+        if (btnVal <= val) {
+            btn.classList.add("active");
+        } else {
+            btn.classList.remove("active");
+        }
+    });
+    if (ratingLabels[val]) {
+        ratingLabelDisplay.textContent = ratingLabels[val];
+    }
+}
+
+// Initialize with current value
+const currentScore = parseInt(ratingInput.value) || 5;
+updateStarDisplay(currentScore);
+
+starBtns.forEach(btn => {
+    btn.addEventListener("mouseenter", function() {
+        const hoverVal = parseInt(this.getAttribute("data-value"));
+        starBtns.forEach(b => {
+            const bVal = parseInt(b.getAttribute("data-value"));
+            if (bVal <= hoverVal) {
+                b.classList.add("hovered");
+            } else {
+                b.classList.remove("hovered");
+            }
+        });
+        if (ratingLabels[hoverVal]) {
+            ratingLabelDisplay.textContent = ratingLabels[hoverVal];
+        }
+    });
+
+    btn.addEventListener("mouseleave", function() {
+        starBtns.forEach(b => b.classList.remove("hovered"));
+        const activeVal = parseInt(ratingInput.value) || 5;
+        updateStarDisplay(activeVal);
+    });
+
+    btn.addEventListener("click", function() {
+        const selectedVal = parseInt(this.getAttribute("data-value"));
+        ratingInput.value = selectedVal;
+        updateStarDisplay(selectedVal);
+    });
+});
+
+// Prompt Chip appender
+function appendPrompt(text) {
+    const textarea = document.getElementById("feedbackComment");
+    if (!textarea) return;
+    const current = textarea.value.trim();
+    if (!current) {
+        textarea.value = text;
+    } else {
+        textarea.value = current + " " + text;
+    }
+    textarea.focus();
+}
+
+// Toggle edit feedback form
+function toggleEditFeedback() {
+    const form = document.getElementById("feedbackForm");
+    const existing = document.getElementById("existingReviewCard");
+    const toggleBtn = document.getElementById("toggleEditBtn");
+    if (!form) return;
+    if (form.style.display === "none" || form.style.display === "") {
+        form.style.display = "block";
+        if (existing) existing.style.display = "none";
+        form.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else {
+        form.style.display = "none";
+        if (existing) existing.style.display = "block";
+    }
+}
+
 function copyCertLink() {
-    var url = window.location.href;
+    var url = window.location.href.split("#")[0];
     navigator.clipboard.writeText(url).then(function() {
         var btn = document.getElementById("copyBtn");
         var origText = btn.innerHTML;

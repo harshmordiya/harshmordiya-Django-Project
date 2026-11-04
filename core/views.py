@@ -22,7 +22,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.urls import reverse
 from .models import Quiz
 
-from .forms import RegistrationForm, CourseForm, CourseContentForm, StudentProfileForm, InstructorProfileForm, ContactInstructorForm, InstructorReplyForm, QuizForm, QuestionForm
+from .forms import RegistrationForm, CourseForm, CourseContentForm, StudentProfileForm, InstructorProfileForm, ContactInstructorForm, InstructorReplyForm, QuizForm, QuestionForm, FeedbackForm
 from .models import Cart, Course, CourseContent, PasswordResetOTP, Student, UserProfile, Payment, Enrollment, Instructor, InstructorMessage, Quiz, Question, QuizAttempt,Feedback
 from .email_utils import (
     send_payment_confirmation_email,
@@ -604,8 +604,10 @@ def forgot_password_view(request):
 
 @login_required
 def submit_feedback(request, course_id):
+    redirect_target = request.POST.get("next") or request.META.get("HTTP_REFERER") or "dashboard"
+
     if request.method != "POST":
-        return redirect("dashboard")
+        return redirect(redirect_target)
 
     student = get_student_for_user(request.user)
     if not student and request.session.get("user_email"):
@@ -624,7 +626,7 @@ def submit_feedback(request, course_id):
 
     if not is_enrolled:
         messages.error(request, "You must be enrolled in this course to give feedback.")
-        return redirect("dashboard")
+        return redirect(redirect_target)
 
     rating_raw = request.POST.get("rating")
     comment = request.POST.get("comment", "").strip()
@@ -635,7 +637,7 @@ def submit_feedback(request, course_id):
             raise ValueError
     except (TypeError, ValueError):
         messages.error(request, "Please select a valid rating between 1 and 5 stars.")
-        return redirect("dashboard")
+        return redirect(redirect_target)
 
     feedback_obj, created = Feedback.objects.update_or_create(
         student=student,
@@ -648,7 +650,7 @@ def submit_feedback(request, course_id):
 
     action_text = "submitted" if created else "updated"
     messages.success(request, f"Your feedback has been {action_text} successfully!")
-    return redirect("dashboard")
+    return redirect(redirect_target)
 
 def verify_otp_view(request):
     email = request.session.get("reset_email")
@@ -3196,8 +3198,9 @@ def course_completion_view(request, course_id):
         messages.error(request, "You must be enrolled in this course to access the Certificate of Completion.")
         return redirect("course_detail", course_id=course_id)
 
-    if enrollment and enrollment.status == "active":
-        if request.method == "POST" and request.POST.get("action") == "mark_complete":
+    if request.method == "POST":
+        action = request.POST.get("action")
+        if action == "mark_complete" and enrollment and enrollment.status == "active":
             enrollment.status = "completed"
             enrollment.save(update_fields=["status"])
             try:
@@ -3205,6 +3208,26 @@ def course_completion_view(request, course_id):
             except Exception as e:
                 pass
             messages.success(request, f"Congratulations! You have completed '{course.title}'.")
+            return redirect("course_completion", course_id=course_id)
+        elif action == "submit_feedback":
+            if not student or not enrollment:
+                messages.error(request, "You must be enrolled in this course to give feedback.")
+                return redirect("course_completion", course_id=course_id)
+            rating_val = request.POST.get("rating")
+            comment_val = request.POST.get("comment", "").strip()
+            try:
+                r_int = int(rating_val)
+                if r_int < 1 or r_int > 5:
+                    raise ValueError
+                fb_obj, crt = Feedback.objects.update_or_create(
+                    student=student,
+                    course=course,
+                    defaults={"rating": r_int, "comment": comment_val}
+                )
+                act_msg = "submitted" if crt else "updated"
+                messages.success(request, f"Thank you! Your feedback has been {act_msg} successfully.")
+            except (TypeError, ValueError):
+                messages.error(request, "Please provide a valid rating between 1 and 5 stars.")
             return redirect("course_completion", course_id=course_id)
 
     display_student = student
@@ -3227,6 +3250,7 @@ def course_completion_view(request, course_id):
     user_feedback = None
     if student:
         user_feedback = Feedback.objects.filter(student=student, course=course).first()
+    feedback_form = FeedbackForm(instance=user_feedback)
 
     context = {
         "course": course,
@@ -3237,5 +3261,6 @@ def course_completion_view(request, course_id):
         "contents_count": contents_count,
         "quizzes_count": quizzes_count,
         "user_feedback": user_feedback,
+        "feedback_form": feedback_form,
     }
     return render(request, "course_completion.html", context)

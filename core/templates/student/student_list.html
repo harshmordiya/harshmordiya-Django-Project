@@ -164,13 +164,13 @@
 
     <div class="tab-pills" style="justify-content: center;">
         <a href="{% url 'instructor_list' %}" class="tab-pill">
-            👨‍🏫 Instructors
+            Instructors
         </a>
         <a href="{% url 'student_list' %}" class="tab-pill active">
-            🎓 Students ({{ total_students }})
+            Students ({{ total_students }})
         </a>
         <a href="{% url 'directory' %}" class="tab-pill">
-            🌐 Unified Directory
+            Unified Directory
         </a>
     </div>
 
@@ -211,23 +211,20 @@
                     <div class="member-card-body">
                         <h2 class="member-name">{{ st.full_name }}</h2>
                         <span class="member-badge-student">
-                            🎓 Student #{{ st.student_id }}
+                            Student #{{ st.student_id }}
                         </span>
 
                         <div class="member-meta">
                             <div class="member-meta-item">
-                                <span>📧</span>
                                 <span title="{{ st.email }}">{{ st.email }}</span>
                             </div>
                             {% if st.phone %}
                                 <div class="member-meta-item">
-                                    <span>📞</span>
                                     <span>{{ st.phone }}</span>
                                 </div>
                             {% endif %}
                             {% if st.address %}
                                 <div class="member-meta-item">
-                                    <span>📍</span>
                                     <span>{{ st.address }}</span>
                                 </div>
                             {% endif %}
@@ -276,7 +273,6 @@
 
     {% else %}
         <div class="empty-state">
-            <div class="empty-state-icon">🎓</div>
             <h3 style="font-size: 1.35rem; color: var(--slate-900); margin-bottom: 0.5rem;">No Students Found</h3>
             <p style="color: var(--slate-500); max-width: 440px; margin: 0 auto 1.5rem; font-size: 0.95rem; line-height: 1.6;">
                 No registered student profiles match your search criteria. Try a different keyword or reset filters.

@@ -164,13 +164,13 @@
 
     <div class="tab-pills" style="justify-content: center;">
         <a href="{% url 'instructor_list' %}" class="tab-pill active">
-            👨‍🏫 Instructors ({{ total_instructors }})
+            Instructors ({{ total_instructors }})
         </a>
         <a href="{% url 'student_list' %}" class="tab-pill">
-            🎓 Students Community
+            Students Community
         </a>
         <a href="{% url 'directory' %}" class="tab-pill">
-            🌐 Unified Directory
+            Unified Directory
         </a>
     </div>
 
@@ -234,12 +234,10 @@
 
                         <div class="member-meta">
                             <div class="member-meta-item">
-                                <span>📧</span>
                                 <span title="{{ inst.email }}">{{ inst.email }}</span>
                             </div>
                             {% if inst.phone %}
                                 <div class="member-meta-item">
-                                    <span>📞</span>
                                     <span>{{ inst.phone }}</span>
                                 </div>
                             {% endif %}
@@ -258,10 +256,10 @@
 
                         <div style="display: flex; gap: 0.5rem; margin-top: 0.75rem;">
                             <a href="{% url 'course_list' %}?q={{ inst.first_name }}" class="btn btn-outline btn-sm" style="flex: 1; text-align: center;">
-                                📚 Courses
+                                Courses
                             </a>
                             <a href="{% url 'contact_instructor' inst.instructor_id %}" class="btn btn-primary btn-sm" style="flex: 1; text-align: center;">
-                                ✉️ Contact
+                                Contact
                             </a>
                         </div>
                     </div>
@@ -291,7 +289,6 @@
 
     {% else %}
         <div class="empty-state">
-            <div class="empty-state-icon">👨‍🏫</div>
             <h3 style="font-size: 1.35rem; color: var(--slate-900); margin-bottom: 0.5rem;">No Instructors Found</h3>
             <p style="color: var(--slate-500); max-width: 440px; margin: 0 auto 1.5rem; font-size: 0.95rem; line-height: 1.6;">
                 No faculty profiles match your search criteria. Try a different query or clear your filters.

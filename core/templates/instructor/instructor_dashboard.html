@@ -17,27 +17,26 @@
                         {{ instructor.first_name }} {{ instructor.last_name }}
                     </h1>
                     <span class="badge-category" style="background: var(--primary-light); color: var(--primary-dark); font-size: 0.8rem;">
-                        👨‍🏫 Instructor
+                        Instructor
                     </span>
                     {% if instructor.specialization %}
                         <span class="badge-category" style="background: #e0e7ff; color: #3730a3; font-size: 0.8rem;">
-                            🎯 {{ instructor.specialization }}
+                            {{ instructor.specialization }}
                         </span>
                     {% endif %}
                 </div>
                 <div style="display: flex; gap: 1.25rem; color: var(--slate-500); font-size: 0.92rem; flex-wrap: wrap;">
-                    <span>📧 {{ instructor.email }}</span>
+                    <span>{{ instructor.email }}</span>
                     {% if instructor.phone %}
-                        <span>📞 {{ instructor.phone }}</span>
+                        <span>{{ instructor.phone }}</span>
                     {% endif %}
-                    <span>📅 Faculty since {{ instructor.hire_date|date:"M Y" }}</span>
+                    <span>Faculty since {{ instructor.hire_date|date:"M Y" }}</span>
                 </div>
             </div>
         </div>
 
         <div style="display: flex; gap: 0.75rem; margin-top: 1rem; align-items: center;">
             <a href="{% url 'course_create' %}" class="btn btn-primary btn-lg">
-                <span>➕</span>
                 <span>Create New Course</span>
             </a>
             <a href="{% url 'course_list' %}" class="btn btn-secondary">
@@ -89,7 +88,6 @@
         <div class="feature-box" style="padding: 1.6rem; border-left: 4px solid #f59e0b;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
                 <span style="font-size: 0.88rem; font-weight: 700; color: var(--slate-500); text-transform: uppercase; letter-spacing: 0.05em;">Total Enrollments</span>
-                <span style="font-size: 1.5rem;">📈</span>
             </div>
             <div style="font-size: 2.25rem; font-weight: 800; font-family: var(--font-heading); color: var(--slate-900);">
                 {{ total_enrollments|default:"0" }}
@@ -108,7 +106,7 @@
         </div>
 
         <a href="{% url 'course_create' %}" class="btn btn-primary">
-            <span>➕</span> Add New Course
+            Add New Course
         </a>
     </div>
 
@@ -154,40 +152,40 @@
                                 </td>
 
                                 <td style="padding: 1.25rem 1.25rem; color: var(--slate-600);">
-                                    ⏱️ {{ course.duration }}
+                                    {{ course.duration }}
                                 </td>
 
                                 <td style="padding: 1.25rem 1.25rem;">
                                     {% if course.is_active %}
                                         <span style="display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.25rem 0.65rem; border-radius: var(--radius-full); font-size: 0.78rem; font-weight: 700; background: var(--success-light); color: var(--success);">
-                                            ● Active
+                                            Active
                                         </span>
                                     {% else %}
                                         <span style="display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.25rem 0.65rem; border-radius: var(--radius-full); font-size: 0.78rem; font-weight: 700; background: var(--slate-100); color: var(--slate-500);">
-                                            ○ Draft / Inactive
+                                            Draft / Inactive
                                         </span>
                                     {% endif %}
                                 </td>
 
                                 <td style="padding: 1.25rem 1.25rem; text-align: center;">
                                     <span style="display: inline-flex; align-items: center; gap: 0.4rem; font-weight: 700; color: var(--slate-800); background: #f0fdf4; padding: 0.3rem 0.75rem; border-radius: var(--radius-full); border: 1px solid #bbf7d0;">
-                                        👨‍🎓 {{ course.active_enrollments|default:"0" }}
+                                        {{ course.active_enrollments|default:"0" }}
                                     </span>
                                 </td>
 
                                 <td style="padding: 1.25rem 1.5rem; text-align: right;">
                                     <div style="display: inline-flex; gap: 0.45rem; align-items: center;">
                                         <a href="{% url 'course_content_manage' course.course_id %}" class="btn btn-secondary btn-sm" title="Manage Lessons & Curriculum">
-                                            📚 Lessons
+                                            Lessons
                                         </a>
                                         <a href="{% url 'course_detail' course.course_id %}" class="btn btn-secondary btn-sm" title="View Public Page">
-                                            👁️ View
+                                            View
                                         </a>
                                         <a href="{% url 'course_edit' course.course_id %}" class="btn btn-primary btn-sm" title="Edit Course Details">
-                                            ✏️ Edit
+                                            Edit
                                         </a>
                                         <a href="{% url 'course_delete' course.course_id %}" class="btn btn-danger btn-sm" title="Delete Course">
-                                            🗑️ Delete
+                                            Delete
                                         </a>
                                     </div>
                                 </td>
@@ -200,11 +198,10 @@
 
     {% else %}
         <div class="empty-state">
-            <div class="empty-state-icon">📚</div>
             <h3>No courses created yet</h3>
             <p>You haven't added any courses to your instructor portfolio. Share your expertise and start teaching students today!</p>
             <a href="{% url 'course_create' %}" class="btn btn-primary btn-lg">
-                ➕ Create Your First Course
+                Create Your First Course
             </a>
         </div>
     {% endif %}
