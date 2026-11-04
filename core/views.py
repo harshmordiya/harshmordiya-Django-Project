@@ -879,6 +879,7 @@ def course_detail_view(request, course_id):
             "contents": contents,
             "course_quizzes": course_quizzes,
             "is_enrolled": is_enrolled,
+            "user_enrollment": Enrollment.objects.filter(student=student, course=course).first() if student else None,
             "is_course_manager": is_course_manager,
             "quizzes_count": quizzes_count,
             "enrolled_students_count": enrolled_students_count,
@@ -3168,3 +3169,73 @@ def admin_feedback_delete_view(request, feedback_id):
         feedback_obj.delete()
         messages.success(request, f"Feedback from {student_name} on '{course_title}' was successfully removed.")
     return redirect("admin_feedbacks")
+
+
+@login_required
+def course_completion_view(request, course_id):
+    course = get_object_or_404(Course, course_id=course_id)
+    student = get_student_for_user(request.user)
+
+    is_course_manager = False
+    if request.user.is_staff or request.user.is_superuser:
+        is_course_manager = True
+    else:
+        profile = UserProfile.objects.filter(user=request.user).first()
+        if profile and profile.role == "admin":
+            is_course_manager = True
+        elif profile and profile.role == "instructor":
+            inst = get_instructor_for_user(request.user)
+            if inst and (course.instructor == inst or course.instructor is None):
+                is_course_manager = True
+
+    enrollment = None
+    if student:
+        enrollment = Enrollment.objects.filter(student=student, course=course).first()
+
+    if not enrollment and not is_course_manager:
+        messages.error(request, "You must be enrolled in this course to access the Certificate of Completion.")
+        return redirect("course_detail", course_id=course_id)
+
+    if enrollment and enrollment.status == "active":
+        if request.method == "POST" and request.POST.get("action") == "mark_complete":
+            enrollment.status = "completed"
+            enrollment.save(update_fields=["status"])
+            try:
+                send_course_completion_email(enrollment.student, enrollment.course)
+            except Exception as e:
+                pass
+            messages.success(request, f"Congratulations! You have completed '{course.title}'.")
+            return redirect("course_completion", course_id=course_id)
+
+    display_student = student
+    if not display_student:
+        first_comp = Enrollment.objects.filter(course=course, status="completed").first()
+        if first_comp:
+            display_student = first_comp.student
+            enrollment = first_comp
+        else:
+            display_student = Student(first_name=request.user.first_name or "Learner", last_name=request.user.last_name or "")
+
+    std_id = getattr(display_student, 'student_id', None) or 1
+    enr_id = getattr(enrollment, 'enrollment_id', None) or 1
+    cert_id = f"EDU-{course.course_id:04d}-{int(std_id):04d}-{int(enr_id):04d}"
+    completion_date = getattr(enrollment, 'enrollment_date', timezone.now())
+
+    contents_count = course.contents.count()
+    quizzes_count = course.quizzes.filter(is_active=True).count()
+
+    user_feedback = None
+    if student:
+        user_feedback = Feedback.objects.filter(student=student, course=course).first()
+
+    context = {
+        "course": course,
+        "student": display_student,
+        "enrollment": enrollment,
+        "cert_id": cert_id,
+        "completion_date": completion_date,
+        "contents_count": contents_count,
+        "quizzes_count": quizzes_count,
+        "user_feedback": user_feedback,
+    }
+    return render(request, "course_completion.html", context)

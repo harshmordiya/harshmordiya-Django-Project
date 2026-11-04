@@ -3175,6 +3175,7 @@ class FeedbackModelAndSubmissionViewTests(TestCase):
         self.assertRedirects(response, reverse("dashboard"))
         self.assertEqual(Feedback.objects.count(), 0)
 
+
     def test_submit_and_update_feedback_enrolled(self):
         Enrollment.objects.create(
             student=self.student,
@@ -3218,3 +3219,140 @@ class FeedbackModelAndSubmissionViewTests(TestCase):
         )
         self.assertRedirects(response, reverse("dashboard"))
         self.assertEqual(Feedback.objects.count(), 0)
+
+
+class CourseCompletionViewTests(TestCase):
+    def setUp(self):
+        self.client = Client()
+
+        # Instructor
+        self.instructor_user = User.objects.create_user(
+            username="prof_smith",
+            email="smith@example.com",
+            password="smithpassword123",
+            first_name="John",
+            last_name="Smith"
+        )
+        self.instructor = Instructor.objects.create(
+            first_name="John",
+            last_name="Smith",
+            email="smith@example.com",
+            phone="9876543210",
+            specialization="Data Science"
+        )
+        UserProfile.objects.create(user=self.instructor_user, role="instructor")
+
+        # Student
+        self.student_user = User.objects.create_user(
+            username="harsh_student",
+            email="harsh@example.com",
+            password="harshpassword123",
+            first_name="Harsh",
+            last_name="Mordiya"
+        )
+        self.student = Student.objects.create(
+            first_name="Harsh",
+            last_name="Mordiya",
+            email="harsh@example.com",
+            phone="8511530779",
+            date_of_birth="2000-01-01",
+            address="Navsari"
+        )
+        UserProfile.objects.create(user=self.student_user, role="student")
+
+        # Admin user
+        self.admin_user = User.objects.create_superuser(
+            username="site_admin",
+            email="admin@example.com",
+            password="adminpassword123"
+        )
+        UserProfile.objects.create(user=self.admin_user, role="admin")
+
+        # Unenrolled student
+        self.other_user = User.objects.create_user(
+            username="other_student",
+            email="other@example.com",
+            password="otherpassword123"
+        )
+        self.other_student = Student.objects.create(
+            first_name="Other",
+            last_name="User",
+            email="other@example.com",
+            phone="1112223334"
+        )
+        UserProfile.objects.create(user=self.other_user, role="student")
+
+        # Course
+        self.course = Course.objects.create(
+            title="Data Science & Analytics",
+            category="data_science",
+            price=Decimal("15000.00"),
+            description="Complete data science from scratch",
+            duration="10 hours",
+            instructor=self.instructor,
+            is_active=True
+        )
+
+    def test_course_model_attributes_and_str(self):
+        """Verify Course model fields and __str__."""
+        self.assertEqual(str(self.course), "Data Science & Analytics")
+        self.assertEqual(self.course.category, "data_science")
+        self.assertEqual(self.course.instructor.full_name, "John Smith")
+        self.assertTrue(self.course.is_active)
+
+    def test_completed_student_can_view_certificate(self):
+        """Student with status='completed' can view the certificate with all credentials."""
+        enrollment = Enrollment.objects.create(
+            student=self.student,
+            course=self.course,
+            status="completed"
+        )
+        self.client.login(username="harsh_student", password="harshpassword123")
+        url = reverse("course_completion", args=[self.course.course_id])
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "course_completion.html")
+        self.assertEqual(response.context["course"], self.course)
+        self.assertEqual(response.context["student"], self.student)
+        self.assertEqual(response.context["enrollment"], enrollment)
+        self.assertIn("EDU-", response.context["cert_id"])
+        self.assertContains(response, "Certificate of Completion")
+        self.assertContains(response, "Harsh Mordiya")
+        self.assertContains(response, "Data Science &amp; Analytics")
+        self.assertContains(response, "John Smith")
+
+    def test_active_student_can_mark_complete(self):
+        """Student with status='active' can mark course complete via POST."""
+        enrollment = Enrollment.objects.create(
+            student=self.student,
+            course=self.course,
+            status="active"
+        )
+        self.client.login(username="harsh_student", password="harshpassword123")
+        url = reverse("course_completion", args=[self.course.course_id])
+
+        # POST action=mark_complete
+        response = self.client.post(url, {"action": "mark_complete"})
+        self.assertRedirects(response, url)
+
+        enrollment.refresh_from_db()
+        self.assertEqual(enrollment.status, "completed")
+
+    def test_unenrolled_student_redirected(self):
+        """Unenrolled student cannot access certificate and gets redirected to course detail."""
+        self.client.login(username="other_student", password="otherpassword123")
+        url = reverse("course_completion", args=[self.course.course_id])
+        response = self.client.get(url)
+
+        self.assertRedirects(response, reverse("course_detail", args=[self.course.course_id]))
+
+    def test_admin_can_preview_certificate(self):
+        """Staff/admin can view/preview certificate even if not enrolled."""
+        self.client.login(username="site_admin", password="adminpassword123")
+        url = reverse("course_completion", args=[self.course.course_id])
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Certificate of Completion")
+

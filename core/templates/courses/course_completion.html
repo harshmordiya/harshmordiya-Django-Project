@@ -1,0 +1,472 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Course Completion Certificate - {{ course.title }} | EduLearn{% endblock %}
+
+{% block extra_css %}
+<style>
+    .completion-hero {
+        background: linear-gradient(135deg, #090e1a 0%, #1e1b4b 50%, #31104b 100%);
+        color: white;
+        padding: 3.5rem 1.5rem 4rem;
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+    }
+    .completion-hero::before {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: radial-gradient(circle at 50% 30%, rgba(245, 158, 11, 0.15), transparent 70%);
+        pointer-events: none;
+    }
+    .confetti-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        background: rgba(255, 255, 255, 0.12);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        backdrop-filter: blur(8px);
+        padding: 0.4rem 1.25rem;
+        border-radius: 9999px;
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: #fef08a;
+        margin-bottom: 1.25rem;
+    }
+    .completion-title {
+        font-family: var(--font-heading);
+        font-size: 2.5rem;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+        margin: 0 0 0.75rem;
+        color: #ffffff;
+    }
+    .completion-sub {
+        font-size: 1.15rem;
+        color: #cbd5e1;
+        max-width: 640px;
+        margin: 0 auto 1.75rem;
+        line-height: 1.55;
+    }
+
+    /* Certificate Card */
+    .certificate-container {
+        max-width: 960px;
+        margin: -2.5rem auto 3rem;
+        padding: 0 1rem;
+        position: relative;
+        z-index: 10;
+    }
+    .certificate-card {
+        background: #ffffff;
+        border: 12px double #b45309;
+        border-radius: 16px;
+        padding: 3.5rem 3rem;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        position: relative;
+        text-align: center;
+        background-image: 
+            radial-gradient(circle at 50% 50%, rgba(254, 243, 199, 0.25) 0%, transparent 80%),
+            repeating-linear-gradient(45deg, rgba(245, 158, 11, 0.02) 0, rgba(245, 158, 11, 0.02) 1px, transparent 0, transparent 20px);
+    }
+    .cert-corner {
+        position: absolute;
+        width: 48px;
+        height: 48px;
+        border-color: #b45309;
+        border-style: solid;
+        pointer-events: none;
+    }
+    .cert-corner-tl { top: 12px; left: 12px; border-width: 3px 0 0 3px; }
+    .cert-corner-tr { top: 12px; right: 12px; border-width: 3px 3px 0 0; }
+    .cert-corner-bl { bottom: 12px; left: 12px; border-width: 0 0 3px 3px; }
+    .cert-corner-br { bottom: 12px; right: 12px; border-width: 0 3px 3px 0; }
+
+    .cert-header {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        margin-bottom: 1.5rem;
+    }
+    .cert-logo {
+        height: 64px;
+        width: 64px;
+        object-fit: contain;
+        margin-bottom: 0.75rem;
+    }
+    .cert-org-name {
+        font-family: var(--font-heading);
+        font-size: 1.5rem;
+        font-weight: 800;
+        letter-spacing: 0.05em;
+        color: #7A0117;
+        text-transform: uppercase;
+        margin: 0;
+    }
+    .cert-tagline {
+        font-size: 0.82rem;
+        color: #64748b;
+        letter-spacing: 0.15em;
+        text-transform: uppercase;
+        font-weight: 600;
+        margin-top: 0.2rem;
+    }
+    .cert-main-title {
+        font-family: Georgia, 'Times New Roman', serif;
+        font-size: 2.1rem;
+        font-weight: 700;
+        color: #1e293b;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        margin: 1.5rem 0 0.5rem;
+        position: relative;
+        display: inline-block;
+    }
+    .cert-main-title::after {
+        content: '';
+        display: block;
+        width: 140px;
+        height: 3px;
+        background: linear-gradient(90deg, transparent, #b45309, transparent);
+        margin: 0.5rem auto 0;
+    }
+    .cert-subtext {
+        font-family: Georgia, 'Times New Roman', serif;
+        font-style: italic;
+        font-size: 1.05rem;
+        color: #64748b;
+        margin-bottom: 1rem;
+    }
+    .cert-student-name {
+        font-family: var(--font-heading);
+        font-size: 2.25rem;
+        font-weight: 800;
+        color: #0f172a;
+        margin: 0.5rem 0;
+        padding-bottom: 0.35rem;
+        border-bottom: 2px solid #e2e8f0;
+        display: inline-block;
+        min-width: 320px;
+    }
+    .cert-body-text {
+        max-width: 680px;
+        margin: 1.25rem auto;
+        font-size: 1.02rem;
+        color: #475569;
+        line-height: 1.7;
+    }
+    .cert-course-title {
+        font-weight: 800;
+        color: #7A0117;
+        font-size: 1.35rem;
+        display: block;
+        margin-top: 0.35rem;
+    }
+
+    /* Certificate Footer / Signatures */
+    .cert-footer-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+        margin-top: 3.5rem;
+        padding-top: 1.5rem;
+        gap: 1.5rem;
+        flex-wrap: wrap;
+    }
+    .cert-sig-block {
+        flex: 1 1 200px;
+        text-align: center;
+    }
+    .cert-sig-line {
+        width: 180px;
+        margin: 0 auto 0.4rem;
+        border-top: 1.5px solid #0f172a;
+    }
+    .cert-sig-name {
+        font-weight: 700;
+        font-size: 0.95rem;
+        color: #0f172a;
+    }
+    .cert-sig-title {
+        font-size: 0.78rem;
+        color: #64748b;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    /* Seal */
+    .cert-seal {
+        width: 90px;
+        height: 90px;
+        border-radius: 50%;
+        background: radial-gradient(circle, #f59e0b 0%, #b45309 100%);
+        box-shadow: 0 4px 14px rgba(180, 83, 9, 0.35);
+        color: white;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        font-weight: 800;
+        font-size: 0.72rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        border: 3px dashed #fef3c7;
+        margin: 0 auto;
+    }
+    .cert-meta-info {
+        margin-top: 2rem;
+        padding-top: 1rem;
+        border-top: 1px solid #f1f5f9;
+        font-size: 0.78rem;
+        color: #94a3b8;
+        display: flex;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+    }
+
+    /* Action Toolbar */
+    .cert-actions-bar {
+        max-width: 960px;
+        margin: 0 auto 2.5rem;
+        padding: 0 1rem;
+        display: flex;
+        justify-content: center;
+        gap: 1rem;
+        flex-wrap: wrap;
+    }
+
+    /* Print styles */
+    @media print {
+        header.site-header, footer.site-footer, .completion-hero, .cert-actions-bar, .feedback-section-box, .nav-links, .btn {
+            display: none !important;
+        }
+        body, html {
+            background: #ffffff !important;
+            padding: 0 !important;
+            margin: 0 !important;
+        }
+        .main-wrapper {
+            padding: 0 !important;
+            margin: 0 !important;
+        }
+        .certificate-container {
+            max-width: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            box-shadow: none !important;
+        }
+        .certificate-card {
+            border: 8px double #b45309 !important;
+            box-shadow: none !important;
+            page-break-inside: avoid !important;
+            margin: 1cm auto !important;
+            padding: 2.5rem !important;
+        }
+        @page {
+            size: landscape;
+            margin: 0.5cm;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="completion-page-wrapper">
+
+    <!-- Hero Celebration Section -->
+    <section class="completion-hero">
+        <div class="confetti-badge">
+            <span>🎉</span> Academic Milestone Achieved
+        </div>
+        <h1 class="completion-title">
+            Congratulations, {{ student.first_name }}!
+        </h1>
+        <p class="completion-sub">
+            You have successfully completed all curriculum requirements for <strong>{{ course.title }}</strong>. Here is your official verified Certificate of Completion.
+        </p>
+    </section>
+
+    <!-- Certificate Card Section -->
+    <div class="certificate-container">
+        <div class="certificate-card" id="certificateNode">
+            <!-- Decorative Corners -->
+            <div class="cert-corner cert-corner-tl"></div>
+            <div class="cert-corner cert-corner-tr"></div>
+            <div class="cert-corner cert-corner-bl"></div>
+            <div class="cert-corner cert-corner-br"></div>
+
+            <!-- Organization Brand Header -->
+            <div class="cert-header">
+                <img src="{% static 'core/imges/edulogo.png' %}?v=5.0" alt="EduLearn Logo" class="cert-logo">
+                <h2 class="cert-org-name">EduLearn Platform</h2>
+                <div class="cert-tagline">Center for Online Academic Excellence &bull; Est. 2026</div>
+            </div>
+
+            <!-- Certificate Title -->
+            <h3 class="cert-main-title">Certificate of Completion</h3>
+            <div class="cert-subtext">This prestigious certificate is proudly presented to</div>
+
+            <!-- Student Name -->
+            <div class="cert-student-name">
+                {{ student.full_name }}
+            </div>
+
+            <!-- Body Statement -->
+            <p class="cert-body-text">
+                for successfully completing the comprehensive professional syllabus, practical assignments, and assessment requirements for the certified curriculum:
+                <span class="cert-course-title">
+                    {{ course.title }}
+                </span>
+            </p>
+
+            <!-- Signatures & Official Seal -->
+            <div class="cert-footer-row">
+                <div class="cert-sig-block">
+                    <div class="cert-sig-line"></div>
+                    <div class="cert-sig-name">
+                        {% if course.instructor %}
+                            {{ course.instructor.full_name }}
+                        {% else %}
+                            Lead Faculty
+                        {% endif %}
+                    </div>
+                    <div class="cert-sig-title">Course Instructor</div>
+                </div>
+
+                <div class="cert-sig-block">
+                    <div class="cert-seal">
+                        <span>★ ★ ★</span>
+                        <span>OFFICIAL</span>
+                        <span>SEAL</span>
+                    </div>
+                </div>
+
+                <div class="cert-sig-block">
+                    <div class="cert-sig-line"></div>
+                    <div class="cert-sig-name">EduLearn Academic Board</div>
+                    <div class="cert-sig-title">Director of Education</div>
+                </div>
+            </div>
+
+            <!-- Verification Metadata -->
+            <div class="cert-meta-info">
+                <span><strong>Certificate ID:</strong> {{ cert_id }}</span>
+                <span><strong>Issued On:</strong> {{ completion_date|date:"F d, Y" }}</span>
+                <span><strong>Verified Status:</strong> Authenticated Record</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Action Toolbar (Hidden during print) -->
+    <div class="cert-actions-bar">
+        <button type="button" class="btn btn-primary" onclick="window.print();" style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.75rem 1.75rem; font-weight: 700; border-radius: 9999px;">
+            <span>🖨️</span> Print / Save Certificate as PDF
+        </button>
+
+        <button type="button" class="btn btn-secondary" onclick="copyCertLink();" id="copyBtn" style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.75rem 1.5rem; font-weight: 600; border-radius: 9999px;">
+            <span>🔗</span> Copy Certificate Link
+        </button>
+
+        <a href="{% url 'course_detail' course.course_id %}" class="btn btn-outline" style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.75rem 1.5rem; font-weight: 600; border-radius: 9999px;">
+            <span>📖</span> Course Syllabus
+        </a>
+
+        <a href="{% url 'dashboard' %}" class="btn btn-outline" style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.75rem 1.5rem; font-weight: 600; border-radius: 9999px;">
+            <span>←</span> My Dashboard
+        </a>
+    </div>
+
+    <!-- Course Achievement Summary -->
+    <div style="max-width: 960px; margin: 0 auto 3rem; padding: 0 1rem;">
+        <div style="background: white; border: 1px solid #e2e8f0; border-radius: 14px; padding: 2rem; box-shadow: 0 4px 12px rgba(0,0,0,0.03);">
+            <h3 style="font-size: 1.25rem; font-weight: 700; color: #0f172a; margin: 0 0 1.25rem; display: flex; align-items: center; gap: 0.5rem;">
+                <span>📊</span> Course Completion Summary
+            </h3>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.25rem; margin-bottom: 2rem;">
+                <div style="background: #f8fafc; padding: 1.25rem; border-radius: 10px; border: 1px solid #f1f5f9;">
+                    <div style="color: #64748b; font-size: 0.82rem; text-transform: uppercase; font-weight: 600;">Course Duration</div>
+                    <div style="font-size: 1.25rem; font-weight: 800; color: #0f172a; margin-top: 0.35rem;">⏱️ {{ course.duration }}</div>
+                </div>
+
+                <div style="background: #f8fafc; padding: 1.25rem; border-radius: 10px; border: 1px solid #f1f5f9;">
+                    <div style="color: #64748b; font-size: 0.82rem; text-transform: uppercase; font-weight: 600;">Lessons Completed</div>
+                    <div style="font-size: 1.25rem; font-weight: 800; color: #0f172a; margin-top: 0.35rem;">📚 {{ contents_count }} Lesson{{ contents_count|pluralize }}</div>
+                </div>
+
+                <div style="background: #f8fafc; padding: 1.25rem; border-radius: 10px; border: 1px solid #f1f5f9;">
+                    <div style="color: #64748b; font-size: 0.82rem; text-transform: uppercase; font-weight: 600;">Assessments & Quizzes</div>
+                    <div style="font-size: 1.25rem; font-weight: 800; color: #0f172a; margin-top: 0.35rem;">🎯 {{ quizzes_count }} Quiz{{ quizzes_count|pluralize:"zes" }}</div>
+                </div>
+
+                <div style="background: #f8fafc; padding: 1.25rem; border-radius: 10px; border: 1px solid #f1f5f9;">
+                    <div style="color: #64748b; font-size: 0.82rem; text-transform: uppercase; font-weight: 600;">Course Category</div>
+                    <div style="font-size: 1.25rem; font-weight: 800; color: #0f172a; margin-top: 0.35rem;">🏷️ {{ course.get_category_display }}</div>
+                </div>
+            </div>
+
+            <!-- Course Rating & Review Widget -->
+            <div style="padding: 1.5rem; background: #fffbeb; border: 1px solid #fde68a; border-radius: 12px;">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem; flex-wrap: wrap; gap: 0.5rem;">
+                    <h4 style="margin: 0; color: #92400e; font-size: 1.1rem; font-weight: 700;">
+                        ⭐ Rate Your Learning Experience
+                    </h4>
+                    {% if user_feedback %}
+                        <span class="badge" style="background: #dcfce7; color: #15803d; font-weight: 700; padding: 0.3rem 0.65rem; border-radius: 9999px;">
+                            Submitted ({{ user_feedback.rating }}/5)
+                        </span>
+                    {% endif %}
+                </div>
+                <p style="color: #78350f; font-size: 0.9rem; margin-bottom: 1rem;">
+                    How was your experience with {{ course.title }}? Your review helps prospective students and guides the instructor!
+                </p>
+
+                <form method="POST" action="{% url 'submit_feedback' course.course_id %}">
+                    {% csrf_token %}
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem; margin-bottom: 1rem;">
+                        <div>
+                            <label style="display: block; font-weight: 600; font-size: 0.88rem; margin-bottom: 0.35rem; color: #78350f;">Your Rating</label>
+                            <select name="rating" required style="width: 100%; padding: 0.65rem; border: 1px solid #d97706; border-radius: 8px; background: white; font-weight: 600;">
+                                <option value="">Select Star Rating</option>
+                                <option value="5" {% if user_feedback and user_feedback.rating == 5 %}selected{% endif %}>⭐⭐⭐⭐⭐ 5 - Exceptional</option>
+                                <option value="4" {% if user_feedback and user_feedback.rating == 4 %}selected{% endif %}>⭐⭐⭐⭐ 4 - Very Good</option>
+                                <option value="3" {% if user_feedback and user_feedback.rating == 3 %}selected{% endif %}>⭐⭐⭐ 3 - Good</option>
+                                <option value="2" {% if user_feedback and user_feedback.rating == 2 %}selected{% endif %}>⭐⭐ 2 - Fair</option>
+                                <option value="1" {% if user_feedback and user_feedback.rating == 1 %}selected{% endif %}>⭐ 1 - Poor</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label style="display: block; font-weight: 600; font-size: 0.88rem; margin-bottom: 0.35rem; color: #78350f;">Review / Testimonial</label>
+                            <textarea name="comment" rows="2" placeholder="What did you like best about this course?" style="width: 100%; padding: 0.65rem; border: 1px solid #d97706; border-radius: 8px; resize: vertical;">{{ user_feedback.comment|default:"" }}</textarea>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary" style="background: linear-gradient(135deg, #d97706, #b45309); border: none; font-weight: 700; padding: 0.6rem 1.5rem; border-radius: 8px;">
+                        {% if user_feedback %}Update My Feedback{% else %}Submit My Review{% endif %}
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+function copyCertLink() {
+    var url = window.location.href;
+    navigator.clipboard.writeText(url).then(function() {
+        var btn = document.getElementById("copyBtn");
+        var origText = btn.innerHTML;
+        btn.innerHTML = "<span>✓</span> Link Copied!";
+        btn.classList.add("btn-success");
+        setTimeout(function() {
+            btn.innerHTML = origText;
+            btn.classList.remove("btn-success");
+        }, 2500);
+    }).catch(function() {
+        alert("Copy URL: " + window.location.href);
+    });
+}
+</script>
+{% endblock %}

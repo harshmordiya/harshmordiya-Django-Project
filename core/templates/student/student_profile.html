@@ -346,6 +346,11 @@
                                     </span>
                                 {% endif %}
 
+                                {% if enr.status == 'completed' %}
+                                    <a href="{% url 'course_completion' enr.course.course_id %}" class="btn btn-success btn-sm" style="background: #059669; border: none; font-size: 0.78rem; font-weight: 700; border-radius: 9999px; padding: 0.35rem 0.85rem; color: white; text-decoration: none;">
+                                        🏆 Certificate
+                                    </a>
+                                {% endif %}
                                 <a href="{% url 'course_detail' enr.course.course_id %}" class="btn btn-primary btn-sm" style="font-size: 0.82rem; border-radius: 9999px; padding: 0.35rem 0.85rem;">
                                     View Syllabus
                                 </a>

@@ -867,11 +867,16 @@ document.addEventListener("DOMContentLoaded", function() {
                                         </div>
                                     </div>
 
-                                    <div class="course-card-footer" style="padding-top: 0.85rem; border-top: 1px solid var(--slate-100);">
-                                        <a href="{% url 'course_detail' enrollment.course.course_id %}" class="btn btn-primary btn-block" style="text-align: center; text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
+                                    <div class="course-card-footer" style="padding-top: 0.85rem; border-top: 1px solid var(--slate-100); display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                                        <a href="{% url 'course_detail' enrollment.course.course_id %}" class="btn btn-primary" style="flex: 1 1 140px; text-align: center; text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 0.35rem; font-size: 0.88rem;">
                                             <span>Continue Learning</span>
                                             <span>→</span>
                                         </a>
+                                        {% if enrollment.status == 'completed' %}
+                                            <a href="{% url 'course_completion' enrollment.course.course_id %}" class="btn btn-success" style="background: linear-gradient(135deg, #10b981, #059669); border: none; font-weight: 700; text-align: center; text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 0.35rem; font-size: 0.88rem; padding: 0.5rem 0.85rem; color: white;">
+                                                <span>🏆 Certificate</span>
+                                            </a>
+                                        {% endif %}
                                     </div>
 
                                     <!-- Course Feedback Form -->
