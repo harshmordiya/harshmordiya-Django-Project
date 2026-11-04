@@ -7,7 +7,7 @@ from django.utils import timezone
 from django.urls import reverse
 from decimal import Decimal
 
-from core.models import Course, CourseContent, Instructor, UserProfile, Student, Enrollment, Payment, InstructorMessage, Cart, Quiz, Question, QuizAttempt
+from core.models import Course, CourseContent, Instructor, UserProfile, Student, Enrollment, Payment, InstructorMessage, Cart, Quiz, Question, QuizAttempt, Feedback
 from core.forms import CourseContentForm, QuizForm, QuestionForm
 
 
@@ -3123,3 +3123,98 @@ class InstructorQuestionManagementTests(TestCase):
 
         self.quiz.refresh_from_db()
         self.assertNotEqual(self.quiz.title, "Hacked Title")
+
+
+class FeedbackModelAndSubmissionViewTests(TestCase):
+    def setUp(self):
+        self.instructor = Instructor.objects.create(
+            first_name="Guido",
+            last_name="Rossum",
+            email="guido@edulearn.test",
+            specialization="Python & Systems"
+        )
+        self.course = Course.objects.create(
+            title="Modern Python Masterclass",
+            category="programming",
+            price=Decimal("49.99"),
+            description="Deep dive into Python architecture.",
+            duration="8 Weeks",
+            instructor=self.instructor,
+            is_active=True
+        )
+        self.user = User.objects.create_user(
+            username="student_alice",
+            email="alice@edulearn.test",
+            password="alicepassword123"
+        )
+        UserProfile.objects.create(user=self.user, role="student")
+        self.student = Student.objects.create(
+            first_name="Alice",
+            last_name="Smith",
+            email="alice@edulearn.test"
+        )
+
+    def test_feedback_model_creation_and_course_properties(self):
+        feedback = Feedback.objects.create(
+            student=self.student,
+            course=self.course,
+            rating=5,
+            comment="Incredible course! Highly recommended."
+        )
+        self.assertEqual(feedback.rating, 5)
+        self.assertEqual(feedback.comment, "Incredible course! Highly recommended.")
+        self.assertEqual(self.course.feedback_count, 1)
+        self.assertEqual(self.course.average_rating, 5.0)
+
+    def test_submit_feedback_not_enrolled(self):
+        self.client.login(username="student_alice", password="alicepassword123")
+        response = self.client.post(
+            reverse("submit_feedback", args=[self.course.course_id]),
+            {"rating": "4", "comment": "Good course"}
+        )
+        self.assertRedirects(response, reverse("dashboard"))
+        self.assertEqual(Feedback.objects.count(), 0)
+
+    def test_submit_and_update_feedback_enrolled(self):
+        Enrollment.objects.create(
+            student=self.student,
+            course=self.course,
+            status="active"
+        )
+        self.client.login(username="student_alice", password="alicepassword123")
+        
+        # 1. First submission
+        response = self.client.post(
+            reverse("submit_feedback", args=[self.course.course_id]),
+            {"rating": "5", "comment": "Outstanding depth!"}
+        )
+        self.assertRedirects(response, reverse("dashboard"))
+        self.assertEqual(Feedback.objects.count(), 1)
+        fb = Feedback.objects.get(student=self.student, course=self.course)
+        self.assertEqual(fb.rating, 5)
+        self.assertEqual(fb.comment, "Outstanding depth!")
+
+        # 2. Update existing submission
+        response2 = self.client.post(
+            reverse("submit_feedback", args=[self.course.course_id]),
+            {"rating": "4", "comment": "Updated thoughts after completing all modules."}
+        )
+        self.assertRedirects(response2, reverse("dashboard"))
+        self.assertEqual(Feedback.objects.count(), 1)  # Still 1 record (unique_together updated)
+        fb.refresh_from_db()
+        self.assertEqual(fb.rating, 4)
+        self.assertEqual(fb.comment, "Updated thoughts after completing all modules.")
+
+    def test_submit_feedback_invalid_rating(self):
+        Enrollment.objects.create(
+            student=self.student,
+            course=self.course,
+            status="active"
+        )
+        self.client.login(username="student_alice", password="alicepassword123")
+        response = self.client.post(
+            reverse("submit_feedback", args=[self.course.course_id]),
+            {"rating": "10", "comment": "Too high rating"}
+        )
+        self.assertRedirects(response, reverse("dashboard"))
+        self.assertEqual(Feedback.objects.count(), 0)

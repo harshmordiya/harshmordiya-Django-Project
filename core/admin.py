@@ -2,6 +2,7 @@ from decimal import Decimal
 from django.contrib import admin
 from django.contrib.auth.models import User
 from django.utils.html import format_html
+
 from .models import (
     Admin,
     Student,
@@ -17,6 +18,7 @@ from .models import (
     Quiz,
     Question,
     QuizAttempt,
+    Feedback,
 )
 
 class StudentAccountStatusFilter(admin.SimpleListFilter):
@@ -308,6 +310,12 @@ class CourseAdmin(admin.ModelAdmin):
     list_select_related = ("instructor",)
     autocomplete_fields = ("instructor",)
     inlines = [CourseContentInline]
+    
+@admin.register(Feedback)
+class FeedbackAdmin(admin.ModelAdmin):
+    list_display = ('feedback_id','student','course','rating','created_at')
+    list_filter = ('rating','created_at')
+    search_fields = ('student__first_name', 'student__last_name', 'course__title', 'comment')
 
 
 @admin.register(CourseContent)

@@ -270,6 +270,70 @@ document.addEventListener("DOMContentLoaded", function() {
     <!-- Recent Activity & Student Inquiries Feed -->
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 1.5rem; margin-bottom: 2.5rem;">
         
+        <!-- Recent Student Feedback & Ratings -->
+        <div class="feature-box" style="padding: 1.5rem; background: var(--white); display: flex; flex-direction: column;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; padding-bottom: 0.75rem; border-bottom: 1px solid var(--slate-100);">
+                <div>
+                    <h3 style="font-size: 1.15rem; font-weight: 700; color: var(--slate-900); margin: 0; display: flex; align-items: center; gap: 0.5rem;">
+                        <span>⭐</span> Recent Student Feedback
+                    </h3>
+                    <div style="font-size: 0.82rem; color: var(--slate-500); margin-top: 0.2rem;">
+                        Ratings and reviews from your enrolled learners
+                    </div>
+                </div>
+                <span class="badge" style="background: #fef3c7; color: #92400e; font-weight: 700; padding: 0.35rem 0.65rem; border-radius: 9999px; font-size: 0.8rem;">
+                    {{ recent_student_feedbacks|length }} Review{{ recent_student_feedbacks|length|pluralize }}
+                </span>
+            </div>
+
+            {% if recent_student_feedbacks %}
+                <div style="display: flex; flex-direction: column; gap: 0.85rem;">
+                    {% for fb in recent_student_feedbacks %}
+                        <div style="display: flex; flex-direction: column; gap: 0.45rem; padding: 0.85rem; background: var(--slate-50); border-radius: var(--radius-md); border: 1px solid var(--slate-100);">
+                            <div style="display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;">
+                                <div style="display: flex; align-items: center; gap: 0.65rem; min-width: 0;">
+                                    <div style="width: 34px; height: 34px; border-radius: 50%; background: linear-gradient(135deg, #f59e0b, #d97706); color: white; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.9rem; flex-shrink: 0;">
+                                        {{ fb.student.first_name|first|upper }}
+                                    </div>
+                                    <div style="min-width: 0;">
+                                        <div style="font-weight: 700; font-size: 0.9rem; color: var(--slate-900); text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">
+                                            {{ fb.student.full_name }}
+                                        </div>
+                                        <div style="font-size: 0.78rem; color: var(--slate-500); text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">
+                                            {{ fb.course.title }}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 0.15rem; flex-shrink: 0;">
+                                    <span style="color: #f59e0b; font-weight: 700; font-size: 0.85rem;">
+                                        {% if fb.rating == 5 %}⭐⭐⭐⭐⭐
+                                        {% elif fb.rating == 4 %}⭐⭐⭐⭐
+                                        {% elif fb.rating == 3 %}⭐⭐⭐
+                                        {% elif fb.rating == 2 %}⭐⭐
+                                        {% else %}⭐{% endif %}
+                                        {{ fb.rating }}/5
+                                    </span>
+                                    <span style="font-size: 0.72rem; color: var(--slate-400);">
+                                        {{ fb.created_at|date:"d M Y" }}
+                                    </span>
+                                </div>
+                            </div>
+                            {% if fb.comment %}
+                                <div style="font-size: 0.85rem; color: var(--slate-700); background: #ffffff; padding: 0.5rem 0.65rem; border-radius: 6px; border: 1px solid #e2e8f0; line-height: 1.45;">
+                                    "{{ fb.comment }}"
+                                </div>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div style="text-align: center; padding: 2.5rem 1rem; color: var(--slate-400);">
+                    <div style="font-size: 2rem; margin-bottom: 0.5rem;">⭐</div>
+                    <p style="margin: 0; font-size: 0.9rem;">No student reviews received yet.</p>
+                </div>
+            {% endif %}
+        </div>
+
         <!-- Recent Student Activity -->
         <div class="feature-box" style="padding: 1.5rem; background: var(--white); display: flex; flex-direction: column;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; padding-bottom: 0.75rem; border-bottom: 1px solid var(--slate-100);">
@@ -423,6 +487,7 @@ document.addEventListener("DOMContentLoaded", function() {
                             <th style="padding: 1.1rem 1.25rem;">Price</th>
                             <th style="padding: 1.1rem 1.25rem;">Duration</th>
                             <th style="padding: 1.1rem 1.25rem;">Status</th>
+                            <th style="padding: 1.1rem 1.25rem; text-align: center;">Rating</th>
                             <th style="padding: 1.1rem 1.25rem; text-align: center;">Students Enrolled</th>
                             <th style="padding: 1.1rem 1.5rem; text-align: right;">Actions</th>
                         </tr>
@@ -469,6 +534,15 @@ document.addEventListener("DOMContentLoaded", function() {
                                     {% endif %}
                                 </td>
 
+                                <td style="padding: 1.25rem 1.25rem; text-align: center;">
+                                    {% if course.feedback_count > 0 %}
+                                        <span style="display: inline-flex; align-items: center; gap: 0.35rem; font-weight: 700; color: #92400e; background: #fef3c7; padding: 0.3rem 0.75rem; border-radius: var(--radius-full); border: 1px solid #fde68a; font-size: 0.85rem;">
+                                            ⭐ {{ course.average_rating }} ({{ course.feedback_count }})
+                                        </span>
+                                    {% else %}
+                                        <span style="color: var(--slate-400); font-size: 0.82rem;">No reviews</span>
+                                    {% endif %}
+                                </td>
                                 <td style="padding: 1.25rem 1.25rem; text-align: center;">
                                     <span style="display: inline-flex; align-items: center; gap: 0.4rem; font-weight: 700; color: var(--slate-800); background: #f0fdf4; padding: 0.3rem 0.75rem; border-radius: var(--radius-full); border: 1px solid #bbf7d0;">
                                         👨‍🎓 {{ course.active_enrollments|default:"0" }}

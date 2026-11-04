@@ -236,6 +236,81 @@
                 </div>
             {% endif %}
 
+            <!-- Student Reviews & Ratings Section -->
+            <div style="background: var(--white); border: 1px solid var(--slate-200); border-radius: var(--radius-lg); padding: 2rem; margin-top: 2rem; box-shadow: var(--shadow-sm);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid var(--slate-100); flex-wrap: wrap; gap: 0.75rem;">
+                    <div>
+                        <h3 style="font-size: 1.35rem; font-weight: 700; color: var(--slate-900); margin: 0 0 0.25rem 0; display: flex; align-items: center; gap: 0.5rem;">
+                            <span>⭐</span> Student Reviews &amp; Feedback
+                        </h3>
+                        <p style="color: var(--slate-500); font-size: 0.88rem; margin: 0;">
+                            Verified reviews and ratings from learners enrolled in this course.
+                        </p>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 0.65rem;">
+                        <span style="font-size: 1.5rem; font-weight: 800; color: var(--slate-900);">{{ course.average_rating }}</span>
+                        <div>
+                            <div style="color: #f59e0b; font-size: 0.95rem;">
+                                {% if course.average_rating >= 4.5 %}⭐⭐⭐⭐⭐
+                                {% elif course.average_rating >= 3.5 %}⭐⭐⭐⭐
+                                {% elif course.average_rating >= 2.5 %}⭐⭐⭐
+                                {% elif course.average_rating >= 1.5 %}⭐⭐
+                                {% else %}⭐{% endif %}
+                            </div>
+                            <span style="font-size: 0.78rem; color: var(--slate-500);">
+                                {{ feedbacks.count }} review{{ feedbacks.count|pluralize }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                {% if feedbacks %}
+                    <div style="display: flex; flex-direction: column; gap: 1.25rem;">
+                        {% for fb in feedbacks %}
+                            <div style="padding: 1.25rem; background: var(--slate-50); border: 1px solid #e2e8f0; border-radius: var(--radius-md);">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.65rem; flex-wrap: wrap; gap: 0.5rem;">
+                                    <div style="display: flex; align-items: center; gap: 0.75rem;">
+                                        <div style="width: 42px; height: 42px; border-radius: 50%; background: linear-gradient(135deg, #4f46e5, #7c3aed); color: white; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1rem; flex-shrink: 0;">
+                                            {{ fb.student.first_name|first|upper }}
+                                        </div>
+                                        <div>
+                                            <div style="font-weight: 700; color: var(--slate-900); font-size: 0.98rem;">
+                                                {{ fb.student.full_name }}
+                                                <span style="font-size: 0.72rem; color: #16a34a; background: #dcfce7; padding: 0.15rem 0.5rem; border-radius: 9999px; margin-left: 0.4rem; font-weight: 600;">✓ Verified Student</span>
+                                            </div>
+                                            <div style="font-size: 0.78rem; color: var(--slate-400);">
+                                                Reviewed on {{ fb.created_at|date:"d M Y" }}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div style="display: flex; align-items: center; gap: 0.35rem; background: #fff; padding: 0.3rem 0.65rem; border-radius: 9999px; border: 1px solid #e2e8f0;">
+                                        <span style="color: #f59e0b; font-size: 0.85rem;">
+                                            {% if fb.rating == 5 %}⭐⭐⭐⭐⭐
+                                            {% elif fb.rating == 4 %}⭐⭐⭐⭐
+                                            {% elif fb.rating == 3 %}⭐⭐⭐
+                                            {% elif fb.rating == 2 %}⭐⭐
+                                            {% else %}⭐{% endif %}
+                                        </span>
+                                        <span style="font-weight: 700; font-size: 0.82rem; color: var(--slate-700);">{{ fb.rating }}.0</span>
+                                    </div>
+                                </div>
+                                {% if fb.comment %}
+                                    <p style="margin: 0; font-size: 0.92rem; color: var(--slate-700); line-height: 1.55;">
+                                        {{ fb.comment|linebreaksbr }}
+                                    </p>
+                                {% endif %}
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div style="text-align: center; padding: 2.5rem 1rem; color: var(--slate-400);">
+                        <div style="font-size: 2.25rem; margin-bottom: 0.5rem;">💬</div>
+                        <h4 style="font-size: 1.05rem; color: var(--slate-700); margin-bottom: 0.25rem;">No reviews yet</h4>
+                        <p style="margin: 0; font-size: 0.88rem;">Enrolled students can submit their rating and feedback directly from their Student Dashboard.</p>
+                    </div>
+                {% endif %}
+            </div>
+
             <div style="background: var(--slate-50); border: 1px solid var(--slate-200); border-radius: var(--radius-lg); padding: 1.75rem; margin-top: 2rem;">
                 <h3 style="font-size: 1.15rem; margin-bottom: 0.85rem; color: var(--slate-900);">About the Instructor</h3>
                 {% if course.instructor %}
@@ -276,6 +351,10 @@
             </div>
 
             <ul class="feature-list">
+                <li class="feature-item">
+                    <span>⭐</span>
+                    <span><strong>Rating:</strong> {{ course.average_rating }} / 5.0 ({{ feedbacks.count }} review{{ feedbacks.count|pluralize }})</span>
+                </li>
                 <li class="feature-item">
                     <span>⏱️</span>
                     <span><strong>Duration:</strong> {{ course.duration }}</span>

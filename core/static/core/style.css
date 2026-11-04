@@ -118,7 +118,7 @@ h1, h2, h3, h4, h5, h6 {
 
 .brand-logo,
 a.brand-logo {
-    display: flex;
+    display: inline-flex;
     align-items: center;
     gap: 0.65rem;
     font-family: var(--font-heading);
@@ -127,6 +127,7 @@ a.brand-logo {
     color: var(--slate-900);
     letter-spacing: -0.02em;
     text-decoration: none !important;
+    flex-shrink: 0;
 }
 
 .brand-logo:hover,
@@ -152,6 +153,43 @@ a.brand-logo span {
     border-radius: var(--radius-md);
     box-shadow: 0 4px 10px rgba(79, 70, 229, 0.3);
     font-size: 1.15rem;
+}
+
+.brand-logo-img {
+    height: 42px;
+    width: 42px;
+    max-height: 42px;
+    max-width: 42px;
+    object-fit: contain;
+    border-radius: 8px;
+    display: inline-block;
+    vertical-align: middle;
+    flex-shrink: 0;
+    transition: transform 0.2s ease;
+}
+
+.brand-logo:hover .brand-logo-img {
+    transform: scale(1.04);
+}
+
+.footer-logo-img {
+    height: 44px;
+    width: 44px;
+    max-height: 44px;
+    max-width: 44px;
+    object-fit: contain;
+    background: #ffffff;
+    padding: 2px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+    display: inline-block;
+    vertical-align: middle;
+    flex-shrink: 0;
+    transition: transform 0.2s ease;
+}
+
+.footer-logo:hover .footer-logo-img {
+    transform: scale(1.04);
 }
 
 .nav-links {

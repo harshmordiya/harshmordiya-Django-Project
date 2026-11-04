@@ -49,6 +49,7 @@ urlpatterns = [
     path("courses/<int:course_id>/edit/", views.course_edit_view, name="course_edit"),
     path("courses/<int:course_id>/update/", views.course_update_view, name="course_update"),
     path("courses/<int:course_id>/delete/", views.course_delete_view, name="course_delete"),
+    path('course/<int:course_id>/feedback/',views.submit_feedback,name='submit_feedback'),
 
     # Course Content & Curriculum
     path("courses/<int:course_id>/content/", views.course_content_manage_view, name="course_content_manage"),
@@ -109,7 +110,9 @@ urlpatterns = [
     path("admin-dashboard/courses/<int:course_id>/toggle-status/", views.admin_course_toggle_status_view, name="admin_course_toggle_status"),
     path("admin-dashboard/enrollments/", views.admin_enrollments_view, name="admin_enrollments"),
     path("admin-dashboard/enrollments/<int:enrollment_id>/status/<str:new_status>/", views.admin_enrollment_update_status_view, name="admin_enrollment_update_status"),
-    path("admin-dashboard/payments/", views.admin_payments_view, name="admin_payments"),
+        path("admin-dashboard/payments/", views.admin_payments_view, name="admin_payments"),
+    path("admin-dashboard/feedbacks/", views.admin_feedbacks_view, name="admin_feedbacks"),
+    path("admin-dashboard/feedbacks/<int:feedback_id>/delete/", views.admin_feedback_delete_view, name="admin_feedback_delete"),
 
     # Information & Support Pages
     path("help/", views.help_center_view, name="help_center"),

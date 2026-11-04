@@ -23,7 +23,7 @@ from django.urls import reverse
 from .models import Quiz
 
 from .forms import RegistrationForm, CourseForm, CourseContentForm, StudentProfileForm, InstructorProfileForm, ContactInstructorForm, InstructorReplyForm, QuizForm, QuestionForm
-from .models import Cart, Course, CourseContent, PasswordResetOTP, Student, UserProfile, Payment, Enrollment, Instructor, InstructorMessage, Quiz, Question, QuizAttempt
+from .models import Cart, Course, CourseContent, PasswordResetOTP, Student, UserProfile, Payment, Enrollment, Instructor, InstructorMessage, Quiz, Question, QuizAttempt,Feedback
 from .email_utils import (
     send_payment_confirmation_email,
     send_enrollment_confirmation_email,
@@ -205,6 +205,10 @@ def dashboard_view(request):
             .select_related("course", "course__instructor")
             .order_by("-enrollment_date")
         )
+        feedbacks = Feedback.objects.filter(student=student)
+        feedback_map = {f.course_id: f for f in feedbacks}
+        for e in enrollments:
+            e.feedback = feedback_map.get(e.course_id)
     else:
         enrollments = Enrollment.objects.none()
 
@@ -368,6 +372,7 @@ def student_profile_view(request):
         "completed_enrollments": completed_enrollments,
         "payments": payments,
         "quiz_attempts": quiz_attempts,
+        "student_feedbacks": student_feedbacks,
         "total_quiz_attempts": total_quiz_attempts,
         "passed_quiz_attempts": passed_quiz_attempts,
         "failed_quiz_attempts": failed_quiz_attempts,
@@ -492,6 +497,11 @@ def student_profile_detail_view(request, student_id):
         Payment.objects.filter(student=target_student)
         .order_by("-created_at")[:10]
     )
+    student_feedbacks = (
+        Feedback.objects.filter(student=target_student)
+        .select_related("course", "course__instructor")
+        .order_by("-created_at")
+    )
 
     active_enrollments = enrollments.filter(status="active")
     completed_enrollments = enrollments.filter(status="completed")
@@ -591,6 +601,54 @@ def forgot_password_view(request):
         return redirect("verify_otp")
 
     return render(request, "forgot_password.html")
+
+@login_required
+def submit_feedback(request, course_id):
+    if request.method != "POST":
+        return redirect("dashboard")
+
+    student = get_student_for_user(request.user)
+    if not student and request.session.get("user_email"):
+        student = Student.objects.filter(email__iexact=request.session["user_email"]).first()
+
+    if not student:
+        messages.error(request, "You must be logged in as a student to give feedback.")
+        return redirect("login")
+
+    course = get_object_or_404(Course, course_id=course_id)
+    is_enrolled = Enrollment.objects.filter(
+        student=student,
+        course=course,
+        status__in=["active", "completed"]
+    ).exists()
+
+    if not is_enrolled:
+        messages.error(request, "You must be enrolled in this course to give feedback.")
+        return redirect("dashboard")
+
+    rating_raw = request.POST.get("rating")
+    comment = request.POST.get("comment", "").strip()
+
+    try:
+        rating = int(rating_raw)
+        if rating < 1 or rating > 5:
+            raise ValueError
+    except (TypeError, ValueError):
+        messages.error(request, "Please select a valid rating between 1 and 5 stars.")
+        return redirect("dashboard")
+
+    feedback_obj, created = Feedback.objects.update_or_create(
+        student=student,
+        course=course,
+        defaults={
+            "rating": rating,
+            "comment": comment
+        }
+    )
+
+    action_text = "submitted" if created else "updated"
+    messages.success(request, f"Your feedback has been {action_text} successfully!")
+    return redirect("dashboard")
 
 def verify_otp_view(request):
     email = request.session.get("reset_email")
@@ -810,11 +868,14 @@ def course_detail_view(request, course_id):
         if item.content_type == "quiz" and item.linked_quiz:
             item.user_attempt = student_quiz_attempts.get(item.linked_quiz.quiz_id)
 
+    course_feedbacks = course.feedbacks.select_related("student").order_by("-created_at")
+
     return render(
         request,
         "course_detail.html",
         {
             "course": course,
+            "feedbacks": course_feedbacks,
             "contents": contents,
             "course_quizzes": course_quizzes,
             "is_enrolled": is_enrolled,
@@ -1436,10 +1497,16 @@ def instructor_courses_view(request):
         .select_related("course", "sender_user")
         .order_by("-created_at")[:6]
     )
+    recent_student_feedbacks = (
+        Feedback.objects.filter(course__instructor=instructor)
+        .select_related("student", "course")
+        .order_by("-created_at")[:8]
+    )
 
     context = {
         "recent_student_activity": recent_student_activity,
         "recent_student_messages": recent_student_messages,
+        "recent_student_feedbacks": recent_student_feedbacks,
         "instructor": instructor,
         "courses": courses,
         "total_courses": total_courses,
@@ -3051,3 +3118,53 @@ def instructor_content_quiz_manage_view(request, content_id):
             is_active=True
         )
     return redirect("instructor_quiz_questions", quiz_id=quiz.quiz_id)
+
+
+@admin_required
+def admin_feedbacks_view(request):
+    q = request.GET.get("q", "").strip()
+    rating_filter = request.GET.get("rating", "all").strip()
+
+    feedbacks_qs = Feedback.objects.select_related("student", "course", "course__instructor").order_by("-created_at")
+
+    if rating_filter.isdigit():
+        feedbacks_qs = feedbacks_qs.filter(rating=int(rating_filter))
+
+    if q:
+        feedbacks_qs = feedbacks_qs.filter(
+            Q(student__first_name__icontains=q) |
+            Q(student__last_name__icontains=q) |
+            Q(student__email__icontains=q) |
+            Q(course__title__icontains=q) |
+            Q(comment__icontains=q)
+        )
+
+    total_feedbacks = Feedback.objects.count()
+    avg_rating_val = Feedback.objects.aggregate(models.Avg("rating"))["rating__avg"]
+    avg_rating_display = round(float(avg_rating_val), 1) if avg_rating_val is not None else 0.0
+
+    five_star_count = Feedback.objects.filter(rating=5).count()
+    four_star_count = Feedback.objects.filter(rating=4).count()
+
+    context = {
+        "feedbacks": feedbacks_qs,
+        "total_feedbacks": total_feedbacks,
+        "avg_rating_display": avg_rating_display,
+        "five_star_count": five_star_count,
+        "four_star_count": four_star_count,
+        "q": q,
+        "rating_filter": rating_filter,
+        "active_tab": "feedbacks",
+    }
+    return render(request, "admin_feedbacks.html", context)
+
+
+@admin_required
+def admin_feedback_delete_view(request, feedback_id):
+    if request.method == "POST":
+        feedback_obj = get_object_or_404(Feedback, feedback_id=feedback_id)
+        course_title = feedback_obj.course.title
+        student_name = feedback_obj.student.full_name
+        feedback_obj.delete()
+        messages.success(request, f"Feedback from {student_name} on '{course_title}' was successfully removed.")
+    return redirect("admin_feedbacks")

@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}EduLearn Admin Portal{% endblock %}</title>
+    <link rel="icon" type="image/png" href="{% static 'core/imges/edulogo.png' %}?v=5.0">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -94,6 +95,24 @@
             font-size: 1.25rem;
             color: #ffffff;
             box-shadow: 0 4px 10px rgba(79, 70, 229, 0.35);
+        }
+
+        .sidebar-brand-img {
+            width: 38px;
+            height: 38px;
+            border-radius: 10px;
+            background: #ffffff;
+            padding: 3px;
+            object-fit: contain;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
+            transition: transform 0.2s ease;
+        }
+
+        .sidebar-brand:hover .sidebar-brand-img {
+            transform: scale(1.05);
         }
 
         .sidebar-brand-title {
@@ -480,6 +499,29 @@
             box-shadow: 0 6px 14px rgba(79, 70, 229, 0.35);
         }
 
+        .topbar-status-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: #ecfdf5;
+            border: 1px solid #a7f3d0;
+            color: #065f46;
+            padding: 0.35rem 0.85rem;
+            border-radius: 9999px;
+            font-size: 0.82rem;
+            font-weight: 600;
+            letter-spacing: -0.01em;
+        }
+
+        .topbar-status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #10b981;
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.25);
+            display: inline-block;
+        }
+
         /* Mobile Sidebar Overlay */
         @media (max-width: 991.98px) {
             .admin-sidebar {
@@ -515,7 +557,7 @@
     <aside class="admin-sidebar" id="adminSidebar">
         <div class="sidebar-brand-wrapper">
             <a href="{% url 'admin_dashboard' %}" class="sidebar-brand">
-                <span class="sidebar-brand-icon">🎓</span>
+                <img src="{% static 'core/imges/edulogo.png' %}?v=5.0" alt="EduLearn Logo" class="sidebar-brand-img" width="38" height="38" style="width: 38px !important; height: 38px !important; object-fit: contain !important; background: #ffffff !important; padding: 2px !important; border-radius: 10px !important; display: inline-block !important;">
                 <div>
                     <div class="sidebar-brand-title">EduLearn</div>
                     <span class="sidebar-brand-tag">ADMIN PORTAL</span>
@@ -530,35 +572,32 @@
             <div class="sidebar-section-title">Core Management</div>
 
             <a href="{% url 'admin_dashboard' %}" class="sidebar-nav-link {% if active_tab == 'dashboard' %}active{% endif %}">
-                <i class="bi bi-speedometer2"></i>
                 <span>Overview</span>
             </a>
 
             <a href="{% url 'admin_students' %}" class="sidebar-nav-link {% if active_tab == 'students' %}active{% endif %}">
-                <i class="bi bi-people-fill"></i>
                 <span>Students Directory</span>
             </a>
 
             <a href="{% url 'admin_instructors' %}" class="sidebar-nav-link {% if active_tab == 'instructors' %}active{% endif %}">
-                <i class="bi bi-person-workspace"></i>
                 <span>Faculty & Instructors</span>
             </a>
 
             <a href="{% url 'admin_courses' %}" class="sidebar-nav-link {% if active_tab == 'courses' %}active{% endif %}">
-                <i class="bi bi-journal-bookmark-fill"></i>
                 <span>Course Catalog</span>
             </a>
 
             <a href="{% url 'admin_enrollments' %}" class="sidebar-nav-link {% if active_tab == 'enrollments' %}active{% endif %}">
-                <i class="bi bi-clipboard-check-fill"></i>
                 <span>Enrollment Records</span>
             </a>
 
             <a href="{% url 'admin_payments' %}" class="sidebar-nav-link {% if active_tab == 'payments' %}active{% endif %}">
-                <i class="bi bi-credit-card-2-front-fill"></i>
                 <span>Payments & Revenue</span>
             </a>
 
+            <a href="{% url 'admin_feedbacks' %}" class="sidebar-nav-link {% if active_tab == 'feedbacks' %}active{% endif %}">
+                <span>Student Feedbacks</span>
+            </a>
         </nav>
 
         <div class="sidebar-profile-card">
@@ -586,12 +625,6 @@
                 <button class="btn btn-outline-secondary btn-sm d-lg-none rounded-pill px-2.5" onclick="toggleSidebar()" aria-label="Toggle Navigation">
                     <i class="bi bi-list fs-5"></i>
                 </button>
-                <div class="d-none d-sm-block">
-                    <div class="topbar-status-pill">
-                        <span class="topbar-status-dot"></span>
-                        <span>EduLearn Platform Live</span>
-                    </div>
-                </div>
             </div>
 
             <div class="d-flex align-items-center gap-2.5">

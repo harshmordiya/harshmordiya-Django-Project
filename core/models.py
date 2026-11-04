@@ -3,6 +3,7 @@ from django.db import models
 from django.utils import timezone
 from django.db.models.signals import pre_delete
 from django.dispatch import receiver
+from django.core.validators import MinValueValidator, MaxValueValidator
 
 
 class Admin(models.Model):
@@ -122,6 +123,39 @@ class Student(models.Model):
         avg = attempts.aggregate(models.Avg("percentage"))["percentage__avg"]
         return round(Decimal(str(avg)), 1) if avg is not None else Decimal("0.00")
 
+class Feedback(models.Model):
+    feedback_id = models.AutoField(primary_key=True)
+
+    student = models.ForeignKey(
+        'Student',
+        on_delete=models.CASCADE,
+        related_name='feedbacks'
+    )
+
+    course = models.ForeignKey(
+        'Course',
+        on_delete=models.CASCADE,
+        related_name='feedbacks'
+    )
+
+    rating = models.PositiveSmallIntegerField(
+        validators=[
+            MinValueValidator(1),
+            MaxValueValidator(5)
+        ]
+    )
+
+    comment = models.TextField(blank=True, null=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        unique_together = ('student', 'course')
+
+    def __str__(self):
+        return f"{self.student} - {self.course} ({self.rating}/5)"
 
 class Instructor(models.Model):
     instructor_id = models.AutoField(primary_key=True)
@@ -314,6 +348,18 @@ class Course(models.Model):
     @contents_count.setter
     def contents_count(self, value):
         self.__dict__["contents_count"] = value
+
+    @property
+    def average_rating(self):
+        feedbacks = self.feedbacks.all()
+        if not feedbacks.exists():
+            return 0.0
+        avg = feedbacks.aggregate(models.Avg("rating"))["rating__avg"]
+        return round(float(avg), 1) if avg is not None else 0.0
+
+    @property
+    def feedback_count(self):
+        return self.feedbacks.count()
 
 
 class Enrollment(models.Model):

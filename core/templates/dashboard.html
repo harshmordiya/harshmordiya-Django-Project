@@ -873,6 +873,39 @@ document.addEventListener("DOMContentLoaded", function() {
                                             <span>→</span>
                                         </a>
                                     </div>
+
+                                    <!-- Course Feedback Form -->
+                                    <div style="margin-top: 1rem; padding: 1rem; background: #f8fafc; border: 1px solid var(--slate-200); border-radius: 10px;">
+                                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem;">
+                                            <h4 style="font-size: 1rem; margin: 0; color: var(--slate-900);">
+                                                {% if enrollment.feedback %}
+                                                    ⭐ Your Feedback ({{ enrollment.feedback.rating }}/5)
+                                                {% else %}
+                                                    ⭐ Share Your Feedback
+                                                {% endif %}
+                                            </h4>
+                                            {% if enrollment.feedback %}
+                                                <span style="font-size: 0.78rem; color: #16a34a; font-weight: 600; background: #dcfce7; padding: 0.2rem 0.55rem; border-radius: 6px;">Submitted</span>
+                                            {% endif %}
+                                        </div>
+                                        <form method="POST" action="{% url 'submit_feedback' enrollment.course.course_id %}">
+                                            {% csrf_token %}
+                                            <label for="rating-{{ enrollment.course.course_id }}" style="display: block; margin-bottom: 0.4rem; font-size: 0.88rem; font-weight: 600;">Your Rating</label>
+                                            <select name="rating" id="rating-{{ enrollment.course.course_id }}" required style="width: 100%; padding: 0.7rem; border: 1px solid #cbd5e1; border-radius: 7px; margin-bottom: 0.8rem; background: #fff;">
+                                                <option value="">Select Rating</option>
+                                                <option value="1" {% if enrollment.feedback and enrollment.feedback.rating == 1 %}selected{% endif %}>⭐ 1 - Poor</option>
+                                                <option value="2" {% if enrollment.feedback and enrollment.feedback.rating == 2 %}selected{% endif %}>⭐⭐ 2 - Fair</option>
+                                                <option value="3" {% if enrollment.feedback and enrollment.feedback.rating == 3 %}selected{% endif %}>⭐⭐⭐ 3 - Good</option>
+                                                <option value="4" {% if enrollment.feedback and enrollment.feedback.rating == 4 %}selected{% endif %}>⭐⭐⭐⭐ 4 - Very Good</option>
+                                                <option value="5" {% if enrollment.feedback and enrollment.feedback.rating == 5 %}selected{% endif %}>⭐⭐⭐⭐⭐ 5 - Excellent</option>
+                                            </select>
+                                            <label for="comment-{{ enrollment.course.course_id }}" style="display: block; margin-bottom: 0.4rem; font-size: 0.88rem; font-weight: 600;">Your Comment</label>
+                                            <textarea name="comment" id="comment-{{ enrollment.course.course_id }}" rows="3" maxlength="2000" placeholder="Write your feedback about this course..." style="width: 100%; box-sizing: border-box; padding: 0.7rem; border: 1px solid #cbd5e1; border-radius: 7px; resize: vertical;">{{ enrollment.feedback.comment|default:"" }}</textarea>
+                                            <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 0.75rem;">
+                                                {% if enrollment.feedback %}Update Feedback{% else %}Submit Feedback{% endif %}
+                                            </button>
+                                        </form>
+                                    </div>
                                 </div>
                             </div>
                         {% endfor %}

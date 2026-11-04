@@ -1,0 +1,200 @@
+{% extends "admin_base.html" %}
+{% load static %}
+
+{% block title %}Student Feedbacks & Reviews - EduLearn Admin{% endblock %}
+
+{% block admin_content %}
+<div class="admin-page-container">
+
+    <!-- Header -->
+    <div class="admin-header-row mb-4">
+        <div>
+            <span class="admin-pretitle">QUALITY & REPUTATION MANAGEMENT</span>
+            <h1 class="admin-page-title d-flex align-items-center gap-2">
+                <span>⭐</span> Student Feedbacks & Ratings
+            </h1>
+            <p class="text-muted small mb-0">
+                View, filter, and monitor course reviews and ratings submitted by enrolled students across all curriculum offerings.
+            </p>
+        </div>
+    </div>
+
+    <!-- Metrics Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-sm-6 col-xl-3">
+            <div class="admin-metric-card" style="background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.25rem;">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="text-muted small fw-semibold text-uppercase">Total Reviews</span>
+                    <span style="font-size: 1.35rem;">💬</span>
+                </div>
+                <div class="fs-3 fw-bold text-dark">{{ total_feedbacks }}</div>
+                <div class="small text-muted mt-1">Submitted by learners</div>
+            </div>
+        </div>
+
+        <div class="col-sm-6 col-xl-3">
+            <div class="admin-metric-card" style="background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.25rem;">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="text-muted small fw-semibold text-uppercase">Platform Avg Rating</span>
+                    <span style="font-size: 1.35rem;">⭐</span>
+                </div>
+                <div class="fs-3 fw-bold text-dark">{{ avg_rating_display }} <span class="fs-6 text-muted fw-normal">/ 5.0</span></div>
+                <div class="small text-muted mt-1">Across all courses</div>
+            </div>
+        </div>
+
+        <div class="col-sm-6 col-xl-3">
+            <div class="admin-metric-card" style="background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.25rem;">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="text-muted small fw-semibold text-uppercase">5-Star Excellence</span>
+                    <span style="font-size: 1.35rem;">🏆</span>
+                </div>
+                <div class="fs-3 fw-bold text-success">{{ five_star_count }}</div>
+                <div class="small text-muted mt-1">Top satisfaction reviews</div>
+            </div>
+        </div>
+
+        <div class="col-sm-6 col-xl-3">
+            <div class="admin-metric-card" style="background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.25rem;">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="text-muted small fw-semibold text-uppercase">4-Star Reviews</span>
+                    <span style="font-size: 1.35rem;">👍</span>
+                </div>
+                <div class="fs-3 fw-bold text-primary">{{ four_star_count }}</div>
+                <div class="small text-muted mt-1">Positive learner evaluations</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter & Search Toolbar -->
+    <div class="admin-toolbar-box bg-white p-3 rounded-3 border mb-4">
+        <form method="get" class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+            <div class="input-group" style="flex: 1 1 280px; max-width: 420px;">
+                <span class="input-group-text bg-white border-end-0 text-muted ps-3">
+                    <i class="bi bi-search"></i>
+                </span>
+                <input type="text" name="q" class="form-control border-start-0 ps-0" placeholder="Search by student, email, course, comment..." value="{{ q }}">
+                {% if q or rating_filter != 'all' %}
+                    <a href="{% url 'admin_feedbacks' %}" class="btn btn-outline-secondary" title="Clear Filters">Clear</a>
+                {% endif %}
+            </div>
+
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <label class="text-muted small fw-semibold text-nowrap"><i class="bi bi-funnel me-1"></i>Rating:</label>
+                <select name="rating" class="form-select form-select-sm rounded-pill border" style="min-width: 140px;" onchange="this.form.submit()">
+                    <option value="all" {% if rating_filter == 'all' or not rating_filter %}selected{% endif %}>All Ratings ({{ total_feedbacks }})</option>
+                    <option value="5" {% if rating_filter == '5' %}selected{% endif %}>⭐⭐⭐⭐⭐ 5 Stars</option>
+                    <option value="4" {% if rating_filter == '4' %}selected{% endif %}>⭐⭐⭐⭐ 4 Stars</option>
+                    <option value="3" {% if rating_filter == '3' %}selected{% endif %}>⭐⭐⭐ 3 Stars</option>
+                    <option value="2" {% if rating_filter == '2' %}selected{% endif %}>⭐⭐ 2 Stars</option>
+                    <option value="1" {% if rating_filter == '1' %}selected{% endif %}>⭐ 1 Star</option>
+                </select>
+            </div>
+        </form>
+    </div>
+
+    <!-- Feedbacks Table -->
+    <div class="card border rounded-3 overflow-hidden shadow-sm">
+        <div class="card-header bg-white py-3 border-bottom d-flex align-items-center justify-content-between">
+            <div class="fw-bold text-dark d-flex align-items-center gap-2">
+                <i class="bi bi-chat-square-quote-fill text-primary"></i>
+                <span>Student Feedback Records ({{ feedbacks.count }})</span>
+            </div>
+        </div>
+
+        {% if feedbacks %}
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0" style="font-size: 0.92rem;">
+                    <thead class="table-light text-uppercase small text-muted" style="letter-spacing: 0.03em;">
+                        <tr>
+                            <th style="padding-left: 1.25rem;">Student</th>
+                            <th>Course</th>
+                            <th>Rating</th>
+                            <th>Comment</th>
+                            <th>Submitted On</th>
+                            <th class="text-end" style="padding-right: 1.25rem;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for fb in feedbacks %}
+                            <tr>
+                                <td style="padding-left: 1.25rem;">
+                                    <div class="d-flex align-items-center gap-2.5">
+                                        <div style="width: 38px; height: 38px; border-radius: 50%; background: linear-gradient(135deg, #4f46e5, #7c3aed); color: white; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.95rem; flex-shrink: 0;">
+                                            {{ fb.student.first_name|first|upper }}
+                                        </div>
+                                        <div>
+                                            <a href="{% url 'student_profile_detail' fb.student.student_id %}" class="fw-bold text-dark text-decoration-none">
+                                                {{ fb.student.full_name }}
+                                            </a>
+                                            <div class="text-muted small">{{ fb.student.email }}</div>
+                                        </div>
+                                    </div>
+                                </td>
+
+                                <td>
+                                    <a href="{% url 'course_detail' fb.course.course_id %}" class="fw-bold text-primary text-decoration-none">
+                                        {{ fb.course.title }}
+                                    </a>
+                                    <div class="text-muted small">
+                                        {% if fb.course.instructor %}
+                                            Instructor: {{ fb.course.instructor.full_name }}
+                                        {% else %}
+                                            EduLearn Faculty
+                                        {% endif %}
+                                    </div>
+                                </td>
+
+                                <td>
+                                    <div class="d-flex align-items-center gap-1.5">
+                                        <span class="text-warning fw-bold">
+                                            {% if fb.rating == 5 %}⭐⭐⭐⭐⭐
+                                            {% elif fb.rating == 4 %}⭐⭐⭐⭐
+                                            {% elif fb.rating == 3 %}⭐⭐⭐
+                                            {% elif fb.rating == 2 %}⭐⭐
+                                            {% else %}⭐{% endif %}
+                                        </span>
+                                        <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-pill px-2 py-0.5 small fw-bold">
+                                            {{ fb.rating }}.0
+                                        </span>
+                                    </div>
+                                </td>
+
+                                <td style="max-width: 320px;">
+                                    {% if fb.comment %}
+                                        <span class="text-dark" style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.45;">
+                                            "{{ fb.comment }}"
+                                        </span>
+                                    {% else %}
+                                        <span class="text-muted fst-italic">No written comment provided</span>
+                                    {% endif %}
+                                </td>
+
+                                <td>
+                                    <span class="text-muted small">{{ fb.created_at|date:"d M Y, h:i A" }}</span>
+                                </td>
+
+                                <td class="text-end" style="padding-right: 1.25rem;">
+                                    <form method="post" action="{% url 'admin_feedback_delete' fb.feedback_id %}" onsubmit="return confirm('Are you sure you want to delete this feedback from {{ fb.student.full_name }}?');" class="d-inline">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-outline-danger btn-sm rounded-pill px-2.5" title="Remove Feedback">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="text-center py-5 text-muted">
+                <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">⭐</div>
+                <h5>No Feedbacks Found</h5>
+                <p class="small text-muted mb-0">No student reviews match the current filter criteria.</p>
+            </div>
+        {% endif %}
+    </div>
+
+</div>
+{% endblock %}

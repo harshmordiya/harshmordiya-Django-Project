@@ -138,6 +138,11 @@
                                             <i class="bi bi-clock me-0.5"></i>{{ course.duration }}
                                         </span>
                                     {% endif %}
+                                    {% if course.feedback_count > 0 %}
+                                        <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-pill px-2 py-0.5 fw-bold" style="font-size: 0.72rem;">
+                                            ⭐ {{ course.average_rating }} ({{ course.feedback_count }})
+                                        </span>
+                                    {% endif %}
                                 </div>
                             </td>
 
